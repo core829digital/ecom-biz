@@ -90,13 +90,6 @@ export async function connectStripeAction(slug: string) {
   redirect(link.url);
 }
 
-export async function refreshStripeStatus(storeId: string, accountId: string) {
-  const stripe = getStripe();
-  if (!stripe) return;
-  const account = await stripe.accounts.retrieve(accountId);
-  await db.store.update({ where: { id: storeId }, data: { stripeChargesEnabled: account.charges_enabled, stripePayoutsEnabled: account.payouts_enabled } });
-}
-
 export async function stripeDashboardAction(slug: string) {
   const { store } = await requireStoreAccess(slug, "OWNER");
   const stripe = getStripe();

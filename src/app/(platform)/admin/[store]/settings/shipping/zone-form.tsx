@@ -1,16 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ActionForm, SubmitButton, useFieldError } from "@/components/ui/form";
 import { Input, inputClass } from "@/components/ui/fields";
-import { useLocale, useT } from "@/components/i18n-provider";
-import { countryOptions } from "@/lib/geo";
+import { useT } from "@/components/i18n-provider";
 import type { ActionState } from "@/lib/action";
 
-export function ZoneForm({ action, initial }: { action: (s: ActionState, fd: FormData) => Promise<ActionState>; initial?: { name: string; countries: string[] } }) {
+/**
+ * `countries` is computed on the server: country names come from the runtime's ICU data,
+ * which differs between Node and browsers and would otherwise cause hydration mismatches.
+ */
+export function ZoneForm({ action, initial, countries: all }: { action: (s: ActionState, fd: FormData) => Promise<ActionState>; initial?: { name: string; countries: string[] }; countries: { code: string; name: string }[] }) {
   const t = useT();
-  const locale = useLocale();
-  const all = useMemo(() => countryOptions(locale), [locale]);
   const [selected, setSelected] = useState<string[]>(initial?.countries ?? []);
   const [filter, setFilter] = useState("");
   const world = selected.includes("*");

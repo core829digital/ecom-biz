@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import { loadStorefront, sfHref } from "@/server/storefront";
 import { getCart, cartItemCount } from "@/server/cart";
 import { themeCssVars } from "@/lib/theme";
+import { MobileNav } from "@/components/storefront/mobile-nav";
 
 type MenuItem = { title: string; url: string };
 const menuItems = (json: unknown): MenuItem[] =>
@@ -59,20 +60,13 @@ export default async function StorefrontLayout({ children, params }: { children:
         )}
         <header className="sticky top-0 z-30 border-b border-border bg-bg/95 backdrop-blur">
           <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-            <details className="relative md:hidden">
-              <summary className="list-none rounded p-2 text-lg leading-none" aria-label={t("sf.menu")}>☰</summary>
-              <nav className="absolute left-0 top-full z-40 mt-2 w-64 rounded-lg border border-border bg-bg p-2 shadow-lg">
-                {main.map((i) => (
-                  <a key={i.title + i.url} href={sfHref(base, i.url)} className="block rounded px-3 py-2 hover:bg-surface-2">{i.title}</a>
-                ))}
-              </nav>
-            </details>
+            <MobileNav items={main.map((i) => ({ title: i.title, href: sfHref(base, i.url) }))} label={t("sf.menu")} closeLabel={t("common.close")} />
             <Link href={sf.href("/")} className="flex min-w-0 items-center font-semibold tracking-tight">
               {theme.logoUrl ? <img src={theme.logoUrl} alt={store.name} style={{ height: theme.logoHeight }} className="w-auto max-w-[45vw] object-contain" /> : <span className="truncate text-lg">{store.name}</span>}
             </Link>
             <nav className="hidden flex-1 items-center gap-6 text-sm md:flex" aria-label={t("sf.menu")}>
               {main.map((i) => (
-                <a key={i.title + i.url} href={sfHref(base, i.url)} className="text-text/80 hover:text-text">{i.title}</a>
+                <Link key={i.title + i.url} href={sfHref(base, i.url)} className="text-text/80 transition-colors hover:text-text">{i.title}</Link>
               ))}
             </nav>
             <div className="ml-auto flex shrink-0 items-center gap-1 text-sm">
@@ -112,7 +106,7 @@ export default async function StorefrontLayout({ children, params }: { children:
             {footer.length > 0 && (
               <ul className="space-y-2">
                 {footer.map((i) => (
-                  <li key={i.title + i.url}><a href={sfHref(base, i.url)} className="text-muted hover:text-text">{i.title}</a></li>
+                  <li key={i.title + i.url}><Link href={sfHref(base, i.url)} className="text-muted transition-colors hover:text-text">{i.title}</Link></li>
                 ))}
               </ul>
             )}

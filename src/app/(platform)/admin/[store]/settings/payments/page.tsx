@@ -9,14 +9,15 @@ import { Badge, Card, PageHeader } from "@/components/ui/primitives";
 import { BackLink } from "@/components/admin/back-link";
 import { ActionForm, ConfirmSubmit, SubmitButton } from "@/components/ui/form";
 import { Checkbox, Textarea } from "@/components/ui/fields";
-import { connectStripeAction, refreshStripeStatus, saveManualPaymentsAction, stripeDashboardAction } from "../actions";
+import { connectStripeAction, saveManualPaymentsAction, stripeDashboardAction } from "../actions";
+import { refreshStripeStatus } from "@/server/stripe-connect";
 
 export default async function PaymentsSettings({ params, searchParams }: { params: Promise<{ store: string }>; searchParams: Promise<{ stripe?: string; error?: string }> }) {
   const { store: slug } = await params;
   const sp = await searchParams;
   const { store: initial, role } = await requireStoreAccess(slug, "ADMIN");
   const { t } = await getPlatformT();
-  if (sp.stripe === "return" && initial.stripeAccountId) await refreshStripeStatus(initial.id, initial.stripeAccountId).catch(() => undefined);
+  if (sp.stripe === "return" && initial.stripeAccountId) await refreshStripeStatus(initial).catch(() => undefined);
   const store = await db.store.findUniqueOrThrow({ where: { id: initial.id } });
   const stripeReady = !!getStripe();
   const manual = parseManualPayments(store.manualPayments);

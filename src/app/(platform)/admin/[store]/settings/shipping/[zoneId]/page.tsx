@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireStoreAccess } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { formatMoney } from "@/lib/money";
+import { countryOptions } from "@/lib/geo";
 import { Card, PageHeader, Table, Td, Th } from "@/components/ui/primitives";
 import { BackLink } from "@/components/admin/back-link";
 import { ActionForm, ConfirmSubmit, SubmitButton } from "@/components/ui/form";
@@ -54,7 +55,7 @@ export default async function ZonePage({ params }: { params: Promise<{ store: st
           </ActionForm>
         </Card>
         <Card title={t("common.edit")}>
-          <ZoneForm action={saveZoneAction.bind(null, slug, zone.id)} initial={{ name: zone.name, countries: zone.countries }} />
+          <ZoneForm action={saveZoneAction.bind(null, slug, zone.id)} initial={{ name: zone.name, countries: zone.countries }} countries={countryOptions(locale)} />
         </Card>
       </div>
     </>

@@ -621,7 +621,7 @@ export const en = {
   "staff.send": "Send invitation",
   "staff.invited": "Invitation sent to {email}.",
   "staff.alreadyMember": "This person is already a member.",
-  "staff.inviteInvalid": "This invitation is invalid or has expired.",
+  "staff.inviteInvalid": "This invitation is invalid or has expired. Ask the store owner to send a new one.",
   "staff.inviteTitle": "Join {store}",
   "staff.inviteFor": "Invitation for {email} as {role}.",
   "staff.wrongAccount": "You're signed in as {email}. Log out and sign in with the invited email.",
@@ -919,7 +919,7 @@ export const en = {
   "sf.reviews.write": "Write a review",
   "sf.reviews.rating": "Your rating",
   "sf.reviews.name": "Your name",
-  "sf.reviews.emailHint": "Your email isn't published. We use it to verify purchases.",
+  "sf.reviews.emailHint": "Your email isn't published.",
   "sf.reviews.titleField": "Title (optional)",
   "sf.reviews.body": "Tell others what you think (at least 10 characters)",
   "sf.reviews.submit": "Submit review",
@@ -1006,6 +1006,12 @@ export const en = {
   "sf.reviews.count.one": "1 review",
   "reviews.publishedCount.one": "1 published",
   "domains.error.hosting": "The domain is verified, but the hosting provider could not activate it yet. Try again in a few minutes; if it persists, contact support.",
+  "common.close": "Close",
+  "sf.notFound.title": "We couldn't find that page",
+  "sf.notFound.body": "The link may be broken or the product may no longer be available.",
+  "sf.notFound.home": "Back to the shop",
+  "staff.inviteInvalidTitle": "Invitation unavailable",
+  "sf.reviews.emailHintGuest": "Your email isn't published. Sign in to your account to get a “Verified purchase” badge.",
 } as const;
 
 export type MessageKey = keyof typeof en;

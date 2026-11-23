@@ -7,6 +7,7 @@ import { loadStorefront } from "@/server/storefront";
 import { subscribeStockAlert } from "@/server/stock-alerts";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/http";
+import { getCurrentCustomer } from "@/lib/auth/customer";
 
 const emailSchema = z.string().trim().toLowerCase().email().max(200);
 
@@ -42,8 +43,11 @@ export async function submitReviewAction(site: string, productId: string, _: Rev
   const d = parsed.data;
   // One review per email per product.
   if (await db.productReview.findFirst({ where: { productId, email: d.email } })) return { error: t("sf.reviews.already"), at: Date.now() };
-  const verified = (await db.orderLine.count({
-    where: { productId, order: { storeId: store.id, email: d.email, financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] } } },
+  // "Verified purchase" only for a signed-in customer (their email is proven by account
+  // activation); a typed email alone could be anyone's.
+  const customer = await getCurrentCustomer(store.id);
+  const verified = customer?.email === d.email && (await db.orderLine.count({
+    where: { productId, order: { storeId: store.id, customerId: customer.id, financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] } } },
   })) > 0;
   await db.productReview.create({
     data: {

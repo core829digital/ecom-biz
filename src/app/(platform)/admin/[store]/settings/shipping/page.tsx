@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireStoreAccess } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { formatMoney } from "@/lib/money";
-import { countryName } from "@/lib/geo";
+import { countryName, countryOptions } from "@/lib/geo";
 import { Card, EmptyState, PageHeader } from "@/components/ui/primitives";
 import { BackLink } from "@/components/admin/back-link";
 import { ZoneForm } from "./zone-form";
@@ -37,7 +37,7 @@ export default async function ShippingSettings({ params }: { params: Promise<{ s
           </Card>
         ))}
         <Card title={t("settings.shipping.addZone")}>
-          <ZoneForm action={saveZoneAction.bind(null, slug, null)} />
+          <ZoneForm action={saveZoneAction.bind(null, slug, null)} countries={countryOptions(locale)} />
         </Card>
       </div>
     </>

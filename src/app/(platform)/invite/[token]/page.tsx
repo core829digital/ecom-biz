@@ -36,7 +36,11 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     <main className="flex min-h-dvh items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 text-center shadow-sm">
         {!valid ? (
-          <p className="text-sm">{t("staff.inviteInvalid")}</p>
+          <>
+            <h1 className="text-lg font-semibold">{t("staff.inviteInvalidTitle")}</h1>
+            <p className="mt-2 text-sm text-muted">{t("staff.inviteInvalid")}</p>
+            <LinkButton href={user ? "/admin" : "/login"} variant="secondary" className="mt-5 w-full">{user ? t("nav.allStores") : t("auth.login")}</LinkButton>
+          </>
         ) : (
           <>
             <h1 className="text-lg font-semibold">{t("staff.inviteTitle", { store: invite.store.name })}</h1>

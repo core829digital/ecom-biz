@@ -13,6 +13,7 @@ import { addToCartAction } from "../../cart/actions";
 import { submitReviewAction, subscribeStockAlertAction } from "./actions";
 import { Stars } from "@/components/storefront/stars";
 import { ReviewForm } from "@/components/storefront/reviews";
+import { getCurrentCustomer } from "@/lib/auth/customer";
 
 type Props = { params: Promise<{ site: string; handle: string }>; searchParams: Promise<{ variant?: string }> };
 
@@ -58,6 +59,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   ]);
   const reviewCount = reviewStats.reduce((n, r) => n + r._count, 0);
   const avgRating = reviewCount ? reviewStats.reduce((s, r) => s + r.rating * r._count, 0) / reviewCount : 0;
+  const customer = store.reviewsEnabled ? await getCurrentCustomer(store.id) : null;
   const reviewDate = new Intl.DateTimeFormat(sf.locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium", timeZone: sf.store.timezone });
   const related = await db.product.findMany({
     where: {
@@ -152,9 +154,10 @@ export default async function ProductPage({ params, searchParams }: Props) {
               <div className="mt-6">
                 <ReviewForm
                   action={submitReviewAction.bind(null, site, product.id)}
+                  defaults={customer ? { name: [customer.firstName, customer.lastName].filter(Boolean).join(" "), email: customer.email } : undefined}
                   labels={{
                     write: t("sf.reviews.write"), name: t("sf.reviews.name"), email: t("field.email"), title: t("sf.reviews.titleField"),
-                    body: t("sf.reviews.body"), submit: t("sf.reviews.submit"), rating: t("sf.reviews.rating"), emailHint: t("sf.reviews.emailHint"),
+                    body: t("sf.reviews.body"), submit: t("sf.reviews.submit"), rating: t("sf.reviews.rating"), emailHint: customer ? t("sf.reviews.emailHint") : t("sf.reviews.emailHintGuest"),
                   }}
                 />
               </div>
