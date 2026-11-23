@@ -13,6 +13,8 @@ import { sha256 } from "@/lib/crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/server/audit";
 import { BillingError, createBillingPortal, createSubscriptionCheckout } from "@/server/billing";
+import { sendVerificationEmail } from "@/server/email-verification";
+import { clientIp } from "@/lib/http";
 
 export async function updateProfileAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser();
@@ -32,7 +34,10 @@ export async function updateProfileAction(_: ActionState, fd: FormData): Promise
     }
     if (await db.user.findUnique({ where: { email } })) return fail(t("validation.fixErrors"), { email: t("auth.error.emailTaken") });
   }
-  await db.user.update({ where: { id: user.id }, data: { name, email, locale } });
+  const emailChanged = email !== user.email;
+  // A new address must be verified again (it unlocks trials and billing).
+  const updated = await db.user.update({ where: { id: user.id }, data: { name, email, locale, ...(emailChanged ? { emailVerifiedAt: null } : {}) } });
+  if (emailChanged) await sendVerificationEmail(updated);
   (await cookies()).set("locale", locale, { path: "/", maxAge: 31536000, sameSite: "lax" });
   if (email !== user.email) await audit({ userId: user.id, action: "account.email_change", meta: { from: user.email, to: email } });
   revalidatePath("/", "layout");
@@ -64,12 +69,13 @@ export async function choosePlanAction(planId: string) {
   let url: string;
   try {
     // An existing subscription is changed in the billing portal: never create a second one.
-    url = user.stripeSubscriptionId && user.subscriptionStatus !== "CANCELED" && plan.priceCents > 0
+    const live = user.stripeSubscriptionId && ["TRIALING", "ACTIVE", "PAST_DUE"].includes(user.subscriptionStatus);
+    url = live && plan.priceCents > 0
       ? await createBillingPortal(user)
-      : await createSubscriptionCheckout(user, plan);
+      : (await createSubscriptionCheckout(user, plan, { ip: await clientIp() })).url;
   } catch (e) {
     if (!(e instanceof BillingError)) console.error("[billing]", e);
-    redirect("/account/billing?error=1");
+    redirect(`/account/billing?error=${e instanceof BillingError ? e.code : "unknown"}`);
   }
   await audit({ userId: user.id, action: "billing.plan_checkout", target: plan.name });
   redirect(url);

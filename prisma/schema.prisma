@@ -28,6 +28,17 @@ model User {
   trialEndsAt          DateTime?
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
+  /// When a free trial was granted. Never cleared: one trial per account, ever.
+  trialUsedAt          DateTime?
+  /// Mirrors Stripe: the subscription ends at currentPeriodEnd instead of renewing.
+  cancelAtPeriodEnd    Boolean            @default(false)
+  currentPeriodEnd     DateTime?
+  /// First failed renewal; the account keeps working for a grace period from here.
+  pastDueSince         DateTime?
+  /// Set on payment disputes (chargebacks) or by a platform admin: the account is paused until cleared.
+  billingHold          Boolean            @default(false)
+  billingHoldReason    String?
+  emailVerifiedAt      DateTime?
   // Two-factor authentication (TOTP, RFC 6238)
   totpSecret           String?
   totpEnabledAt        DateTime?
@@ -35,11 +46,47 @@ model User {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
-  plan           Plan?           @relation(fields: [planId], references: [id])
-  auditLogs      AuditLog[]
-  sessions       Session[]
-  memberships    Membership[]
-  passwordResets PasswordReset[]
+  plan               Plan?               @relation(fields: [planId], references: [id])
+  auditLogs          AuditLog[]
+  sessions           Session[]
+  memberships        Membership[]
+  passwordResets     PasswordReset[]
+  emailVerifications EmailVerification[]
+  trialClaims        TrialClaim[]
+}
+
+model EmailVerification {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  email     String // the address being verified (it may change before the link is used)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum TrialClaimKind {
+  EMAIL
+  CARD
+  NETWORK
+}
+
+/// Anti-abuse ledger for free trials. Stores only keyed hashes (HMAC with APP_SECRET), never
+/// raw emails, card data or IPs, and survives account deletion (userId is nulled) so a deleted
+/// account cannot start another trial. Lawful basis: legitimate interest in fraud prevention.
+model TrialClaim {
+  id        String         @id @default(cuid())
+  kind      TrialClaimKind
+  valueHash String
+  userId    String?
+  createdAt DateTime       @default(now())
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([kind, valueHash])
+  @@index([kind, createdAt])
 }
 
 model Session {

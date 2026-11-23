@@ -5,7 +5,8 @@ import { getPlatformT } from "@/lib/i18n/server";
 import { env } from "@/lib/env";
 import { storePublicUrl } from "@/lib/tenant";
 import { getAppearance } from "@/lib/appearance-server";
-import { accountActive, assertCanCreateStore, PlanLimitError, storeUsage } from "@/server/plans";
+import { assertCanCreateStore, PlanLimitError, storeAvailability, storeUsage } from "@/server/plans";
+import { graceEndsAt } from "@/lib/billing-rules";
 import { AdminShell, type NavItem } from "@/components/admin/sidebar";
 import { UsageMeter } from "@/components/admin/usage-meter";
 import { CommandPalette } from "@/components/admin/command-palette";
@@ -64,10 +65,21 @@ export default async function StoreAdminLayout({ children, params }: { children:
     ] },
   ];
 
-  const ownerActive = usage.owner ? accountActive(usage.owner) : true;
-  const banner = store.status !== "ACTIVE" || (env.billingEnforced && !ownerActive) ? (
-    <div className="border-b border-warning/30 bg-warning-bg px-4 py-2 text-center text-sm text-warning">
-      {t("admin.banner.paused")} <Link href="/account/billing" className="font-medium underline">{t("nav.billing")}</Link>
+  // Tell the merchant exactly why the store isn't selling (or is about to stop), with the fix.
+  const availability = await storeAvailability(store);
+  const owner = usage.owner;
+  const fmt = (d: Date) => new Intl.DateTimeFormat(locale === "it" ? "it-IT" : "en-GB", { dateStyle: "long" }).format(d);
+  let bannerText: string | null = null;
+  if (availability === "store_inactive") bannerText = t("admin.banner.paused");
+  else if (env.billingEnforced && owner) {
+    if (owner.billingHold) bannerText = t("admin.banner.hold");
+    else if (availability === "account_inactive") bannerText = owner.subscriptionStatus === "NONE" ? t("admin.banner.startTrial") : t("admin.banner.inactive");
+    else if (availability === "over_store_limit") bannerText = t("admin.banner.overLimit", { limit: usage.limits.stores });
+    else if (owner.subscriptionStatus === "PAST_DUE" && owner.pastDueSince) bannerText = t("admin.banner.pastDue", { date: fmt(graceEndsAt(owner.pastDueSince)) });
+  }
+  const banner = bannerText ? (
+    <div role="status" className="border-b border-warning/30 bg-warning-bg px-4 py-2 text-center text-sm text-warning">
+      {bannerText} {owner?.id === user.id && <Link href="/account/billing" className="font-medium underline">{t("nav.billing")}</Link>}
     </div>
   ) : null;
 

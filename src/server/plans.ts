@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { Plan, Store, User } from "@prisma/client";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { accountActive as rulesAccountActive, storesWithinLimit } from "@/lib/billing-rules";
 
 /**
  * Entitlements: the single place that decides what an account may do.
@@ -21,11 +22,12 @@ export class PlanLimitError extends Error {
 
 type AccountLike = Pick<User, "subscriptionStatus" | "trialEndsAt"> & { plan: Plan | null };
 
-/** An account may operate while subscribed, or while its trial has not ended. */
-export function accountActive(user: Pick<User, "subscriptionStatus" | "trialEndsAt">, now = new Date()): boolean {
-  if (user.subscriptionStatus === "ACTIVE") return true;
-  if (user.subscriptionStatus === "TRIALING") return !user.trialEndsAt || user.trialEndsAt > now;
-  return false;
+/**
+ * An account may operate while subscribed, during its trial, during the grace period after a
+ * failed renewal, and never while on hold (payment dispute). Rules live in billing-rules.ts.
+ */
+export function accountActive(user: Pick<User, "subscriptionStatus" | "trialEndsAt"> & Partial<Pick<User, "pastDueSince" | "billingHold">>, now = new Date()): boolean {
+  return rulesAccountActive(user, now);
 }
 
 export function limitsOf(plan: Plan | null) {
@@ -48,12 +50,31 @@ export const storeOwner = cache(async (storeId: string) => {
   return m?.user ?? null;
 });
 
-/** A store sells only when active and (if billing is enforced) its owner's account is in good standing. */
-export async function storeOperational(store: Pick<Store, "id" | "status">): Promise<boolean> {
-  if (store.status !== "ACTIVE") return false;
-  if (!env.billingEnforced) return true;
+/** Stores owned by an account (oldest first). Memoized per request. */
+const ownedStores = cache((userId: string) =>
+  db.store.findMany({ where: { status: { not: "CLOSED" }, memberships: { some: { userId, role: "OWNER" } } }, select: { id: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
+);
+
+export type StoreAvailability = "ok" | "store_inactive" | "account_inactive" | "over_store_limit";
+
+/**
+ * Why a store can or cannot sell. With billing enforced, the owner's account must be in good
+ * standing, and only as many stores as the plan allows stay open (the oldest ones): downgrading
+ * from a bigger plan pauses the extra stores instead of keeping them for free.
+ */
+export async function storeAvailability(store: Pick<Store, "id" | "status">): Promise<StoreAvailability> {
+  if (store.status !== "ACTIVE") return "store_inactive";
+  if (!env.billingEnforced) return "ok";
   const owner = await storeOwner(store.id);
-  return !!owner && accountActive(owner);
+  if (!owner || !accountActive(owner)) return "account_inactive";
+  if (owner.isPlatformAdmin) return "ok";
+  const allowed = storesWithinLimit(await ownedStores(owner.id), limitsOf(owner.plan).stores);
+  return allowed.has(store.id) ? "ok" : "over_store_limit";
+}
+
+/** A store sells only when it is available (see storeAvailability). */
+export async function storeOperational(store: Pick<Store, "id" | "status">): Promise<boolean> {
+  return (await storeAvailability(store)) === "ok";
 }
 
 /** Platform fee in bps for card payments: store override → owner's plan → deployment default. */

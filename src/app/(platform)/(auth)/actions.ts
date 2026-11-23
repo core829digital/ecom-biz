@@ -13,6 +13,8 @@ import { randomToken, sha256 } from "@/lib/crypto";
 import { emailButton, emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
+import { sendVerificationEmail, verifyEmailToken } from "@/server/email-verification";
+import { getCurrentUser } from "@/lib/auth/staff";
 
 /** Only allow same-origin relative redirects to avoid open-redirects. */
 function safeNext(next: string | undefined) {
@@ -66,11 +68,14 @@ export async function signupAction(_: ActionState, fd: FormData): Promise<Action
       email: parsed.data.email,
       passwordHash: await hashPassword(parsed.data.password),
       locale,
+      // The plan is a preselection: nothing is active until the merchant starts a subscription
+      // (or a card-backed free trial) from Billing. See server/billing.ts.
       planId: entryPlan?.id,
-      subscriptionStatus: "TRIALING",
-      trialEndsAt: new Date(Date.now() + (entryPlan?.trialDays ?? 14) * 86400_000),
+      subscriptionStatus: "NONE",
     },
   });
+  await sendVerificationEmail(user);
+  await audit({ userId: user.id, action: "auth.signup" });
   await createStaffSession(user.id);
   const next = safeNext(String(fd.get("next") ?? ""));
   redirect(next === "/admin" ? "/admin/new" : next);
@@ -154,4 +159,23 @@ export async function verifyTwoFactorAction(_: ActionState, fd: FormData): Promi
   await db.session.update({ where: { id: session.id }, data: { verified: true } });
   await audit({ userId: user.id, action: "auth.login", meta: { twoFactor: true } });
   redirect(safeNext(String(fd.get("next") ?? "")));
+}
+
+export async function confirmEmailAction(token: string, _: ActionState): Promise<ActionState> {
+  const { t } = await getPlatformT();
+  const ip = await clientIp();
+  if (!(await rateLimit(`verify:ip:${ip}`, 30, 3600))) return fail(t("auth.error.rateLimited"));
+  if ((await verifyEmailToken(token)) !== "ok") return fail(t("auth.verify.invalid"));
+  const user = await getCurrentUser();
+  redirect(user ? "/account/billing?verified=1" : "/login?verified=1");
+}
+
+export async function resendVerificationAction(_: ActionState): Promise<ActionState> {
+  const { t } = await getPlatformT();
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  if (user.emailVerifiedAt) return ok(t("auth.verify.already"));
+  if (!(await rateLimit(`verify-resend:${user.id}`, 3, 3600))) return fail(t("auth.error.rateLimited"));
+  await sendVerificationEmail(user);
+  return ok(t("auth.verify.sent", { email: user.email }));
 }

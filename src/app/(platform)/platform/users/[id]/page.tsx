@@ -5,7 +5,7 @@ import { getPlatformT } from "@/lib/i18n/server";
 import { Badge, Card, PageHeader } from "@/components/ui/primitives";
 import { BackLink } from "@/components/admin/back-link";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
-import { Input, Select } from "@/components/ui/fields";
+import { Checkbox, Input, Select } from "@/components/ui/fields";
 import { updateUserBillingAction } from "../../actions";
 
 export default async function PlatformUser({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +24,15 @@ export default async function PlatformUser({ params }: { params: Promise<{ id: s
             {user.plan?.name ?? "—"} · <Badge>{t(`platform.sub.${user.subscriptionStatus}`)}</Badge>
             {user.trialEndsAt && <span className="text-muted"> · {t("platform.trialEnds", { date: date.format(user.trialEndsAt) })}</span>}
           </p>
+          <dl className="mb-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted">{t("platform.emailVerified")}</dt><dd>{user.emailVerifiedAt ? date.format(user.emailVerifiedAt) : <Badge tone="warning">{t("common.no")}</Badge>}</dd>
+            <dt className="text-muted">{t("platform.trialUsed")}</dt><dd>{user.trialUsedAt ? date.format(user.trialUsedAt) : t("common.no")}</dd>
+            {user.currentPeriodEnd && <><dt className="text-muted">{t(user.cancelAtPeriodEnd ? "platform.endsOn" : "platform.renewsOn")}</dt><dd>{date.format(user.currentPeriodEnd)}</dd></>}
+            {user.pastDueSince && <><dt className="text-muted">{t("platform.pastDueSince")}</dt><dd>{date.format(user.pastDueSince)}</dd></>}
+            {user.stripeSubscriptionId && <><dt className="text-muted">Stripe</dt><dd className="truncate font-mono text-xs">{user.stripeSubscriptionId}</dd></>}
+          </dl>
+          {user.billingHold && <p role="alert" className="mb-4 rounded-lg bg-danger-bg p-3 text-sm text-danger">{t("platform.holdActive", { reason: user.billingHoldReason ?? "—" })}</p>}
+          {user.stripeSubscriptionId && <p className="mb-4 text-xs text-muted">{t("platform.stripeSyncNote")}</p>}
           <ActionForm action={updateUserBillingAction.bind(null, user.id)} className="space-y-4">
             <Select name="planId" label={t("platform.plan")} defaultValue={user.planId ?? ""}>
               <option value="">—</option>
@@ -33,6 +42,7 @@ export default async function PlatformUser({ params }: { params: Promise<{ id: s
               {(["TRIALING", "ACTIVE", "PAST_DUE", "CANCELED", "NONE"] as const).map((s) => <option key={s} value={s}>{t(`platform.sub.${s}`)}</option>)}
             </Select>
             <Input name="extendTrialDays" type="number" min={0} max={365} label={t("platform.extendTrial")} defaultValue="0" />
+            <Checkbox name="billingHold" label={t("platform.hold")} hint={t("platform.holdHint")} defaultChecked={user.billingHold} />
             <SubmitButton>{t("common.save")}</SubmitButton>
           </ActionForm>
         </Card>

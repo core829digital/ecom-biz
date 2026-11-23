@@ -41,15 +41,19 @@ export async function updateUserBillingAction(userId: string, _: ActionState, fd
   const extend = Math.min(365, Math.max(0, parseInt(String(fd.get("extendTrialDays") ?? "0"), 10) || 0));
   const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
   const base = user.trialEndsAt && user.trialEndsAt > new Date() ? user.trialEndsAt : new Date();
+  const hold = fd.get("billingHold") === "on";
   await db.user.update({
     where: { id: userId },
     data: {
       planId,
       subscriptionStatus: extend > 0 && status !== "ACTIVE" ? "TRIALING" : (status as "ACTIVE"),
-      ...(extend > 0 ? { trialEndsAt: new Date(base.getTime() + extend * 86400_000) } : {}),
+      ...(extend > 0 ? { trialEndsAt: new Date(base.getTime() + extend * 86400_000), trialUsedAt: user.trialUsedAt ?? new Date() } : {}),
+      ...(status !== "PAST_DUE" ? { pastDueSince: null } : { pastDueSince: user.pastDueSince ?? new Date() }),
+      billingHold: hold,
+      ...(hold !== user.billingHold ? { billingHoldReason: hold ? `admin:${admin.email}` : null } : {}),
     },
   });
-  await audit({ userId: admin.id, action: "platform.user_billing", target: user.email, meta: { planId, status, extend } });
+  await audit({ userId: admin.id, action: "platform.user_billing", target: user.email, meta: { planId, status, extend, hold } });
   revalidatePath(`/platform/users/${userId}`);
   return ok(t("common.saved"));
 }

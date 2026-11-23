@@ -64,12 +64,20 @@ export async function POST(req: Request) {
         if (piId) await recordExternalRefund(piId, charge.amount_refunded);
         break;
       }
+      // Account subscriptions, and disputes (on merchant orders or on our own invoices).
       case "checkout.session.completed":
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted":
+      case "customer.subscription.paused":
+      case "customer.subscription.resumed":
+      case "customer.subscription.trial_will_end":
+      case "invoice.paid":
       case "invoice.payment_failed":
-        await handleBillingEvent(event);
+      case "charge.dispute.created":
+      case "charge.dispute.closed":
+        // Connect events (event.account set) are about merchants' own Stripe accounts, never our billing.
+        if (!event.account) await handleBillingEvent(event);
         break;
     }
   } catch (e) {
