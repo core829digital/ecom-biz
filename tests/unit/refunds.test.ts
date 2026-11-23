@@ -24,5 +24,7 @@ describe("refunds", () => {
     expect(fulfillmentStatusFor([{ quantity: 2, fulfilledQty: 1, refundedQty: 0, requiresShipping: true }])).toBe("PARTIALLY_FULFILLED");
     expect(fulfillmentStatusFor([{ quantity: 2, fulfilledQty: 1, refundedQty: 1, requiresShipping: true }])).toBe("FULFILLED");
     expect(fulfillmentStatusFor([{ quantity: 1, fulfilledQty: 0, refundedQty: 0, requiresShipping: false }])).toBe("FULFILLED");
+    expect(fulfillmentStatusFor([{ quantity: 2, fulfilledQty: 0, refundedQty: 2, requiresShipping: true }])).toBe("UNFULFILLED");
+    expect(fulfillmentStatusFor([{ quantity: 1, fulfilledQty: 1, refundedQty: 1, requiresShipping: true }])).toBe("FULFILLED");
   });
 });

@@ -39,8 +39,12 @@ export function financialStatusAfterRefund(totalCents: number, refundedCents: nu
 }
 
 export function fulfillmentStatusFor(lines: { quantity: number; fulfilledQty: number; refundedQty: number; requiresShipping: boolean }[]) {
-  const shippable = lines.filter((l) => l.requiresShipping && l.quantity - l.refundedQty > 0);
-  if (shippable.length === 0) return "FULFILLED" as const;
+  const physical = lines.filter((l) => l.requiresShipping);
+  const shippable = physical.filter((l) => l.quantity - l.refundedQty > 0);
+  if (shippable.length === 0) {
+    // Nothing left to ship. Fully refunded physical orders that never shipped stay "unfulfilled".
+    return physical.length > 0 && !physical.some((l) => l.fulfilledQty > 0) ? ("UNFULFILLED" as const) : ("FULFILLED" as const);
+  }
   const done = shippable.filter((l) => l.fulfilledQty >= l.quantity - l.refundedQty).length;
   const any = shippable.some((l) => l.fulfilledQty > 0);
   if (done === shippable.length) return "FULFILLED" as const;

@@ -6,6 +6,8 @@ import { financialStatusAfterRefund, fulfillmentStatusFor } from "@/lib/refunds"
 import { sendOrderCancelled, sendRefundNotification, sendShippingConfirmation } from "@/server/emails";
 import { emitWebhook } from "@/server/webhooks";
 import { orderPayload } from "@/server/orders";
+import { getTranslator } from "@/lib/i18n";
+import { formatMoney } from "@/lib/money";
 
 export class OrderActionError extends Error {
   constructor(public code: "not_found" | "invalid" | "nothing" | "amount" | "provider" | "state") {
@@ -61,7 +63,7 @@ export async function fulfillOrder(
         orderId: order.id,
         type: "fulfilled",
         author: input.author,
-        message: `Fulfilled ${selection.reduce((n, s) => n + s.qty, 0)} item(s)${input.trackingNumber ? ` · tracking ${input.trackingNumber}` : ""}`,
+        message: getTranslator(store.locale)("event.fulfilled", { count: selection.reduce((n, s) => n + s.qty, 0) }) + (input.trackingNumber ? ` · ${input.trackingNumber}` : ""),
       },
     });
     return f;
@@ -76,7 +78,7 @@ export async function fulfillOrder(
 export async function markOrderPaid(store: Store, orderId: string, author?: string) {
   const order = await loadOrder(store.id, orderId);
   if (order.financialStatus !== "PENDING" || order.status === "CANCELLED") throw new OrderActionError("state");
-  await db.order.update({ where: { id: order.id }, data: { financialStatus: "PAID", events: { create: { type: "paid", message: "Marked as paid", author } } } });
+  await db.order.update({ where: { id: order.id }, data: { financialStatus: "PAID", events: { create: { type: "paid", message: getTranslator(store.locale)("event.markedPaid"), author } } } });
   await emitWebhook(store.id, "orders/paid", orderPayload(await loadOrder(store.id, order.id)));
 }
 
@@ -157,7 +159,11 @@ export async function refundOrder(
         orderId: order.id,
         type: "refunded",
         author: input.author,
-        message: `Refunded ${(amount / 100).toFixed(2)} ${order.currency}${selection.length ? ` · ${selection.reduce((n, s) => n + s.qty, 0)} item(s)${input.restock ? ", restocked" : ""}` : ""}${input.reason ? ` · ${input.reason}` : ""}`,
+        message: [
+          getTranslator(store.locale)("event.refunded", { amount: formatMoney(amount, order.currency, store.locale) }),
+          selection.length ? getTranslator(store.locale)(input.restock ? "event.itemsRestocked" : "event.items", { count: selection.reduce((n, s) => n + s.qty, 0) }) : "",
+          input.reason ?? "",
+        ].filter(Boolean).join(" · "),
       },
     });
   });
@@ -200,7 +206,7 @@ export async function cancelOrder(store: Store, orderId: string, input: { reason
       cancelledAt: new Date(),
       cancelReason: input.reason,
       financialStatus: order.financialStatus === "PENDING" ? "VOIDED" : undefined,
-      events: { create: { type: "cancelled", message: `Order cancelled · ${input.reason}`, author: input.author } },
+      events: { create: { type: "cancelled", message: getTranslator(store.locale)("event.cancelled", { reason: getTranslator(store.locale)(`orders.cancel.reason.${input.reason as "other"}`) }), author: input.author } },
     },
   });
   const fresh = await loadOrder(store.id, order.id);
@@ -210,7 +216,7 @@ export async function cancelOrder(store: Store, orderId: string, input: { reason
 
 /** Sync a refund made outside the platform (e.g. in the Stripe dashboard). */
 export async function recordExternalRefund(paymentIntentId: string, totalRefundedCents: number) {
-  const order = await db.order.findFirst({ where: { paymentRef: paymentIntentId } });
+  const order = await db.order.findFirst({ where: { paymentRef: paymentIntentId }, include: { store: { select: { locale: true } } } });
   if (!order || totalRefundedCents <= order.refundedCents) return;
   const delta = totalRefundedCents - order.refundedCents;
   await db.$transaction([
@@ -220,7 +226,7 @@ export async function recordExternalRefund(paymentIntentId: string, totalRefunde
       data: {
         refundedCents: totalRefundedCents,
         financialStatus: financialStatusAfterRefund(order.totalCents, totalRefundedCents),
-        events: { create: { type: "refunded", message: `External refund of ${(delta / 100).toFixed(2)} ${order.currency} synced from payment provider` } },
+        events: { create: { type: "refunded", message: getTranslator(order.store.locale)("event.externalRefund", { amount: formatMoney(delta, order.currency, order.store.locale) }) } },
       },
     }),
   ]);

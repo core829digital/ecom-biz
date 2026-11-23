@@ -7,6 +7,7 @@ import type { Address } from "@/lib/address";
 import { parseManualPayments } from "@/server/payments";
 import { sendMerchantNewOrder, sendOrderConfirmation } from "@/server/emails";
 import { emitWebhook } from "@/server/webhooks";
+import { getTranslator } from "@/lib/i18n";
 
 export class OutOfStockError extends Error {
   constructor(public title: string) {
@@ -80,6 +81,7 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
       const pricing = checkout.pricing as unknown as PricingResult;
       const shippingAddress = checkout.shippingAddress as unknown as Address;
       const warnings: string[] = [];
+      const et = getTranslator(store.locale);
 
       // Inventory: decrement atomically.
       for (const line of pricing.lines) {
@@ -100,7 +102,7 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
             data: { inventoryQty: { decrement: line.quantity } },
             select: { inventoryQty: true },
           });
-          if (updated.inventoryQty < 0 && !variant.allowBackorder) warnings.push(`Oversold: ${line.title}${line.variantTitle ? ` (${line.variantTitle})` : ""}`);
+          if (updated.inventoryQty < 0 && !variant.allowBackorder) warnings.push(et("event.oversold", { title: `${line.title}${line.variantTitle ? ` (${line.variantTitle})` : ""}` }));
         }
       }
 
@@ -177,8 +179,8 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
           },
           events: {
             create: [
-              { type: "placed", message: `Order placed via ${checkout.paymentMethod}` },
-              ...(opts.paid ? [{ type: "paid", message: "Payment captured" }] : []),
+              { type: "placed", message: et("event.placed", { method: et(`checkout.method.${checkout.paymentMethod as "cod"}`) }) },
+              ...(opts.paid ? [{ type: "paid", message: et("event.paid") }] : []),
               ...warnings.map((w) => ({ type: "warning", message: w })),
             ],
           },

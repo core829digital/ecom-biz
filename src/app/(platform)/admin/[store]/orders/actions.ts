@@ -101,7 +101,8 @@ export async function archiveAction(slug: string, orderId: string, archive: bool
   const order = await db.order.findFirst({ where: { id: orderId, storeId: store.id } });
   if (order && order.status !== "CANCELLED") {
     await db.order.update({ where: { id: order.id }, data: { status: archive ? "ARCHIVED" : "OPEN" } });
-    await addOrderEvent(order.id, archive ? "archived" : "unarchived", archive ? "Order archived" : "Order unarchived", user.name);
+    const et = (await import("@/lib/i18n")).getTranslator(store.locale);
+    await addOrderEvent(order.id, archive ? "archived" : "unarchived", et(archive ? "event.archived" : "event.unarchived"), user.name);
   }
   revalidatePath(`/admin/${slug}/orders/${orderId}`);
 }
