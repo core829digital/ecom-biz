@@ -10,7 +10,8 @@ export default [
     rules: {
       // Merchant images come from arbitrary storage hosts; plain <img> is intentional.
       "@next/next/no-img-element": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" }],
     },
   },
-  { ignores: [".next/**", "node_modules/**", "prisma/migrations/**"] },
+  { ignores: [".next/**", "node_modules/**", "prisma/migrations/**", "storage/**", "next-env.d.ts"] },
 ];

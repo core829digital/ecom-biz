@@ -4,12 +4,13 @@ import { getPlatformT } from "@/lib/i18n/server";
 import { env } from "@/lib/env";
 import { storeIsOperational, storePublicUrl } from "@/lib/tenant";
 import { AdminShell, type NavItem } from "@/components/admin/sidebar";
+import { I18nProvider } from "@/components/i18n-provider";
 import { logoutAction } from "../../(auth)/actions";
 
 export default async function StoreAdminLayout({ children, params }: { children: React.ReactNode; params: Promise<{ store: string }> }) {
   const { store: slug } = await params;
   const { user, store } = await requireStoreAccess(slug);
-  const { t } = await getPlatformT();
+  const { t, locale } = await getPlatformT();
   const base = `/admin/${store.slug}`;
   const stores = await db.store.findMany({
     where: { memberships: { some: { userId: user.id } } },
@@ -68,7 +69,7 @@ export default async function StoreAdminLayout({ children, params }: { children:
         logout: t("auth.logout"),
       }}
     >
-      {children}
+      <I18nProvider locale={locale}>{children}</I18nProvider>
     </AdminShell>
   );
 }
