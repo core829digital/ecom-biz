@@ -160,6 +160,7 @@ async function seedDemo() {
             title: s ?? "Default",
             option1: s,
             priceCents: price,
+            costCents: Math.round(price * 0.42), // demo cost so profit reports work out of the box
             compareAtCents: i === 5 ? 5900 : null,
             sku: `${handle.toUpperCase().slice(0, 6)}-${s ?? "OS"}`,
             inventoryQty: 25,

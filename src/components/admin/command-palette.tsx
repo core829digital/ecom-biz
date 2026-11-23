@@ -74,7 +74,7 @@ export function CommandPalette({ slug, stores }: { slug: string; stores: { slug:
     const actions = t("palette.actions");
     const nav: [string, string][] = [
       [t("nav.home"), base], [t("nav.orders"), `${base}/orders`], [t("nav.products"), `${base}/products`], [t("nav.inventory"), `${base}/products/inventory`],
-      [t("nav.collections"), `${base}/collections`], [t("nav.customers"), `${base}/customers`], [t("nav.discounts"), `${base}/discounts`],
+      [t("nav.collections"), `${base}/collections`], [t("nav.customers"), `${base}/customers`], [t("nav.reviews"), `${base}/reviews`], [t("nav.discounts"), `${base}/discounts`],
       [t("nav.theme"), `${base}/online-store/theme`], [t("nav.pages"), `${base}/online-store/pages`], [t("nav.navigation"), `${base}/online-store/navigation`],
       [t("nav.domains"), `${base}/online-store/domains`], [t("nav.payments"), `${base}/settings/payments`], [t("nav.shipping"), `${base}/settings/shipping`],
       [t("nav.taxes"), `${base}/settings/taxes`], [t("nav.staff"), `${base}/settings/staff`], [t("nav.developers"), `${base}/settings/developers`],

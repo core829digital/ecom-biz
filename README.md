@@ -12,11 +12,15 @@ and every storefront uses the merchant's own logo, colors, fonts and copy.
 
 | Area | What's included |
 |---|---|
-| **Merchant admin** | Dashboard (KPIs, daily sales, top products, low stock, setup checklist), products with up to 3 options / 100 variants, media uploads, inventory, CSV import/export, manual + automated collections, orders (fulfil with tracking, refund per line with restock, cancel, mark paid, comments, packing slip, CSV export), customers, discount codes, staff roles with email invitations |
+| **Merchant admin** | Dashboard (KPIs, daily sales, gross profit and margin from cost snapshots, top products, low stock, setup checklist), products with up to 3 options / 100 variants, media uploads, inventory, CSV import/export, manual + automated collections, orders (fulfil with tracking, refund per line with restock, cancel, mark paid, comments, packing slip, printable receipt with VAT summary, CSV export), customers, discount codes, product review moderation with public replies, staff roles with email invitations |
 | **Online store** | Theme editor with live preview (colors with automatic contrast, fonts, logo, hero, announcement bar, footer, social links), CMS pages, header/footer menus, custom domains with DNS verification |
-| **Storefront** | Home, collections (sorting, pagination), product page with availability-aware variant picker, search, cart, one-page checkout, order status page, customer accounts with address book, SEO (metadata, JSON-LD, sitemap.xml, robots.txt) |
+| **Storefront** | Home, collections (sorting, pagination), product page with availability-aware variant picker, star ratings and reviews (verified-purchase badge), "email me when it's back in stock", search, cart, one-page checkout, order status page and receipt, customer accounts with address book, SEO (metadata, JSON-LD, sitemap.xml, robots.txt) |
 | **Payments** | Stripe Connect Express (destination charges + platform fee), cash on delivery, bank transfer, a dev-only test gateway |
 | **Taxes & shipping** | Per-country VAT (inclusive or exclusive, optional tax on shipping), shipping zones with price/condition-based rates |
+| **Recovery & retention** | Abandoned-checkout reminder email with a one-click link that restores the cart (attributed when it converts), back-in-stock emails sent automatically on restock, refund or cancellation |
+| **Accounts & plans** | Account-level subscription; plans cap stores, products and staff and gate custom domains and the API; usage meter in the admin |
+| **Security** | TOTP two-factor auth with recovery codes, session list with remote sign-out, audit log, nonce-based CSP, self-hosted fonts (no third-party requests) |
+| **UX** | Store rail and quick switcher (Ctrl/⌘ K), keyboard shortcuts (G then a letter, `?` for help), light/dark/system themes with accent colors, animated landing page |
 | **Developers** | REST API v1 with scoped, hashed tokens and rate limiting; signed webhooks with retries and delivery logs |
 | **Platform admin** | Stores (suspend, plan, fee override, trial extension), plans synced to Stripe Billing, users, GMV and fee reporting |
 | **i18n** | English and Italian across admin, storefront and emails (type-checked dictionaries) |
@@ -117,6 +121,9 @@ Call with `Authorization: Bearer $CRON_SECRET`:
 - `GET /api/cron/webhooks`, every 5 minutes: retries failed webhook deliveries
 - `GET /api/cron/cleanup`, hourly: expires abandoned checkouts (cancelling unpaid PaymentIntents),
   purges expired sessions, rate-limit buckets and stale carts
+- `GET /api/cron/recovery`, every 15–30 minutes: sends one reminder per abandoned checkout
+  (1–48 hours after the last activity, only when the shopper typed an email; merchants can turn it off
+  in **Settings → Checkout**)
 
 ## Security notes
 
@@ -128,6 +135,9 @@ Call with `Authorization: Bearer $CRON_SECRET`:
 - Webhook destinations are checked against private/internal IP ranges (SSRF protection).
 - CSV exports neutralise spreadsheet formula injection.
 - Stripe webhooks are signature-verified and processed idempotently.
+- Staff accounts support TOTP 2FA; TOTP secrets are sealed with AES-256-GCM and recovery codes are hashed.
+- Sensitive admin actions are written to a per-store audit log.
+- A strict, nonce-based Content Security Policy is applied to every page.
 
 ## Deployment
 
@@ -136,8 +146,9 @@ subdomains and custom domains). API reference: [docs/API.md](docs/API.md).
 
 ## Known limitations
 
-- Fiscal e-invoicing (e.g. Romania's e-Factura, Italy's SdI) is not included; export orders as CSV or
-  integrate through the API/webhooks.
+- Fiscal e-invoicing (e.g. Romania's e-Factura, Italy's SdI) is not included: the printable receipt is
+  explicitly not a tax invoice. Export orders as CSV or integrate a certified provider through the API/webhooks.
+- One VAT rate per order (the store's rate for the destination country); reduced rates per product are not supported yet.
 - Discounts apply to the whole order (no product- or collection-specific discounts yet).
 - No built-in carrier rate APIs; shipping uses flat or condition-based rates.
 - No multi-currency storefront (one currency per store) and no gift cards yet.

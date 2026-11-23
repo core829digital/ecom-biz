@@ -45,7 +45,7 @@ Legenda: ✅ presente · 🟡 parziale · ⬜ assente (in backlog)
 | Codici sconto (%, fisso, spedizione gratuita) | ✅ | |
 | Sconti automatici, BOGO, sconti per prodotto o collezione | ⬜ | Priorità media |
 | Carte regalo | ⬜ | |
-| Recupero dei carrelli abbandonati | ⬜ | **Priorità alta** (impatto diretto sul fatturato) |
+| Recupero dei carrelli abbandonati | ✅ | Email unica 1–48 h dopo l'abbandono, link che ripristina il carrello, conversione attribuita. Su Shopify è incluso, su molte piattaforme no |
 | Conformità GDPR sui cookie | ✅ | Solo cookie tecnici (nessun consenso richiesto) e font self-hosted: nessun dato inviato a CDN terzi |
 
 ### Ordini e operatività
@@ -53,7 +53,7 @@ Legenda: ✅ presente · 🟡 parziale · ⬜ assente (in backlog)
 |---|---|---|
 | Evasione con tracking, rimborsi parziali, restock | ✅ | |
 | Documento di trasporto | ✅ | |
-| Fattura con riepilogo IVA | ⬜ | **Priorità alta** (su Shopify serve un'app) |
+| Ricevuta con riepilogo IVA (stampa/PDF) | ✅ | Admin e cliente. **Non è una fattura fiscale**: per e-Factura/SdI serve un provider certificato (vedi sotto) |
 | Bozze d'ordine / ordini manuali | ⬜ | |
 | Resi gestiti dal cliente | ⬜ | |
 | Integrazioni corrieri (FAN, Sameday, BRT, Poste) | ⬜ | Differenziatore locale |
@@ -63,8 +63,8 @@ Legenda: ✅ presente · 🟡 parziale · ⬜ assente (in backlog)
 | Funzione | Stato | Note |
 |---|---|---|
 | Account cliente, indirizzi, storico | ✅ | |
-| Recensioni prodotto con moderazione | ⬜ | **Priorità alta** (su Shopify serve un'app) |
-| Avvisi "di nuovo disponibile" | ⬜ | **Priorità alta** (su Shopify serve un'app) |
+| Recensioni prodotto con moderazione | ✅ | Stelle, acquisto verificato, risposta pubblica, dati strutturati SEO, moderazione in blocco. **Su Shopify serve un'app** |
+| Avvisi "di nuovo disponibile" | ✅ | Email automatica a riassortimento, rimborso con restock o annullamento. **Su Shopify serve un'app** |
 | Segmenti e email marketing | ⬜ | |
 | Wishlist | ⬜ | |
 | Programma fedeltà | ⬜ | |
@@ -73,7 +73,7 @@ Legenda: ✅ presente · 🟡 parziale · ⬜ assente (in backlog)
 | Funzione | Stato | Note |
 |---|---|---|
 | Dashboard vendite, prodotti più venduti | ✅ | |
-| **Profitto lordo con costo del venduto** | ⬜ | **Priorità alta**: il costo per articolo è già salvato. Su Shopify serve un piano superiore o un'app |
+| **Profitto lordo con costo del venduto** | ✅ | Costo "fotografato" sull'ordine, al netto di IVA, sconti e rimborsi; avviso per articoli senza costo. **Su Shopify serve un piano superiore o un'app** |
 | Report personalizzati, funnel | ⬜ | |
 
 ### Piattaforma e sicurezza
@@ -113,7 +113,7 @@ Ordine scelto in base a valore per il merchant, differenziazione e sforzo:
 | 9 | Integrazioni corrieri locali | Differenziatore locale (richiede le API dei corrieri) |
 | 10 | Carte regalo, bozze d'ordine, resi | Parità |
 
-I punti da 1 a 6 vengono implementati subito. I punti 8 e 9 richiedono contratti o API esterne: vanno decisi con il titolare.
+**Stato (novembre 2026):** i punti da 1 a 6 sono implementati e verificati end-to-end. I punti 8 e 9 richiedono contratti o API esterne: vanno decisi con il titolare. Il punto 7 è il prossimo candidato naturale.
 
 ## Fonti
 

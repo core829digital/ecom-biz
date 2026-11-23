@@ -12,7 +12,7 @@ const isTyping = (el: EventTarget | null) => {
 
 /**
  * Global keyboard shortcuts (Discord/Linear style):
- *   G then H/O/P/C/D/S/T  → go to a section
+ *   G then H/O/P/C/R/D/S/T → go to a section
  *   Alt + ↑ / ↓           → previous / next store
  *   N                      → new product
  *   ?                      → this help
@@ -27,7 +27,7 @@ export function KeyboardShortcuts({ slug, stores }: { slug: string; stores: stri
   useEffect(() => {
     const routes: Record<string, string> = {
       h: base, o: `${base}/orders`, p: `${base}/products`, c: `${base}/customers`,
-      d: `${base}/discounts`, s: `${base}/settings`, t: `${base}/online-store/theme`, i: `${base}/products/inventory`,
+      d: `${base}/discounts`, s: `${base}/settings`, t: `${base}/online-store/theme`, i: `${base}/products/inventory`, r: `${base}/reviews`,
     };
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e.target) || e.metaKey || e.ctrlKey || document.querySelector("[role=dialog]")) return;
@@ -70,6 +70,7 @@ export function KeyboardShortcuts({ slug, stores }: { slug: string; stores: stri
     [["G", "P"], t("nav.products")],
     [["G", "I"], t("nav.inventory")],
     [["G", "C"], t("nav.customers")],
+    [["G", "R"], t("nav.reviews")],
     [["G", "D"], t("nav.discounts")],
     [["G", "T"], t("nav.theme")],
     [["G", "S"], t("nav.settings")],

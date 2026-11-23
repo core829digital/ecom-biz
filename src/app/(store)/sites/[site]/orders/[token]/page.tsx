@@ -88,7 +88,10 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ si
           <p className="text-muted">{address.map((l, i) => <span key={i} className="block">{l}</span>)}</p>
         </div>
       )}
-      <Link href={sf.href("/")} className="mt-10 inline-flex h-12 items-center rounded-full bg-brand px-7 font-medium text-brand-contrast">{t("sf.continueShopping")}</Link>
+      <div className="mt-10 flex flex-wrap items-center gap-3">
+        <Link href={sf.href("/")} className="inline-flex h-12 items-center rounded-full bg-brand px-7 font-medium text-brand-contrast">{t("sf.continueShopping")}</Link>
+        {order.status !== "CANCELLED" && <Link href={sf.href(`/orders/${token}/receipt`)} className="inline-flex h-12 items-center rounded-full border border-border px-6 font-medium hover:bg-surface-2">{t("receipt.view")}</Link>}
+      </div>
     </div>
   );
 }

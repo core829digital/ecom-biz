@@ -36,6 +36,7 @@ export default async function StoreAdminLayout({ children, params }: { children:
     else throw e;
   }
   const usage = await storeUsage(store.id);
+  const pendingReviews = await db.productReview.count({ where: { storeId: store.id, status: "PENDING" } });
 
   const nav: NavItem[] = [
     { href: base, label: t("nav.home"), icon: "home", exact: true },
@@ -43,6 +44,7 @@ export default async function StoreAdminLayout({ children, params }: { children:
     { href: `${base}/products`, label: t("nav.products"), icon: "products", children: [{ href: `${base}/products/inventory`, label: t("nav.inventory") }] },
     { href: `${base}/collections`, label: t("nav.collections"), icon: "collections" },
     { href: `${base}/customers`, label: t("nav.customers"), icon: "customers" },
+    { href: `${base}/reviews`, label: t("nav.reviews"), icon: "reviews", badge: pendingReviews },
     { href: `${base}/discounts`, label: t("nav.discounts"), icon: "discounts" },
     { href: `${base}/online-store`, label: t("nav.onlineStore"), icon: "onlineStore", children: [
       { href: `${base}/online-store/theme`, label: t("nav.theme") },

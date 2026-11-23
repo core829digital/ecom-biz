@@ -75,6 +75,16 @@ export function CheckoutForm(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Re-quote when the email changes: it re-checks per-customer discounts and lets
+  // the server remember the address for abandoned-checkout reminders.
+  const quotedEmail = useRef(props.initial.email);
+  const onEmailBlur = () => {
+    const value = email.trim().toLowerCase();
+    if (value === quotedEmail.current || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return;
+    quotedEmail.current = value;
+    refresh();
+  };
+
   const setAddr = (patch: Partial<Address>) => setAddress((a) => ({ ...a, ...patch }));
   const free = view?.totalCents === 0;
 
@@ -114,7 +124,7 @@ export function CheckoutForm(props: {
             <h2 className="mb-3 text-lg font-semibold">{L["checkout.contact"]}</h2>
             <div className="space-y-3">
               <div>
-                <input className={field} type="email" autoComplete="email" placeholder={L["checkout.email"]} aria-label={L["checkout.email"]} value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => appliedCode && refresh()} required />
+                <input className={field} type="email" autoComplete="email" placeholder={L["checkout.email"]} aria-label={L["checkout.email"]} value={email} onChange={(e) => setEmail(e.target.value)} onBlur={onEmailBlur} required />
                 {err("email")}
               </div>
               <label className="flex items-center gap-2 text-sm">

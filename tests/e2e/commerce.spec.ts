@@ -127,3 +127,33 @@ test("API: scopes, validation and CRUD", async ({ page, request }) => {
   expect(patched.data).toMatchObject({ title: "API item 2", status: "active", tags: ["keep"] });
   expect((await request.delete(`${APP}/api/v1/products/${id}`, { headers: auth })).status()).toBe(204);
 });
+
+test("shopper reviews a product, merchant publishes and replies", async ({ page, browser }) => {
+  const body = `Lovely mug, keeps coffee warm ${unique()}`;
+  const shopper = await browser.newPage();
+  await shopper.goto(`${DEMO}/products/ceramic-mug`, { waitUntil: "networkidle" });
+  await shopper.click('button:has-text("Write a review")');
+  await shopper.locator('label:has(input[name=rating][value="5"])').click();
+  await shopper.fill("input[name=name]", "E2E Reviewer");
+  await shopper.fill("input[name=email]", `reviewer-${unique()}@example.com`);
+  await shopper.fill("textarea[name=body]", body);
+  await shopper.click('button:has-text("Submit review")');
+  await expect(shopper.getByText("Your review will appear once it's approved.")).toBeVisible();
+
+  await login(page, "demo@example.com", "demo12345");
+  await page.goto(`${APP}/admin/demo/reviews?view=pending`, { waitUntil: "networkidle" });
+  const item = page.locator("li", { hasText: body });
+  await item.getByRole("button", { name: "Publish", exact: true }).click();
+  await expect(page.locator("li", { hasText: body }).getByText("Published", { exact: true })).toHaveCount(0); // left the pending view
+  await page.goto(`${APP}/admin/demo/reviews?view=approved`, { waitUntil: "networkidle" });
+  const published = page.locator("li", { hasText: body });
+  await published.locator("summary").click();
+  await published.locator("textarea[name=reply]").fill("Thanks for the kind words!");
+  await published.locator('button:has-text("Save")').click();
+  await expect(page.getByText("Reply published")).toBeVisible();
+
+  await shopper.reload({ waitUntil: "networkidle" });
+  await expect(shopper.getByText(body)).toBeVisible();
+  await expect(shopper.getByText("Thanks for the kind words!")).toBeVisible();
+  await shopper.close();
+});

@@ -173,3 +173,12 @@ html.theme-transition, html.theme-transition *, html.theme-transition *::before,
 @property --angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 @keyframes spin-border { to { --angle: 360deg; } }
 html { scroll-behavior: smooth; }
+
+/* Printable documents (receipts, packing slips): print only the document,
+   whatever chrome (admin shell, storefront header) surrounds it. */
+@media print {
+  @page { margin: 14mm; }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0 !important; overflow: visible !important; }
+}

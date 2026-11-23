@@ -4,7 +4,7 @@ import { requireStoreAccess } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { formatAddressLines, type Address } from "@/lib/address";
 import { countryName } from "@/lib/geo";
-import { PrintButton } from "./print-button";
+import { PrintButton } from "@/components/print-button";
 
 export default async function PackingSlip({ params }: { params: Promise<{ store: string; id: string }> }) {
   const { store: slug, id } = await params;
@@ -16,7 +16,7 @@ export default async function PackingSlip({ params }: { params: Promise<{ store:
   const from = [store.legalName || store.name, store.address1, store.address2, [store.zip, store.city].filter(Boolean).join(" "), countryName(store.countryCode, locale), store.vatNumber]
     .filter((l): l is string => !!l);
   return (
-    <div className="fixed inset-0 z-50 overflow-auto bg-white p-8 text-black print:static print:p-0">
+    <div className="print-area fixed inset-0 z-50 overflow-auto bg-white p-8 text-black">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 flex items-start justify-between print:hidden">
           <a href={`/admin/${slug}/orders/${order.id}`} className="text-sm underline">← {t("common.back")}</a>

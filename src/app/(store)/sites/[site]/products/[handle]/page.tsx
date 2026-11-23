@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { cache } from "react";
 import { db } from "@/lib/db";
@@ -59,7 +58,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   ]);
   const reviewCount = reviewStats.reduce((n, r) => n + r._count, 0);
   const avgRating = reviewCount ? reviewStats.reduce((s, r) => s + r.rating * r._count, 0) / reviewCount : 0;
-  const reviewDate = new Intl.DateTimeFormat(sf.locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium" });
+  const reviewDate = new Intl.DateTimeFormat(sf.locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium", timeZone: sf.store.timezone });
   const related = await db.product.findMany({
     where: {
       storeId: store.id,
@@ -89,10 +88,9 @@ export default async function ProductPage({ params, searchParams }: Props) {
     })),
   };
 
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div className="grid gap-10 md:grid-cols-2">
         <Gallery images={product.images} title={product.title} />
         <div>

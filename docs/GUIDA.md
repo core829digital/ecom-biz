@@ -20,13 +20,20 @@ Una piattaforma e-commerce **white-label e multi-negozio**, sullo stesso modello
 - **Catalogo:** prodotti con varianti (taglia, colore…), foto, inventario, collezioni
   manuali o automatiche, import ed export CSV
 - **Ordini:** evasione con numero di tracking ed email automatica al cliente, rimborsi
-  (anche parziali), annullamenti, documento di trasporto stampabile, export CSV
+  (anche parziali), annullamenti, documento di trasporto e ricevuta con riepilogo IVA
+  stampabili (o salvabili in PDF), export CSV
 - **Pagamenti:** carta (Stripe), contrassegno, bonifico
 - **Spedizioni e IVA:** zone, tariffe (anche "spedizione gratis sopra X €"), aliquote per paese
-- **Marketing:** codici sconto con limiti e date
+- **Marketing:** codici sconto con limiti e date; email automatica per chi abbandona il
+  checkout (con link che ripristina il carrello); email "di nuovo disponibile" quando un
+  prodotto esaurito torna in magazzino
+- **Recensioni:** stelle e recensioni sui prodotti con moderazione, risposta pubblica del
+  negozio e badge "acquisto verificato" (aiutano anche la SEO su Google)
+- **Analisi:** vendite, profitto lordo e margine (dal costo dei prodotti), prodotti più venduti
 - **Negozio online:** tema personalizzabile (logo, colori, font, banner), pagine, menu, dominio
 - **Clienti:** account con storico ordini e indirizzi salvati
-- **Team:** inviti allo staff con ruoli (proprietario, amministratore, staff)
+- **Team:** inviti allo staff con ruoli (proprietario, amministratore, staff), registro delle attività
+- **Sicurezza:** verifica in due passaggi (app di autenticazione), controllo delle sessioni attive
 - **Sviluppatori:** API e webhook per collegare gestionali, magazzini e strumenti di marketing
 - **Lingue:** inglese e italiano
 
@@ -63,8 +70,11 @@ Una piattaforma e-commerce **white-label e multi-negozio**, sullo stesso modello
 
 ## Limiti attuali (detti onestamente)
 
-- **Fatturazione elettronica** (e-Factura in Romania, SdI in Italia): non è inclusa. Si può
-  integrare un servizio esterno tramite API e webhook.
+- **Fatturazione elettronica** (e-Factura in Romania, SdI in Italia): non è inclusa. La ricevuta
+  stampabile riporta "Documento non valido ai fini fiscali": la fattura vera va emessa con un
+  provider certificato, integrabile tramite API e webhook.
+- **IVA:** un'aliquota per ordine (quella del paese di destinazione). Le aliquote ridotte per
+  singolo prodotto (es. libri, alimentari) non sono ancora gestite.
 - **Sconti:** valgono su tutto l'ordine, non ancora su singoli prodotti o collezioni.
 - **Corrieri:** le tariffe sono fisse o a soglie, senza calcolo in tempo reale da FAN Courier o DHL.
 - **Valute:** una per negozio. Non ci sono ancora carte regalo.

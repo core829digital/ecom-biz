@@ -58,7 +58,7 @@ export default async function AccountBillingPage({ searchParams }: { searchParam
           const current = p.id === user.planId;
           const l = limitsOf(p);
           const feats: [string, boolean][] = [
-            [l.stores === 1 ? t("billing.feature.storeOne") : t("billing.feature.stores", { count: l.stores }), true],
+            [t("billing.feature.stores", { count: l.stores }), true],
             [l.products === null ? t("billing.feature.unlimitedProducts") : t("billing.feature.products", { count: l.products }), true],
             [l.staff === null ? t("billing.feature.unlimitedStaff") : t("billing.feature.staff", { count: l.staff }), true],
             [t("billing.feature.customDomain"), l.customDomain],

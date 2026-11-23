@@ -62,6 +62,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         actions={
           <>
             <a href={`${base}/print`} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium hover:bg-surface-2">{t("orders.print")}</a>
+            <a href={`${base}/receipt`} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium hover:bg-surface-2">{t("receipt.title")}</a>
             {canRefund && <LinkButton href={`${base}?action=refund`} variant="secondary" size="sm">{t("orders.refund")}</LinkButton>}
             {canCancel && <LinkButton href={`${base}?action=cancel`} variant="secondary" size="sm">{t("orders.cancel")}</LinkButton>}
             {!cancelled && (

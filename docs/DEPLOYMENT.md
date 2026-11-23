@@ -82,6 +82,7 @@ Add these to the server's crontab (or any scheduler):
 ```
 */5 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://app.example.com/api/cron/webhooks
 0 * * * *   curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://app.example.com/api/cron/cleanup
+*/20 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://app.example.com/api/cron/recovery
 ```
 
 ## 6. Backups
