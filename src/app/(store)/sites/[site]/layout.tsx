@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
+import { permanentRedirect } from "next/navigation";
 import "../../../globals.css";
 import { db } from "@/lib/db";
 import { loadStorefront, sfHref } from "@/server/storefront";
@@ -25,6 +27,11 @@ export default async function StorefrontLayout({ children, params }: { children:
   const { site } = await params;
   const sf = await loadStorefront(site);
   const { store, theme, t, base } = sf;
+  // Visitors on the platform subdomain are sent to the primary custom domain (one canonical host for SEO).
+  const h = await headers();
+  if (!decodeURIComponent(site).includes(".") && h.has("x-store-base") && sf.publicUrl.startsWith("https://") && !sf.publicUrl.endsWith(`.${process.env.STOREFRONT_ROOT_DOMAIN}`)) {
+    permanentRedirect(`${sf.publicUrl}${h.get("x-original-path") ?? "/"}`);
+  }
   const [menus, cart] = await Promise.all([
     db.menu.findMany({ where: { storeId: store.id, handle: { in: ["main", "footer"] } } }),
     getCart(store.id),

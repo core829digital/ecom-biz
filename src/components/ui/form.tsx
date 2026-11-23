@@ -90,7 +90,7 @@ export function SubmitButton({
   className,
   pendingLabel,
   ...props
-}: ComponentProps<"button"> & { variant?: "primary" | "secondary" | "danger" | "ghost"; pendingLabel?: string }) {
+}: ComponentProps<"button"> & { variant?: "primary" | "secondary" | "danger" | "ghost" | "brand"; pendingLabel?: string }) {
   const status = useFormStatus();
   const ctxPending = useContext(FormPendingContext);
   const pending = status.pending || ctxPending;

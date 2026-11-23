@@ -14,6 +14,7 @@ export function middleware(req: NextRequest) {
 
   const requestHeaders = new Headers(req.headers);
   requestHeaders.delete("x-store-base");
+  requestHeaders.delete("x-original-path");
 
   if (host === appHost || host === rootDomain || host === `www.${rootDomain}`) {
     return NextResponse.next({ request: { headers: requestHeaders } });
@@ -29,6 +30,7 @@ export function middleware(req: NextRequest) {
   url.pathname = `/sites/${encodeURIComponent(siteKey)}${req.nextUrl.pathname === "/" ? "" : req.nextUrl.pathname}`;
   // Storefront links on a real host are root-relative.
   requestHeaders.set("x-store-base", "");
+  requestHeaders.set("x-original-path", req.nextUrl.pathname + req.nextUrl.search);
   return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
 }
 
