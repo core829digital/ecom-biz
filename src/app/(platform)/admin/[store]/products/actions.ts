@@ -10,7 +10,7 @@ import { fail, ok, type ActionState } from "@/lib/action";
 import { getPlatformT } from "@/lib/i18n/server";
 import { parseMoney } from "@/lib/money";
 import { comboKey, MAX_VARIANTS, variantCombos, variantTitle } from "@/lib/variants";
-import { storeImage, UploadError } from "@/lib/storage";
+import { MAX_UPLOAD_MB, storeImage, UploadError } from "@/lib/storage";
 import { uniqueHandle } from "@/server/catalog";
 import { handleize } from "@/lib/slug";
 import { emitWebhook } from "@/server/webhooks";
@@ -213,7 +213,7 @@ export async function uploadImageAction(slug: string, fd: FormData): Promise<{ u
     await db.storedFile.create({ data: { storeId: store.id, key: res.key, url: res.url, contentType: res.contentType, size: res.size } });
     return { url: res.url };
   } catch (e) {
-    if (e instanceof UploadError) return { error: t(e.code === "too_large" ? "upload.tooLarge" : "upload.unsupported") };
+    if (e instanceof UploadError) return { error: e.code === "too_large" ? t("upload.tooLarge", { max: MAX_UPLOAD_MB }) : t("upload.unsupported") };
     console.error("[upload]", e);
     return { error: t("upload.failed") };
   }
@@ -316,7 +316,7 @@ export async function importProductsAction(slug: string, _: ActionState, fd: For
   const { t } = await getPlatformT();
   const file = fd.get("file");
   if (!(file instanceof File) || file.size === 0) return fail(t("import.noFile"));
-  if (file.size > 5 * 1024 * 1024) return fail(t("upload.tooLarge"));
+  if (file.size > Math.min(5, MAX_UPLOAD_MB) * 1024 * 1024) return fail(t("upload.tooLarge", { max: Math.min(5, MAX_UPLOAD_MB) }));
   const { importProductsCsv } = await import("@/server/product-csv");
   const res = await importProductsCsv(store.id, await file.text());
   if (res.limitReached) res.errors.unshift({ line: 0, message: t("usage.limitProductsDetail", { count: res.limitReached }) });

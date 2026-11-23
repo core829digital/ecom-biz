@@ -113,7 +113,7 @@ export const it: Record<MessageKey, string> = {
   "email.reset.cta": "Scegli una nuova password",
   "common.saving": "Salvataggio…",
   "upload.failed": "Caricamento non riuscito. Riprova.",
-  "upload.tooLarge": "File troppo grande (max 10 MB).",
+  "upload.tooLarge": "File troppo grande (max {max} MB).",
   "upload.unsupported": "Formato non supportato. Usa JPG, PNG, WebP, GIF o AVIF.",
   "products.add": "Aggiungi prodotto",
   "products.import": "Importa",
@@ -135,7 +135,7 @@ export const it: Record<MessageKey, string> = {
   "products.statusHint.ARCHIVED": "Nascosto e conservato per archivio.",
   "products.media": "Media",
   "products.media.add": "Aggiungi immagini",
-  "products.media.hint": "JPG, PNG, WebP, GIF o AVIF · fino a 10 MB. La prima immagine è quella principale.",
+  "products.media.hint": "JPG, PNG, WebP, GIF o AVIF. La prima immagine è quella principale.",
   "products.media.uploading": "Caricamento di {count}…",
   "products.media.alt": "Testo alternativo",
   "products.pricing": "Prezzi",
@@ -994,4 +994,5 @@ export const it: Record<MessageKey, string> = {
   "reviews.rejectAllConfirm.one": "Rifiutare 1 recensione in attesa?",
   "sf.reviews.count.one": "1 recensione",
   "reviews.publishedCount.one": "1 pubblicata",
+  "domains.error.hosting": "Il dominio è verificato, ma il provider di hosting non è ancora riuscito ad attivarlo. Riprova tra qualche minuto; se il problema persiste, contatta il supporto.",
 };

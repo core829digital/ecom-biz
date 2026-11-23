@@ -10,6 +10,7 @@ import { randomToken } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { assertFeature, PlanLimitError } from "@/server/plans";
 import { audit } from "@/server/audit";
+import { HostingDomainError, registerHostingDomain, unregisterHostingDomain } from "@/server/hosting-domains";
 
 const HOST_RE = /^(?=.{4,253}$)(?!-)([a-z0-9-]{1,63}\.)+[a-z]{2,63}$/;
 
@@ -48,6 +49,13 @@ export async function verifyDomainAction(slug: string, domainId: string, _: Acti
     records = [];
   }
   if (!records.includes(domain.verificationToken)) return fail(t("domains.error.notVerified"));
+  try {
+    await registerHostingDomain(domain.hostname);
+  } catch (e) {
+    if (!(e instanceof HostingDomainError)) throw e;
+    console.error("[domains]", e.message);
+    return fail(t("domains.error.hosting"));
+  }
   const hasPrimary = await db.domain.count({ where: { storeId: store.id, isPrimary: true, verifiedAt: { not: null } } });
   await db.domain.update({ where: { id: domain.id }, data: { verifiedAt: new Date(), isPrimary: hasPrimary === 0 } });
   revalidatePath(`/admin/${slug}/online-store/domains`);
@@ -66,7 +74,11 @@ export async function setPrimaryDomainAction(slug: string, domainId: string) {
 }
 
 export async function removeDomainAction(slug: string, domainId: string) {
-  const { store } = await requireStoreAccess(slug, "OWNER");
-  await db.domain.deleteMany({ where: { id: domainId, storeId: store.id } });
+  const { store, user } = await requireStoreAccess(slug, "OWNER");
+  const domain = await db.domain.findFirst({ where: { id: domainId, storeId: store.id } });
+  if (!domain) return;
+  await db.domain.delete({ where: { id: domain.id } });
+  if (domain.verifiedAt) await unregisterHostingDomain(domain.hostname);
+  await audit({ userId: user.id, storeId: store.id, action: "domain.remove", target: domain.hostname });
   revalidatePath(`/admin/${slug}/online-store/domains`);
 }

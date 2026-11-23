@@ -82,7 +82,7 @@ The essentials:
 | `DATABASE_URL` | PostgreSQL connection string |
 | `APP_URL` | Public URL of the admin/app host |
 | `STOREFRONT_ROOT_DOMAIN` | Stores are served at `<slug>.<this>` |
-| `APP_SECRET` | 32+ random bytes |
+| `APP_SECRET` | 32+ random bytes; also encrypts 2FA secrets, so never rotate it casually |
 | `PLATFORM_NAME` | Your white-label platform name |
 | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Card payments + merchant subscriptions |
 | `PLATFORM_FEE_BPS` | Default fee on card payments (plans can override) |
@@ -90,6 +90,9 @@ The essentials:
 | `STORAGE_DRIVER` (`local` \| `s3`) + `S3_*` | Upload storage (S3, R2, MinIO, …) |
 | `CRON_SECRET` | Protects `/api/cron/*` |
 | `BILLING_ENFORCED` | Pause stores without an active/trialing subscription |
+| `DIRECT_DATABASE_URL` | Serverless only: direct (non-pooled) URL used by `vercel-build` for migrations |
+| `CUSTOM_DOMAIN_TARGET` | CNAME target shown to merchants (e.g. `cname.vercel-dns.com` on Vercel) |
+| `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | Vercel only: register merchants' verified custom domains on the project |
 
 ## Scripts
 
@@ -141,8 +144,15 @@ Call with `Authorization: Bearer $CRON_SECRET`:
 
 ## Deployment
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) (Docker Compose + Caddy with automatic HTTPS for
-subdomains and custom domains). API reference: [docs/API.md](docs/API.md).
+Two supported targets:
+
+- **Docker** (any VPS): [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), Docker Compose + Caddy with automatic HTTPS for
+  subdomains and custom domains.
+- **Vercel + Neon + R2**: `vercel.json` (EU region, cron jobs) and the `vercel-build` script are included;
+  custom domains are registered through the Vercel API. Uploads are capped at 4 MB there.
+
+Sizing, costs and a step-by-step guide (in Italian): [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md).
+API reference: [docs/API.md](docs/API.md).
 
 ## Known limitations
 

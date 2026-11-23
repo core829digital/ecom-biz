@@ -4,7 +4,9 @@ import path from "node:path";
 import { AwsClient } from "aws4fetch";
 import { randomToken } from "@/lib/crypto";
 
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+/** Serverless hosts cap request bodies (Vercel: 4.5 MB), so uploads are smaller there. */
+export const MAX_UPLOAD_MB = process.env.VERCEL ? 4 : 10;
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 /** Identify images by magic bytes (never trust the client's MIME type or extension). SVG is rejected on purpose. */
 export function sniffImageType(buf: Buffer): { mime: string; ext: string } | null {
@@ -74,7 +76,10 @@ function s3Driver(): Driver {
 }
 
 function driver(): Driver {
-  return process.env.STORAGE_DRIVER === "s3" ? s3Driver() : localDriver;
+  if (process.env.STORAGE_DRIVER === "s3") return s3Driver();
+  // Serverless file systems are ephemeral: uploads would vanish on the next deploy.
+  if (process.env.VERCEL) throw new Error("STORAGE_DRIVER=s3 is required on Vercel (use Cloudflare R2 or S3)");
+  return localDriver;
 }
 
 export type UploadResult = { key: string; url: string; contentType: string; size: number };

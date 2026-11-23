@@ -124,7 +124,7 @@ export const en = {
   "email.reset.cta": "Choose a new password",
   "common.saving": "Saving…",
   "upload.failed": "Upload failed. Please try again.",
-  "upload.tooLarge": "File is too large (max 10 MB).",
+  "upload.tooLarge": "File is too large (max {max} MB).",
   "upload.unsupported": "Unsupported file type. Use JPG, PNG, WebP, GIF or AVIF.",
   "products.add": "Add product",
   "products.import": "Import",
@@ -146,7 +146,7 @@ export const en = {
   "products.statusHint.ARCHIVED": "Hidden and kept for your records.",
   "products.media": "Media",
   "products.media.add": "Add images",
-  "products.media.hint": "JPG, PNG, WebP, GIF or AVIF · up to 10 MB. The first image is the main one.",
+  "products.media.hint": "JPG, PNG, WebP, GIF or AVIF. The first image is the main one.",
   "products.media.uploading": "Uploading {count}…",
   "products.media.alt": "Alt text",
   "products.pricing": "Pricing",
@@ -1005,6 +1005,7 @@ export const en = {
   "reviews.rejectAllConfirm.one": "Reject 1 pending review?",
   "sf.reviews.count.one": "1 review",
   "reviews.publishedCount.one": "1 published",
+  "domains.error.hosting": "The domain is verified, but the hosting provider could not activate it yet. Try again in a few minutes; if it persists, contact support.",
 } as const;
 
 export type MessageKey = keyof typeof en;

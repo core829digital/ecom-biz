@@ -48,6 +48,10 @@ Una piattaforma e-commerce **white-label e multi-negozio**, sullo stesso modello
 
 ## Come metterla online: i passi
 
+> La guida completa, con costi, database gratuito, Vercel o server dedicato e dimensionamento per
+> 10.000 utenti, è in [`DEPLOY-PRODUZIONE.md`](DEPLOY-PRODUZIONE.md). Qui sotto c'è il riassunto per
+> l'opzione con server dedicato.
+
 1. **Dominio.** Compra il dominio della piattaforma (es. `tuobrand.com`) e punta
    `app.tuobrand.com` e `*.tuobrand.com` al server.
 2. **Server.** Una macchina Linux con Docker è sufficiente per iniziare (es. Hetzner o
