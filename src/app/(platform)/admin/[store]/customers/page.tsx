@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { requireStoreAccess } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { formatMoney } from "@/lib/money";
-import { Badge, Card, EmptyState, PageHeader, Table, Td, Th } from "@/components/ui/primitives";
+import { Badge, EmptyState, PageHeader, Table, Td, Th } from "@/components/ui/primitives";
 import { LinkButton } from "@/components/ui/button";
 import { Pagination, SearchBox, parsePage } from "@/components/admin/list";
 
