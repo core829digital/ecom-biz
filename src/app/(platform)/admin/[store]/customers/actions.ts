@@ -8,6 +8,7 @@ import { requireStoreAccess } from "@/lib/auth/staff";
 import { fail, formObject, ok, parseForm, type ActionState } from "@/lib/action";
 import { getPlatformT } from "@/lib/i18n/server";
 import { emitWebhook } from "@/server/webhooks";
+import { eraseCustomer } from "@/server/gdpr";
 
 export async function saveCustomerAction(slug: string, id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const { store } = await requireStoreAccess(slug);
@@ -46,10 +47,10 @@ export async function saveCustomerAction(slug: string, id: string | null, _: Act
   redirect(`/admin/${slug}/customers/${customer.id}`);
 }
 
+/** GDPR erasure: profile, addresses, reviews, alerts and unfinished checkouts. Orders are kept (tax law), unlinked. */
 export async function deleteCustomerAction(slug: string, id: string) {
-  const { store } = await requireStoreAccess(slug, "ADMIN");
-  // Orders keep their own copy of contact details; the link is set to null.
-  await db.customer.deleteMany({ where: { id, storeId: store.id } });
+  const { store, user } = await requireStoreAccess(slug, "ADMIN");
+  await eraseCustomer(store.id, id, { userId: user.id });
   revalidatePath(`/admin/${slug}/customers`);
   redirect(`/admin/${slug}/customers`);
 }

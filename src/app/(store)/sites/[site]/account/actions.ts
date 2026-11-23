@@ -132,3 +132,16 @@ export async function deleteAddressAction(site: string, addressId: string) {
   await db.customerAddress.deleteMany({ where: { id: addressId, customerId: customer.id } });
   redirect(sf.href("/account/addresses"));
 }
+
+/** GDPR art. 17, self-service: the signed-in shopper erases their data in this store. */
+export async function deleteMyAccountAction(site: string, _: ActionState, fd: FormData): Promise<ActionState> {
+  const { sf, customer } = await requireCustomer(site);
+  if (!(await rateLimit(`sf-delete:${customer.id}`, 5, 3600))) return fail(sf.t("auth.error.rateLimited"));
+  if (customer.passwordHash && !(await verifyPassword(String(fd.get("password") ?? ""), customer.passwordHash))) {
+    return fail(sf.t("validation.fixErrors"), { password: sf.t("auth.error.invalidCredentials") });
+  }
+  const { eraseCustomer } = await import("@/server/gdpr");
+  await eraseCustomer(sf.store.id, customer.id, { byCustomer: true });
+  await destroyCustomerSession(sf.store.id);
+  redirect(sf.href("/?deleted=1"));
+}

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { db } from "@/lib/db";
-import { currentSessionId, requireUser } from "@/lib/auth/staff";
+import { currentSessionId, requireUser, STAFF_COOKIE } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { verifyPassword } from "@/lib/auth/password";
 import { generateRecoveryCodes, generateTotpSecret, otpauthUri, verifyTotp } from "@/lib/totp";
@@ -12,6 +14,8 @@ import { sha256 } from "@/lib/crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
+import { fail, type ActionState } from "@/lib/action";
+import { AccountDeletionError, deleteUserAccount } from "@/server/gdpr";
 
 export type EnrollState = { error?: string; qr?: string; secret?: string; codes?: string[]; done?: boolean; at?: number } | null;
 
@@ -76,4 +80,22 @@ export async function revokeOtherSessionsAction() {
   await db.session.deleteMany({ where: { userId: user.id, NOT: { id: current ?? "" } } });
   await audit({ userId: user.id, action: "auth.sessions_revoked_all" });
   revalidatePath("/account/security");
+}
+
+/** GDPR art. 17: delete the signed-in merchant's account (and, if confirmed, their stores). */
+export async function deleteAccountAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const { t } = await getPlatformT();
+  if (!(await rateLimit(`delete-account:${user.id}`, 5, 3600))) return fail(t("auth.error.rateLimited"));
+  if (!(await verifyPassword(String(fd.get("password") ?? ""), user.passwordHash))) return fail(t("validation.fixErrors"), { password: t("account.error.password") });
+  const phrase = t("privacy.delete.phrase");
+  if (String(fd.get("confirm") ?? "").trim().toUpperCase() !== phrase.toUpperCase()) return fail(t("validation.fixErrors"), { confirm: t("privacy.delete.phraseError", { phrase }) });
+  try {
+    await deleteUserAccount(user.id, { deleteOwnedStores: fd.get("deleteStores") === "on" });
+  } catch (e) {
+    if (e instanceof AccountDeletionError) return fail(t(`privacy.delete.error.${e.code}`));
+    throw e;
+  }
+  (await cookies()).delete(STAFF_COOKIE);
+  redirect("/?deleted=1");
 }

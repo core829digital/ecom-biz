@@ -3,9 +3,11 @@ import { db } from "@/lib/db";
 import { currentSessionId, requireUser } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { Badge } from "@/components/ui/primitives";
-import { ConfirmSubmit } from "@/components/ui/form";
+import { ActionForm, ConfirmSubmit, SubmitButton } from "@/components/ui/form";
+import { Checkbox, Input } from "@/components/ui/fields";
+import { Download, Trash2 } from "lucide-react";
 import { TwoFactor } from "./two-factor";
-import { revokeOtherSessionsAction, revokeSessionAction } from "./actions";
+import { deleteAccountAction, revokeOtherSessionsAction, revokeSessionAction } from "./actions";
 
 function describeAgent(ua: string | null) {
   if (!ua) return { device: "Unknown device", mobile: false };
@@ -21,6 +23,7 @@ export default async function SecurityPage() {
     db.session.findMany({ where: { userId: user.id, verified: true, expiresAt: { gt: new Date() } }, orderBy: { lastSeenAt: "desc" } }),
     currentSessionId(),
   ]);
+  const owned = await db.membership.findMany({ where: { userId: user.id, role: "OWNER" }, include: { store: { select: { name: true } } } });
   const date = new Intl.DateTimeFormat(locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium", timeStyle: "short" });
   return (
     <div className="space-y-6">
@@ -52,6 +55,34 @@ export default async function SecurityPage() {
             );
           })}
         </ul>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5">
+        <h2 className="font-semibold">{t("privacy.data.title")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("privacy.data.body")}</p>
+        <a href="/account/export" className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-surface-2" download>
+          <Download className="size-4" aria-hidden />{t("privacy.data.download")}
+        </a>
+      </section>
+
+      <section className="rounded-2xl border border-danger/30 bg-surface p-5">
+        <h2 className="flex items-center gap-2 font-semibold text-danger"><Trash2 className="size-4" aria-hidden />{t("privacy.delete.title")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("privacy.delete.body")}</p>
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm font-medium text-danger">{t("privacy.delete.open")}</summary>
+          <ActionForm action={deleteAccountAction} className="mt-4 max-w-md space-y-4">
+            {owned.length > 0 && (
+              <div className="rounded-lg bg-danger-bg p-3 text-sm text-danger">
+                <p className="font-medium">{t("privacy.delete.storesWarning", { count: owned.length })}</p>
+                <ul className="mt-1 list-inside list-disc">{owned.map((m) => <li key={m.id}>{m.store.name}</li>)}</ul>
+                <div className="mt-3"><Checkbox name="deleteStores" label={t("privacy.delete.storesConfirm")} /></div>
+              </div>
+            )}
+            <Input name="password" type="password" autoComplete="current-password" label={t("account.currentPassword")} required />
+            <Input name="confirm" autoComplete="off" autoCapitalize="characters" spellCheck={false} label={t("privacy.delete.phraseLabel", { phrase: t("privacy.delete.phrase") })} required />
+            <SubmitButton variant="danger">{t("privacy.delete.submit")}</SubmitButton>
+          </ActionForm>
+        </details>
       </section>
     </div>
   );

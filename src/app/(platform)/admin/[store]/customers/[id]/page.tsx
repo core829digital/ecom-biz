@@ -32,7 +32,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ store
         back={<BackLink href={`/admin/${slug}/customers`} label={t("nav.customers")} />}
         title={[customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email}
         subtitle={`${t("customers.since", { date: date.format(customer.createdAt) })}${customer.passwordHash ? ` · ${t("customers.hasAccount")}` : ""}`}
-        actions={hasRole(role, "ADMIN") ? <form action={deleteCustomerAction.bind(null, slug, customer.id)}><ConfirmSubmit variant="danger" confirmMessage={t("common.confirmDelete")}>{t("common.delete")}</ConfirmSubmit></form> : null}
+        actions={hasRole(role, "ADMIN") ? (
+          <div className="flex flex-wrap gap-2">
+            <a href={`/admin/${slug}/customers/${customer.id}/export`} download className="inline-flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium hover:bg-surface-2">{t("privacy.customer.export")}</a>
+            <form action={deleteCustomerAction.bind(null, slug, customer.id)}><ConfirmSubmit variant="danger" confirmMessage={t("privacy.customer.eraseConfirm")} confirmLabel={t("privacy.customer.erase")}>{t("privacy.customer.erase")}</ConfirmSubmit></form>
+          </div>
+        ) : null}
       />
       <div className="mb-5 grid gap-4 sm:grid-cols-3">
         <Stat label={t("customers.spent")} value={money(spent)} />

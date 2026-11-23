@@ -1,5 +1,5 @@
 import "server-only";
-import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { AwsClient } from "aws4fetch";
 import { randomToken } from "@/lib/crypto";
@@ -22,6 +22,7 @@ export function sniffImageType(buf: Buffer): { mime: string; ext: string } | nul
 type Driver = {
   put(key: string, body: Buffer, contentType: string): Promise<string>; // returns public URL
   remove(key: string): Promise<void>;
+  removePrefix(prefix: string): Promise<void>;
 };
 
 function localDir() {
@@ -46,6 +47,10 @@ const localDriver: Driver = {
   async remove(key) {
     const full = localPathForKey(key);
     if (full) await unlink(full).catch(() => {});
+  },
+  async removePrefix(prefix) {
+    const full = localPathForKey(prefix);
+    if (full) await rm(full, { recursive: true, force: true });
   },
 };
 
@@ -72,6 +77,20 @@ function s3Driver(): Driver {
     async remove(key) {
       await client.fetch(`${endpoint}/${bucket}/${key}`, { method: "DELETE" }).catch(() => {});
     },
+    async removePrefix(prefix) {
+      // ListObjectsV2 pages of up to 1000 keys; delete each (bounded to protect against runaway loops).
+      let token: string | null = null;
+      for (let page = 0; page < 200; page++) {
+        const q = new URLSearchParams({ "list-type": "2", prefix, ...(token ? { "continuation-token": token } : {}) });
+        const res = await client.fetch(`${endpoint}/${bucket}?${q}`);
+        if (!res.ok) throw new Error(`S3 list failed: ${res.status}`);
+        const xml = await res.text();
+        const keys = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map((m) => m[1].replaceAll("&amp;", "&"));
+        await Promise.all(keys.map((k) => client.fetch(`${endpoint}/${bucket}/${k.split("/").map(encodeURIComponent).join("/")}`, { method: "DELETE" }).catch(() => {})));
+        token = /<IsTruncated>true<\/IsTruncated>/.test(xml) ? (xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/)?.[1] ?? null) : null;
+        if (!token) break;
+      }
+    },
   };
 }
 
@@ -96,6 +115,12 @@ export async function storeImage(storeId: string, file: File): Promise<UploadRes
 
 export async function removeStoredObject(key: string) {
   await driver().remove(key);
+}
+
+/** Delete every uploaded file of a store (on store or account deletion). */
+export async function removeStoreFiles(storeId: string) {
+  if (!/^[a-z0-9]+$/i.test(storeId)) throw new Error("Invalid store id");
+  await driver().removePrefix(`stores/${storeId}/`);
 }
 
 export async function readLocalObject(key: string): Promise<Buffer | null> {

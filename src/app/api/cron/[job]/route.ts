@@ -4,6 +4,7 @@ import { safeEqual } from "@/lib/crypto";
 import { getStripe } from "@/lib/stripe";
 import { processPendingWebhooks } from "@/server/webhooks";
 import { sendRecoveryEmails } from "@/server/cart-recovery";
+import { applyRetention } from "@/server/retention";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +37,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ job: str
       await db.checkout.update({ where: { id: c.id }, data: { status: "EXPIRED" } });
     }
     const now = new Date();
-    const [sessions, customerSessions, limits, carts] = await Promise.all([
+    const [sessions, customerSessions, limits] = await Promise.all([
       db.session.deleteMany({ where: { expiresAt: { lt: now } } }),
       db.customerSession.deleteMany({ where: { expiresAt: { lt: now } } }),
       db.rateLimit.deleteMany({ where: { expiresAt: { lt: now } } }),
-      db.cart.deleteMany({ where: { updatedAt: { lt: new Date(Date.now() - 60 * 86400_000) }, completedAt: null, checkouts: { none: {} } } }),
     ]);
-    return Response.json({ expiredCheckouts: stale.length, sessions: sessions.count, customerSessions: customerSessions.count, rateLimits: limits.count, carts: carts.count });
+    const retention = await applyRetention();
+    return Response.json({ expiredCheckouts: stale.length, sessions: sessions.count, customerSessions: customerSessions.count, rateLimits: limits.count, retention });
   }
   return new Response("Unknown job", { status: 404 });
 }

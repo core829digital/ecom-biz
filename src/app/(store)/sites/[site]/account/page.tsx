@@ -5,7 +5,9 @@ import { loadStorefront } from "@/server/storefront";
 import { getCurrentCustomer } from "@/lib/auth/customer";
 import { formatAddressLines } from "@/lib/address";
 import { countryName } from "@/lib/geo";
-import { customerLogoutAction } from "./actions";
+import { customerLogoutAction, deleteMyAccountAction } from "./actions";
+import { ActionForm, SubmitButton } from "@/components/ui/form";
+import { Input } from "@/components/ui/fields";
 
 export const metadata = { robots: { index: false } };
 
@@ -55,6 +57,18 @@ export default async function AccountPage({ params }: { params: Promise<{ site: 
             <p className="text-sm text-muted">{formatAddressLines(address as never, (c) => countryName(c, sf.locale)).map((l, i) => <span key={i} className="block">{l}</span>)}</p>
           ) : <p className="text-sm text-muted">{t("sf.account.noAddress")}</p>}
           <Link href={sf.href("/account/addresses")} className="mt-3 inline-block text-sm underline">{t("sf.account.manageAddresses")}</Link>
+
+          <h2 className="mb-2 mt-10 text-lg font-semibold">{t("sf.privacy.title")}</h2>
+          <p className="text-sm text-muted">{t("sf.privacy.body")}</p>
+          <a href={sf.href("/account/export")} download className="mt-3 inline-block text-sm underline">{t("sf.privacy.download")}</a>
+          <details className="mt-4 text-sm">
+            <summary className="cursor-pointer text-danger">{t("sf.privacy.delete")}</summary>
+            <p className="mt-2 text-muted">{t("sf.privacy.deleteBody")}</p>
+            <ActionForm action={deleteMyAccountAction.bind(null, site)} className="mt-3 space-y-3">
+              {customer.passwordHash && <Input name="password" type="password" autoComplete="current-password" label={t("field.password")} required />}
+              <SubmitButton variant="danger" className="w-full">{t("sf.privacy.deleteConfirm")}</SubmitButton>
+            </ActionForm>
+          </details>
         </aside>
       </div>
     </div>
