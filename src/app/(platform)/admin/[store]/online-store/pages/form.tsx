@@ -20,7 +20,7 @@ export function PageForm({ action, page, t }: { action: (s: ActionState, fd: For
             <div className="space-y-4">
               <Input name="seoTitle" label={t("products.field.seoTitle")} maxLength={70} defaultValue={page?.seoTitle ?? ""} />
               <Textarea name="seoDescription" label={t("products.field.seoDescription")} rows={3} maxLength={320} defaultValue={page?.seoDescription ?? ""} />
-              <Input name="handle" label={t("products.field.handle")} defaultValue={page?.handle} hint="/pages/…" />
+              <Input name="handle" autoCapitalize="none" autoCorrect="off" spellCheck={false} label={t("products.field.handle")} defaultValue={page?.handle} hint="/pages/…" />
             </div>
           </Card>
         </div>

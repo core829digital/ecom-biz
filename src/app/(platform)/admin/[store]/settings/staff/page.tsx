@@ -56,7 +56,7 @@ export default async function StaffSettings({ params }: { params: Promise<{ stor
         )}
         <Card title={t("staff.invite")}>
           <ActionForm action={inviteStaffAction.bind(null, slug)} resetOnSuccess className="grid gap-3 sm:grid-cols-[1fr_180px_auto] sm:items-end">
-            <Input name="email" type="email" label={t("field.email")} required />
+            <Input name="email" type="email" label={t("field.email")} autoComplete="off" spellCheck={false} required />
             <Select name="role" label={t("staff.role")} defaultValue="STAFF">
               <option value="STAFF">{t("role.STAFF")}</option>
               <option value="ADMIN">{t("role.ADMIN")}</option>

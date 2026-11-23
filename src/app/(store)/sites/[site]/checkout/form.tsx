@@ -253,7 +253,7 @@ export function CheckoutForm(props: {
           ))}
         </ul>
         <div className="mt-5 flex gap-2">
-          <input className={`${field} h-11`} placeholder={L["checkout.discountCode"]} aria-label={L["checkout.discountCode"]} value={codeInput} onChange={(e) => setCodeInput(e.target.value)} disabled={!!payment} />
+          <input className={`${field} h-11`} autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} maxLength={40} placeholder={L["checkout.discountCode"]} aria-label={L["checkout.discountCode"]} value={codeInput} onChange={(e) => setCodeInput(e.target.value)} disabled={!!payment} />
           {appliedCode ? (
             <button type="button" className="h-11 shrink-0 rounded-lg border border-border px-4 text-sm" disabled={!!payment} onClick={() => { setAppliedCode(null); setCodeInput(""); refresh({ discountCode: "" }); }}>{L["checkout.remove"]}</button>
           ) : (

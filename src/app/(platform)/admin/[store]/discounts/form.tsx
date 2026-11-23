@@ -26,7 +26,7 @@ export function DiscountForm({ action, initial, currency }: { action: (s: Action
     <ActionForm action={action} className="space-y-5">
       <Card title={t("discounts.code")}>
         <div className="flex items-end gap-2">
-          <Input name="code" label={t("discounts.code")} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} wrapperClassName="flex-1" hint={t("discounts.codeHint")} required />
+          <Input name="code" autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} maxLength={40} label={t("discounts.code")} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} wrapperClassName="flex-1" hint={t("discounts.codeHint")} required />
           <Button variant="secondary" className="mb-5" onClick={() => setCode(randomCode())}>{t("discounts.generate")}</Button>
         </div>
       </Card>

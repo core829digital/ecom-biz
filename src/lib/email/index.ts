@@ -21,7 +21,9 @@ export type Email = {
 };
 
 /** Sends an email. Never throws: failures are logged so they can't break checkout or orders. */
-export async function sendEmail(email: Email): Promise<boolean> {
+export async function sendEmail(input: Email): Promise<boolean> {
+  // Header values come partly from merchants (store names): strip line breaks (header injection).
+  const email = { ...input, subject: input.subject.replace(/[\r\n]+/g, " ").slice(0, 250), to: input.to.replace(/[\r\n,;]/g, "") };
   const from = `"${(email.fromName ?? env.platformName).replace(/["\r\n]/g, "")}" <${env.emailFrom}>`;
   const t = getTransporter();
   if (!t) {

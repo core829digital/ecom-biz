@@ -10,10 +10,10 @@ export function CustomerForm({ action, customer, t }: { action: (s: ActionState,
     <ActionForm action={action}>
       <Card title={t("customers.overview")}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input name="firstName" label={t("checkout.firstName")} defaultValue={customer?.firstName ?? ""} />
-          <Input name="lastName" label={t("checkout.lastName")} defaultValue={customer?.lastName ?? ""} />
-          <Input name="email" type="email" label={t("field.email")} defaultValue={customer?.email ?? ""} required />
-          <Input name="phone" label={t("checkout.phone")} defaultValue={customer?.phone ?? ""} />
+          <Input name="firstName" label={t("checkout.firstName")} defaultValue={customer?.firstName ?? ""} autoComplete="off" maxLength={80} />
+          <Input name="lastName" label={t("checkout.lastName")} defaultValue={customer?.lastName ?? ""} autoComplete="off" maxLength={80} />
+          <Input name="email" type="email" label={t("field.email")} defaultValue={customer?.email ?? ""} autoComplete="off" spellCheck={false} required />
+          <Input name="phone" type="tel" label={t("checkout.phone")} defaultValue={customer?.phone ?? ""} autoComplete="off" maxLength={40} />
           <Input name="tags" label={t("products.field.tags")} hint={t("products.field.tagsHint")} defaultValue={customer?.tags.join(", ") ?? ""} wrapperClassName="sm:col-span-2" />
           <Textarea name="note" label={t("orders.notes")} rows={3} defaultValue={customer?.note ?? ""} wrapperClassName="sm:col-span-2" />
           <Checkbox name="acceptsMarketing" label={t("customers.marketing")} defaultChecked={customer?.acceptsMarketing ?? false} className="sm:col-span-2" />

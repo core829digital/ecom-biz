@@ -33,6 +33,9 @@ export function NewStoreForm(props: {
       />
       <Input
         name="slug"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         label={labels.slug}
         value={slug}
         onChange={(e) => {
@@ -42,7 +45,7 @@ export function NewStoreForm(props: {
         hint={`${slug || "your-store"}.${props.rootDomain}`}
         required
       />
-      <Input name="email" type="email" label={labels.email} defaultValue={props.defaultEmail} required />
+      <Input name="email" type="email" autoComplete="email" label={labels.email} defaultValue={props.defaultEmail} required />
       <div className="grid gap-4 sm:grid-cols-2">
         <Select name="countryCode" label={labels.country} defaultValue="RO">
           {props.countries.map((c) => (

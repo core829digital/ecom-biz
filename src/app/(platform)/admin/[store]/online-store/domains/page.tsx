@@ -53,7 +53,7 @@ export default async function DomainsPage({ params }: { params: Promise<{ store:
         {owner ? (
           <Card title={t("domains.connect")}>
             <ActionForm action={addDomainAction.bind(null, slug)} resetOnSuccess className="flex flex-wrap items-end gap-3">
-              <Input name="hostname" label={t("domains.hostname")} placeholder="shop.example.com" wrapperClassName="min-w-60 flex-1" required />
+              <Input name="hostname" inputMode="url" autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={253} label={t("domains.hostname")} placeholder="shop.example.com" wrapperClassName="min-w-60 flex-1" required />
               <SubmitButton>{t("domains.add")}</SubmitButton>
             </ActionForm>
             <p className="mt-3 text-xs text-muted">{t("domains.sslHint")}</p>

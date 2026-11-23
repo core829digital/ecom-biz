@@ -20,18 +20,18 @@ export default async function GeneralSettings({ params }: { params: Promise<{ st
           <div className="grid gap-4 sm:grid-cols-2">
             <Input name="name" label={t("field.storeName")} defaultValue={store.name} required />
             <Input name="email" type="email" label={t("field.contactEmail")} defaultValue={store.email} hint={t("settings.general.emailHint")} required />
-            <Input name="phone" label={t("checkout.phone")} defaultValue={store.phone ?? ""} />
+            <Input name="phone" type="tel" autoComplete="work tel" maxLength={40} label={t("checkout.phone")} defaultValue={store.phone ?? ""} />
           </div>
         </Card>
         <Card title={t("settings.general.legal")}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input name="legalName" label={t("settings.general.legalName")} defaultValue={store.legalName ?? ""} />
-            <Input name="vatNumber" label={t("settings.general.vatNumber")} defaultValue={store.vatNumber ?? ""} />
-            <Input name="address1" label={t("checkout.address1")} defaultValue={store.address1 ?? ""} wrapperClassName="sm:col-span-2" />
-            <Input name="address2" label={t("checkout.address2")} defaultValue={store.address2 ?? ""} wrapperClassName="sm:col-span-2" />
-            <Input name="zip" label={t("checkout.zip")} defaultValue={store.zip ?? ""} />
-            <Input name="city" label={t("checkout.city")} defaultValue={store.city ?? ""} />
-            <Input name="province" label={t("checkout.province")} defaultValue={store.province ?? ""} />
+            <Input name="legalName" autoComplete="organization" label={t("settings.general.legalName")} defaultValue={store.legalName ?? ""} />
+            <Input name="vatNumber" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={30} label={t("settings.general.vatNumber")} defaultValue={store.vatNumber ?? ""} />
+            <Input name="address1" autoComplete="work address-line1" label={t("checkout.address1")} defaultValue={store.address1 ?? ""} wrapperClassName="sm:col-span-2" />
+            <Input name="address2" autoComplete="work address-line2" label={t("checkout.address2")} defaultValue={store.address2 ?? ""} wrapperClassName="sm:col-span-2" />
+            <Input name="zip" autoComplete="work postal-code" maxLength={20} label={t("checkout.zip")} defaultValue={store.zip ?? ""} />
+            <Input name="city" autoComplete="work address-level2" label={t("checkout.city")} defaultValue={store.city ?? ""} />
+            <Input name="province" autoComplete="work address-level1" label={t("checkout.province")} defaultValue={store.province ?? ""} />
             <Select name="countryCode" label={t("field.country")} defaultValue={store.countryCode}>
               {countryOptions(locale).map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
             </Select>

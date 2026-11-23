@@ -42,8 +42,12 @@ function FieldShell({
 
 type Common = { label?: ReactNode; hint?: ReactNode; wrapperClassName?: string };
 
+const TEXT_LIKE = new Set(["text", "email", "tel", "url", "search", undefined]);
+
 export function Input({ label, hint, wrapperClassName, className, id, name, ...props }: ComponentProps<"input"> & Common) {
   const auto = useId();
+  // Single-line text never needs more than this; the server enforces its own (often lower) limits.
+  if (props.maxLength === undefined && TEXT_LIKE.has(props.type)) props = { ...props, maxLength: props.type === "url" ? 2048 : 255 };
   const fid = id ?? auto;
   const error = useFieldError(name ?? "");
   return (

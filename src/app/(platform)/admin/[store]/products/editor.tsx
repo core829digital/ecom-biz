@@ -314,7 +314,7 @@ function VariantInventoryFields({ v, onChange, index }: { v: EditorVariant; onCh
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t("products.field.sku")} value={v.sku} onChange={(e) => onChange({ sku: e.target.value })} name={`variants.${index}.sku`} />
+        <Input autoCapitalize="characters" autoCorrect="off" spellCheck={false} autoComplete="off" maxLength={100} label={t("products.field.sku")} value={v.sku} onChange={(e) => onChange({ sku: e.target.value })} name={`variants.${index}.sku`} />
         <Input label={t("products.field.barcode")} value={v.barcode} onChange={(e) => onChange({ barcode: e.target.value })} />
       </div>
       <Checkbox label={t("products.field.trackInventory")} checked={v.trackInventory} onChange={(e) => onChange({ trackInventory: e.target.checked })} />

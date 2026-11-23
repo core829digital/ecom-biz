@@ -30,7 +30,7 @@ export function MenuEditor({ action, initial, suggestions }: { action: (s: Actio
       {items.map((it, i) => (
         <div key={i} className="flex flex-wrap gap-2 sm:flex-nowrap">
           <input className={cn(inputClass, "sm:w-48")} aria-label={t("navigation.label")} placeholder={t("navigation.label")} value={it.title} onChange={(e) => set(i, { title: e.target.value })} />
-          <input className={cn(inputClass, "flex-1")} aria-label={t("navigation.link")} placeholder="/collections/all" list={listId} value={it.url}
+          <input className={cn(inputClass, "flex-1")} inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={500} aria-label={t("navigation.link")} placeholder="/collections/all" list={listId} value={it.url}
             onChange={(e) => {
               const url = e.target.value;
               const s = suggestions.find((x) => x.url === url);
