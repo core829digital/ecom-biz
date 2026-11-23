@@ -444,6 +444,8 @@ model Checkout {
   paymentMethod    String // stripe | cod | bank_transfer | test
   paymentRef       String?        @unique // e.g. Stripe PaymentIntent id
   platformFeeCents Int            @default(0)
+  acceptsMarketing Boolean        @default(false)
+  note             String?
   orderId          String?        @unique
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -476,35 +478,38 @@ enum OrderStatus {
 }
 
 model Order {
-  id                String            @id @default(cuid())
-  storeId           String
-  number            Int
-  customerId        String?
-  email             String
-  phone             String?
-  currency          String
-  subtotalCents     Int
-  discountCents     Int               @default(0)
-  shippingCents     Int               @default(0)
-  taxCents          Int               @default(0)
-  totalCents        Int
-  refundedCents     Int               @default(0)
-  taxesIncluded     Boolean
-  discountCode      String?
-  shippingTitle     String?
-  shippingAddress   Json?
-  billingAddress    Json?
-  note              String?
-  status            OrderStatus       @default(OPEN)
-  financialStatus   FinancialStatus   @default(PENDING)
-  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
-  paymentMethod     String
-  paymentRef        String?
-  platformFeeCents  Int               @default(0)
-  cancelledAt       DateTime?
-  cancelReason      String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                  String            @id @default(cuid())
+  storeId             String
+  number              Int
+  statusToken         String            @unique
+  customerId          String?
+  email               String
+  phone               String?
+  currency            String
+  subtotalCents       Int
+  discountCents       Int               @default(0)
+  shippingCents       Int               @default(0)
+  taxCents            Int               @default(0)
+  totalCents          Int
+  refundedCents       Int               @default(0)
+  taxesIncluded       Boolean
+  taxRateBps          Int               @default(0)
+  discountCode        String?
+  shippingTitle       String?
+  shippingAddress     Json?
+  billingAddress      Json?
+  note                String?
+  status              OrderStatus       @default(OPEN)
+  financialStatus     FinancialStatus   @default(PENDING)
+  fulfillmentStatus   FulfillmentStatus @default(UNFULFILLED)
+  paymentMethod       String
+  paymentRef          String?
+  paymentInstructions String?
+  platformFeeCents    Int               @default(0)
+  cancelledAt         DateTime?
+  cancelReason        String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
   customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)

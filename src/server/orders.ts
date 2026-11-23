@@ -1,0 +1,211 @@
+import "server-only";
+import type { Prisma } from "@prisma/client";
+import { db } from "@/lib/db";
+import { randomToken } from "@/lib/crypto";
+import type { PricingResult } from "@/lib/pricing";
+import type { Address } from "@/lib/address";
+import { parseManualPayments } from "@/server/payments";
+import { sendMerchantNewOrder, sendOrderConfirmation } from "@/server/emails";
+import { emitWebhook } from "@/server/webhooks";
+
+export class OutOfStockError extends Error {
+  constructor(public title: string) {
+    super(`Out of stock: ${title}`);
+  }
+}
+
+export type CompleteOptions = {
+  /** Payment already captured (card/test) → PAID; manual methods stay PENDING. */
+  paid: boolean;
+  /** When true, refuse to oversell non-backorder variants (manual payments). For captured payments we never drop a paid order. */
+  enforceStock: boolean;
+};
+
+/** Public shape of an order for webhooks and the Admin API. */
+export function orderPayload(o: Prisma.OrderGetPayload<{ include: { lines: true } }>) {
+  return {
+    id: o.id,
+    number: o.number,
+    email: o.email,
+    currency: o.currency,
+    subtotal: o.subtotalCents,
+    discount: o.discountCents,
+    shipping: o.shippingCents,
+    tax: o.taxCents,
+    total: o.totalCents,
+    refunded: o.refundedCents,
+    taxes_included: o.taxesIncluded,
+    financial_status: o.financialStatus.toLowerCase(),
+    fulfillment_status: o.fulfillmentStatus.toLowerCase(),
+    status: o.status.toLowerCase(),
+    payment_method: o.paymentMethod,
+    discount_code: o.discountCode,
+    shipping_method: o.shippingTitle,
+    shipping_address: o.shippingAddress,
+    note: o.note,
+    created_at: o.createdAt.toISOString(),
+    lines: o.lines.map((l) => ({
+      id: l.id,
+      product_id: l.productId,
+      variant_id: l.variantId,
+      title: l.title,
+      variant_title: l.variantTitle,
+      sku: l.sku,
+      quantity: l.quantity,
+      price: l.priceCents,
+      discount: l.discountCents,
+      tax: l.taxCents,
+      fulfilled_quantity: l.fulfilledQty,
+      refunded_quantity: l.refundedQty,
+    })),
+  };
+}
+
+/**
+ * Turn an OPEN checkout into an order. Idempotent and safe under concurrency:
+ * the checkout row is locked, so a Stripe webhook and the customer's return page
+ * racing each other produce exactly one order.
+ */
+export async function completeCheckout(checkoutId: string, opts: CompleteOptions): Promise<{ orderId: string; created: boolean }> {
+  const result = await db.$transaction(
+    async (tx) => {
+      const locked = await tx.$queryRaw<{ id: string; status: string; orderId: string | null }[]>`
+        SELECT "id", "status"::text, "orderId" FROM "Checkout" WHERE "id" = ${checkoutId} FOR UPDATE`;
+      const row = locked[0];
+      if (!row) throw new Error(`Checkout ${checkoutId} not found`);
+      if (row.status === "COMPLETED" && row.orderId) return { orderId: row.orderId, created: false as const };
+
+      const checkout = await tx.checkout.findUniqueOrThrow({ where: { id: checkoutId }, include: { store: true } });
+      const store = checkout.store;
+      const pricing = checkout.pricing as unknown as PricingResult;
+      const shippingAddress = checkout.shippingAddress as unknown as Address;
+      const warnings: string[] = [];
+
+      // Inventory: decrement atomically.
+      for (const line of pricing.lines) {
+        const variant = await tx.productVariant.findFirst({
+          where: { id: line.variantId, product: { storeId: store.id } },
+          select: { id: true, trackInventory: true, allowBackorder: true },
+        });
+        if (!variant || !variant.trackInventory) continue;
+        if (opts.enforceStock && !variant.allowBackorder) {
+          const res = await tx.productVariant.updateMany({
+            where: { id: variant.id, inventoryQty: { gte: line.quantity } },
+            data: { inventoryQty: { decrement: line.quantity } },
+          });
+          if (res.count === 0) throw new OutOfStockError(line.title);
+        } else {
+          const updated = await tx.productVariant.update({
+            where: { id: variant.id },
+            data: { inventoryQty: { decrement: line.quantity } },
+            select: { inventoryQty: true },
+          });
+          if (updated.inventoryQty < 0 && !variant.allowBackorder) warnings.push(`Oversold: ${line.title}${line.variantTitle ? ` (${line.variantTitle})` : ""}`);
+        }
+      }
+
+      const { orderCounter: number } = await tx.store.update({
+        where: { id: store.id },
+        data: { orderCounter: { increment: 1 } },
+        select: { orderCounter: true },
+      });
+
+      const email = checkout.email.toLowerCase();
+      const customer = await tx.customer.upsert({
+        where: { storeId_email: { storeId: store.id, email } },
+        create: {
+          storeId: store.id,
+          email,
+          firstName: shippingAddress.firstName,
+          lastName: shippingAddress.lastName,
+          phone: checkout.phone || shippingAddress.phone || null,
+          acceptsMarketing: checkout.acceptsMarketing,
+        },
+        update: checkout.acceptsMarketing ? { acceptsMarketing: true } : {},
+      });
+
+      const manual = parseManualPayments(store.manualPayments);
+      const paymentInstructions =
+        checkout.paymentMethod === "bank_transfer"
+          ? manual.bankTransfer.instructions || null
+          : checkout.paymentMethod === "cod"
+            ? manual.cod.instructions || null
+            : null;
+
+      const order = await tx.order.create({
+        data: {
+          storeId: store.id,
+          number,
+          statusToken: randomToken(24),
+          customerId: customer.id,
+          email,
+          phone: checkout.phone || shippingAddress.phone || null,
+          currency: store.currency,
+          subtotalCents: pricing.subtotalCents,
+          discountCents: pricing.discountCents,
+          shippingCents: pricing.shippingCents,
+          taxCents: pricing.taxCents,
+          totalCents: pricing.totalCents,
+          taxesIncluded: pricing.taxesIncluded,
+          taxRateBps: pricing.taxRateBps,
+          discountCode: pricing.discountCode,
+          shippingTitle: pricing.requiresShipping ? pricing.shippingTitle : null,
+          shippingAddress: checkout.shippingAddress as Prisma.InputJsonValue,
+          billingAddress: (checkout.billingAddress ?? checkout.shippingAddress) as Prisma.InputJsonValue,
+          note: checkout.note,
+          financialStatus: opts.paid ? "PAID" : "PENDING",
+          fulfillmentStatus: pricing.requiresShipping ? "UNFULFILLED" : "FULFILLED",
+          paymentMethod: checkout.paymentMethod,
+          paymentRef: checkout.paymentRef,
+          paymentInstructions,
+          platformFeeCents: checkout.platformFeeCents,
+          lines: {
+            create: pricing.lines.map((l) => ({
+              productId: l.productId,
+              variantId: l.variantId,
+              title: l.title,
+              variantTitle: l.variantTitle,
+              sku: l.sku,
+              imageUrl: l.imageUrl,
+              quantity: l.quantity,
+              priceCents: l.unitPriceCents,
+              discountCents: l.discountCents,
+              taxCents: l.taxCents,
+              requiresShipping: l.requiresShipping,
+              fulfilledQty: l.requiresShipping ? 0 : l.quantity,
+            })),
+          },
+          events: {
+            create: [
+              { type: "placed", message: `Order placed via ${checkout.paymentMethod}` },
+              ...(opts.paid ? [{ type: "paid", message: "Payment captured" }] : []),
+              ...warnings.map((w) => ({ type: "warning", message: w })),
+            ],
+          },
+        },
+        include: { lines: true },
+      });
+
+      if (pricing.discountCode) {
+        await tx.discount.updateMany({ where: { storeId: store.id, code: pricing.discountCode }, data: { usageCount: { increment: 1 } } });
+      }
+      await tx.checkout.update({ where: { id: checkout.id }, data: { status: "COMPLETED", orderId: order.id } });
+      await tx.cart.update({ where: { id: checkout.cartId }, data: { completedAt: new Date() } });
+      return { orderId: order.id, created: true as const, order, store, newCustomer: customer.createdAt.getTime() === customer.updatedAt.getTime() };
+    },
+    { isolationLevel: "ReadCommitted", timeout: 20_000 },
+  );
+
+  if (result.created) {
+    const { order, store } = result;
+    // Side effects after commit; failures here never roll back the order.
+    await Promise.allSettled([
+      sendOrderConfirmation(store, order),
+      sendMerchantNewOrder(store, order),
+      emitWebhook(store.id, "orders/create", orderPayload(order)),
+      order.financialStatus === "PAID" ? emitWebhook(store.id, "orders/paid", orderPayload(order)) : Promise.resolve(),
+      result.newCustomer ? emitWebhook(store.id, "customers/create", { id: order.customerId, email: order.email }) : Promise.resolve(),
+    ]);
+  }
+  return { orderId: result.orderId, created: result.created };
+}
