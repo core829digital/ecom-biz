@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { ApiError, apiRoute } from "@/server/api";
 import { validationError } from "@/server/api-products";
 import { emitWebhook } from "@/server/webhooks";
+import { notifyBackInStock } from "@/server/stock-alerts";
 
 const body = z
   .object({
@@ -32,6 +33,7 @@ export const POST = apiRoute("write_inventory", async ({ store }, req) => {
     select: { id: true, sku: true, inventoryQty: true },
   });
   await emitWebhook(store.id, "inventory/update", { variantId: variant.id, available: variant.inventoryQty });
+  if (variant.inventoryQty > 0) await notifyBackInStock([variant.id]);
   return Response.json({ data: { variant_id: variant.id, sku: variant.sku, available: variant.inventoryQty } });
 });
 

@@ -3,10 +3,17 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { permanentRedirect } from "next/navigation";
 import "../../../globals.css";
+// Storefront fonts are self-hosted: no visitor IPs are sent to third-party font CDNs (GDPR).
+import "@fontsource-variable/inter";
+import "@fontsource-variable/manrope";
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/playfair-display";
+import "@fontsource-variable/lora";
+import "@fontsource-variable/space-grotesk";
 import { db } from "@/lib/db";
 import { loadStorefront, sfHref } from "@/server/storefront";
 import { getCart, cartItemCount } from "@/server/cart";
-import { FONTS, themeCssVars } from "@/lib/theme";
+import { themeCssVars } from "@/lib/theme";
 
 type MenuItem = { title: string; url: string };
 const menuItems = (json: unknown): MenuItem[] =>
@@ -39,20 +46,10 @@ export default async function StorefrontLayout({ children, params }: { children:
   const main = menuItems(menus.find((m) => m.handle === "main")?.items);
   const footer = menuItems(menus.find((m) => m.handle === "footer")?.items);
   const count = cartItemCount(cart);
-  const font = FONTS[theme.font];
   const social = Object.entries(theme.social).filter(([, url]) => /^https:\/\//.test(url));
 
   return (
     <html lang={store.locale}>
-      <head>
-        {font.google && (
-          <>
-            <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-            <link rel="stylesheet" href={`https://fonts.googleapis.com/css2?family=${font.google}&display=swap`} />
-          </>
-        )}
-      </head>
       <body className="storefront min-h-dvh" style={themeCssVars(theme) as React.CSSProperties}>
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:px-3 focus:py-2">
           {t("sf.skip")}

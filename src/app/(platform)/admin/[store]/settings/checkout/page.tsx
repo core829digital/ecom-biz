@@ -15,7 +15,10 @@ export default async function CheckoutSettings({ params }: { params: Promise<{ s
       <PageHeader back={<BackLink href={`/admin/${slug}/settings`} label={t("nav.settings")} />} title={t("nav.checkout")} />
       <ActionForm action={saveCheckoutSettingsAction.bind(null, slug)}>
         <Card title={t("settings.checkout.customerInfo")}>
-          <Checkbox name="requirePhone" label={t("settings.checkout.requirePhone")} hint={t("settings.checkout.requirePhoneHint")} defaultChecked={store.checkoutRequirePhone} />
+          <div className="space-y-4">
+            <Checkbox name="requirePhone" label={t("settings.checkout.requirePhone")} hint={t("settings.checkout.requirePhoneHint")} defaultChecked={store.checkoutRequirePhone} />
+            <Checkbox name="abandonedCartEmails" label={t("settings.checkout.recovery")} hint={t("settings.checkout.recoveryHint")} defaultChecked={store.abandonedCartEmails} />
+          </div>
           <div className="mt-4 flex justify-end"><SubmitButton>{t("common.save")}</SubmitButton></div>
         </Card>
       </ActionForm>

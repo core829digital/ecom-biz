@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { safeEqual } from "@/lib/crypto";
 import { getStripe } from "@/lib/stripe";
 import { processPendingWebhooks } from "@/server/webhooks";
+import { sendRecoveryEmails } from "@/server/cart-recovery";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
  * Scheduled jobs. Call with `Authorization: Bearer $CRON_SECRET`:
  *   /api/cron/webhooks  — retry failed outbound webhooks (every 5 min)
  *   /api/cron/cleanup   — expire abandoned checkouts, purge old sessions/rate limits (hourly)
+ *   /api/cron/recovery  — abandoned-cart reminder emails (every 15–30 min)
  */
 export async function GET(req: Request, { params }: { params: Promise<{ job: string }> }) {
   const auth = req.headers.get("authorization") ?? "";
@@ -17,6 +19,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ job: str
   const { job } = await params;
 
   if (job === "webhooks") return Response.json(await processPendingWebhooks());
+  if (job === "recovery") return Response.json(await sendRecoveryEmails());
 
   if (job === "cleanup") {
     const cutoff = new Date(Date.now() - 24 * 3600_000);

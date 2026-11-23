@@ -17,9 +17,9 @@ function buildCsp(nonce: string) {
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com${dev ? " 'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    "font-src 'self' data:",
     `connect-src 'self' https://api.stripe.com${dev ? " ws: wss:" : ""}`,
     "frame-src https://js.stripe.com https://hooks.stripe.com",
     "frame-ancestors 'self'",

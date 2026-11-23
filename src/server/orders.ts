@@ -106,6 +106,10 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
         }
       }
 
+      // Snapshot unit costs so profit reports stay correct if costs change later.
+      const costRows = await tx.productVariant.findMany({ where: { id: { in: pricing.lines.map((l) => l.variantId) } }, select: { id: true, costCents: true } });
+      const unitCost = new Map(costRows.map((r) => [r.id, r.costCents]));
+
       const { orderCounter: number } = await tx.store.update({
         where: { id: store.id },
         data: { orderCounter: { increment: 1 } },
@@ -171,6 +175,7 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
               imageUrl: l.imageUrl,
               quantity: l.quantity,
               priceCents: l.unitPriceCents,
+              costCents: unitCost.get(l.variantId) ?? null,
               discountCents: l.discountCents,
               taxCents: l.taxCents,
               requiresShipping: l.requiresShipping,
@@ -192,7 +197,11 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
         await tx.discount.updateMany({ where: { storeId: store.id, code: pricing.discountCode }, data: { usageCount: { increment: 1 } } });
       }
       await tx.checkout.update({ where: { id: checkout.id }, data: { status: "COMPLETED", orderId: order.id } });
-      await tx.cart.update({ where: { id: checkout.cartId }, data: { completedAt: new Date() } });
+      const cartBefore = await tx.cart.findUnique({ where: { id: checkout.cartId }, select: { recoveryEmailSentAt: true } });
+      await tx.cart.update({
+        where: { id: checkout.cartId },
+        data: { completedAt: new Date(), ...(cartBefore?.recoveryEmailSentAt ? { recoveredAt: new Date() } : {}) },
+      });
       return { orderId: order.id, created: true as const, order, store, newCustomer: customer.createdAt.getTime() === customer.updatedAt.getTime() };
     },
     { isolationLevel: "ReadCommitted", timeout: 20_000 },

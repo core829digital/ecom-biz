@@ -223,7 +223,7 @@ export async function deleteTaxRateAction(slug: string, id: string) {
 export async function saveCheckoutSettingsAction(slug: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const { store } = await requireStoreAccess(slug, "ADMIN");
   const { t } = await getPlatformT();
-  await db.store.update({ where: { id: store.id }, data: { checkoutRequirePhone: bool(fd.get("requirePhone")) } });
+  await db.store.update({ where: { id: store.id }, data: { checkoutRequirePhone: bool(fd.get("requirePhone")), abandonedCartEmails: bool(fd.get("abandonedCartEmails")) } });
   revalidatePath(`/admin/${slug}/settings/checkout`);
   return ok(t("common.saved"));
 }

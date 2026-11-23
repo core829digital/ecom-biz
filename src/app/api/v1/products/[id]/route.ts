@@ -4,6 +4,7 @@ import { apiProductUpdate, validationError } from "@/server/api-products";
 import { uniqueHandle } from "@/server/catalog";
 import { handleize } from "@/lib/slug";
 import { emitWebhook } from "@/server/webhooks";
+import { notifyBackInStock } from "@/server/stock-alerts";
 
 type P = { id: string };
 
@@ -62,6 +63,7 @@ export const PATCH = apiRoute<P>("write_products", async ({ store }, req, { id }
   });
   const updated = await find(store.id, id);
   await emitWebhook(store.id, "products/update", { id: updated.id, title: updated.title, handle: updated.handle, status: updated.status });
+  await notifyBackInStock(updated.variants.map((v) => v.id));
   return Response.json({ data: productPayload(updated) });
 });
 

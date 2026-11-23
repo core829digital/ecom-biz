@@ -11,6 +11,7 @@ export function VariantPicker({
   variants,
   initialVariantId,
   addToCart,
+  notifyMe,
   cartHref,
   labels,
 }: {
@@ -18,8 +19,9 @@ export function VariantPicker({
   variants: V[];
   initialVariantId?: string;
   addToCart: (variantId: string, qty: number) => Promise<{ ok: boolean; error?: string }>;
+  notifyMe?: (variantId: string, email: string) => Promise<{ ok: boolean; message: string }>;
   cartHref: string;
-  labels: { add: string; soldOut: string; unavailable: string; quantity: string; added: string; viewCart: string; lowStock: string };
+  labels: { add: string; soldOut: string; unavailable: string; quantity: string; added: string; viewCart: string; lowStock: string; notifyTitle?: string; notifyCta?: string; email?: string };
 }) {
   const router = useRouter();
   const initial = variants.find((v) => v.id === initialVariantId) ?? variants.find((v) => v.available > 0) ?? variants[0];
@@ -27,6 +29,8 @@ export function VariantPicker({
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();
+  const [alertEmail, setAlertEmail] = useState("");
+  const [alertMsg, setAlertMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const variant = useMemo(() => variants.find((v) => v.values.every((x, i) => x === selected[i])), [variants, selected]);
 
@@ -112,6 +116,29 @@ export function VariantPicker({
           {pending ? "…" : soldOut ? (variant ? labels.soldOut : labels.unavailable) : labels.add}
         </button>
       </div>
+      {soldOut && variant && notifyMe && (
+        <form
+          className="rounded-xl border border-border p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            start(async () => {
+              const r = await notifyMe(variant.id, alertEmail);
+              setAlertMsg({ ok: r.ok, text: r.message });
+            });
+          }}
+        >
+          <p className="mb-2 text-sm font-medium">{labels.notifyTitle}</p>
+          {alertMsg?.ok ? (
+            <p role="status" className="text-sm">{alertMsg.text}</p>
+          ) : (
+            <div className="flex gap-2">
+              <input type="email" required value={alertEmail} onChange={(e) => setAlertEmail(e.target.value)} placeholder={labels.email} aria-label={labels.email} className="h-11 min-w-0 flex-1 rounded-full border border-border bg-bg px-4 text-sm" />
+              <button disabled={pending} className="h-11 shrink-0 rounded-full border border-text px-5 text-sm font-medium hover:bg-text hover:text-bg">{labels.notifyCta}</button>
+            </div>
+          )}
+          {alertMsg && !alertMsg.ok && <p className="mt-2 text-sm text-danger">{alertMsg.text}</p>}
+        </form>
+      )}
       {message && (
         <p role="status" className={`text-sm ${message.ok ? "" : "text-danger"}`}>
           {message.text} {message.ok && <Link href={cartHref} className="font-medium underline">{labels.viewCart} →</Link>}

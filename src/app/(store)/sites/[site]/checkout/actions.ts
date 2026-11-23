@@ -92,6 +92,10 @@ export async function quoteAction(site: string, raw: unknown): Promise<QuoteView
   const input = quoteInput.safeParse(raw);
   if (!input.success) return { error: sf.t("products.error.invalid") };
   const quote = await buildQuote(sf.store, cart, input.data);
+  const typedEmail = input.data.email?.trim().toLowerCase();
+  if (typedEmail && typedEmail !== cart.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail) && typedEmail.length <= 200) {
+    await db.cart.update({ where: { id: cart.id }, data: { email: typedEmail } });
+  }
   // Persist a valid code on the cart so it survives reloads.
   if (input.data.discountCode !== undefined) {
     const code = quote.pricing.discountCode ?? null;

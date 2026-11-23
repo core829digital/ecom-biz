@@ -165,6 +165,9 @@ model Store {
   orderCounter         Int         @default(1000)
   manualPayments       Json        @default("{}") // { cod: {enabled, instructions}, bankTransfer: {...} }
   checkoutRequirePhone Boolean     @default(false)
+  abandonedCartEmails  Boolean     @default(true)
+  reviewsEnabled       Boolean     @default(true)
+  reviewsAutoPublish   Boolean     @default(false)
   // Payments (Stripe Connect)
   stripeAccountId      String?     @unique
   stripeChargesEnabled Boolean     @default(false)
@@ -191,6 +194,8 @@ model Store {
   webhooks      WebhookSubscription[]
   files         StoredFile[]
   auditLogs     AuditLog[]
+  reviews       ProductReview[]
+  stockAlerts   StockAlert[]
 }
 
 model Domain {
@@ -248,6 +253,7 @@ model Product {
   variants    ProductVariant[]
   images      ProductImage[]
   collections CollectionProduct[]
+  reviews     ProductReview[]
 
   @@unique([storeId, handle])
   @@index([storeId, status])
@@ -299,8 +305,9 @@ model ProductVariant {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cartLines CartLine[]
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartLines   CartLine[]
+  stockAlerts StockAlert[]
 
   @@index([productId])
 }
@@ -410,18 +417,21 @@ model CustomerPasswordReset {
 // ───────────────────────────── Cart & Checkout ─────────────────────────────
 
 model Cart {
-  id           String     @id @default(cuid())
-  storeId      String
-  token        String     @unique
-  customerId   String?
-  discountCode String?
-  note         String?
-  completedAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  store        Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  lines        CartLine[]
-  checkouts    Checkout[]
+  id                  String     @id @default(cuid())
+  storeId             String
+  token               String     @unique
+  customerId          String?
+  discountCode        String?
+  email               String?
+  recoveryEmailSentAt DateTime?
+  recoveredAt         DateTime?
+  note                String?
+  completedAt         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  store               Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  lines               CartLine[]
+  checkouts           Checkout[]
 
   @@index([storeId])
 }
@@ -551,6 +561,7 @@ model OrderLine {
   imageUrl         String?
   quantity         Int
   priceCents       Int // unit price
+  costCents        Int? // unit cost at time of sale (profit analytics)
   discountCents    Int     @default(0) // allocated to the whole line
   taxCents         Int     @default(0)
   requiresShipping Boolean @default(true)
@@ -769,4 +780,45 @@ model AuditLog {
 
   @@index([storeId, createdAt])
   @@index([userId, createdAt])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProductReview {
+  id               String       @id @default(cuid())
+  storeId          String
+  productId        String
+  name             String
+  email            String
+  rating           Int // 1..5
+  title            String?
+  body             String
+  status           ReviewStatus @default(PENDING)
+  verifiedPurchase Boolean      @default(false)
+  reply            String? // public answer from the merchant
+  createdAt        DateTime     @default(now())
+  store            Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product          Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([storeId, status, createdAt])
+}
+
+/// "Email me when it's back in stock" subscriptions.
+model StockAlert {
+  id         String         @id @default(cuid())
+  storeId    String
+  variantId  String
+  email      String
+  createdAt  DateTime       @default(now())
+  notifiedAt DateTime?
+  store      Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, email])
+  @@index([storeId, notifiedAt])
 }

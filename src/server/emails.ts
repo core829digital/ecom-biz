@@ -135,3 +135,25 @@ export async function sendOrderCancelled(store: Store, order: OrderWithLines) {
     text: t("email.cancel.body"),
   });
 }
+
+export async function sendCartRecovery(store: Store, email: string, lines: { title: string; variantTitle: string | null; quantity: number; imageUrl: string | null; priceCents: number }[], url: string) {
+  const t = getTranslator(store.locale);
+  const theme = parseTheme(store.theme);
+  const money = (c: number) => formatMoney(c, store.currency, store.locale);
+  const rows = lines
+    .map((l) => `<tr><td style="padding:8px 0;border-bottom:1px solid #eee">${escapeHtml(l.title)}${l.variantTitle ? `<br><span style="color:#71717a;font-size:13px">${escapeHtml(l.variantTitle)}</span>` : ""}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">× ${l.quantity} · ${money(l.priceCents * l.quantity)}</td></tr>`)
+    .join("");
+  await sendEmail({
+    to: email,
+    fromName: store.name,
+    replyTo: store.email,
+    subject: t("email.recovery.subject", { store: store.name }),
+    html: emailLayout({
+      heading: t("email.recovery.heading"),
+      brandColor: theme.primaryColor,
+      footer: `${store.name} · ${store.email}`,
+      bodyHtml: `<p>${escapeHtml(t("email.recovery.body"))}</p><table role="presentation" width="100%" style="border-collapse:collapse;font-size:14px">${rows}</table>${emailButton(url, t("email.recovery.cta"), theme.primaryColor)}<p style="color:#71717a;font-size:12px">${escapeHtml(t("email.recovery.footer"))}</p>`,
+    }),
+    text: `${t("email.recovery.body")}\n\n${lines.map((l) => `${l.quantity} × ${l.title}`).join("\n")}\n\n${url}`,
+  });
+}

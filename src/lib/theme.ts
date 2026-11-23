@@ -4,13 +4,13 @@ const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const safeUrl = z.string().max(2000).refine((u) => u === "" || u.startsWith("https://") || u.startsWith("/files/"));
 
 export const FONTS = {
-  system: { label: "System", stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', google: null },
-  inter: { label: "Inter", stack: '"Inter", ui-sans-serif, system-ui, sans-serif', google: "Inter:wght@400;500;600;700" },
-  manrope: { label: "Manrope", stack: '"Manrope", ui-sans-serif, system-ui, sans-serif', google: "Manrope:wght@400;500;600;700" },
-  dmsans: { label: "DM Sans", stack: '"DM Sans", ui-sans-serif, system-ui, sans-serif', google: "DM+Sans:wght@400;500;600;700" },
-  playfair: { label: "Playfair Display", stack: '"Playfair Display", Georgia, serif', google: "Playfair+Display:wght@400;500;600;700" },
-  lora: { label: "Lora", stack: '"Lora", Georgia, serif', google: "Lora:wght@400;500;600;700" },
-  spacegrotesk: { label: "Space Grotesk", stack: '"Space Grotesk", ui-sans-serif, sans-serif', google: "Space+Grotesk:wght@400;500;600;700" },
+  system: { label: "System", stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
+  inter: { label: "Inter", stack: '"Inter Variable", ui-sans-serif, system-ui, sans-serif' },
+  manrope: { label: "Manrope", stack: '"Manrope Variable", ui-sans-serif, system-ui, sans-serif' },
+  dmsans: { label: "DM Sans", stack: '"DM Sans Variable", ui-sans-serif, system-ui, sans-serif' },
+  playfair: { label: "Playfair Display", stack: '"Playfair Display Variable", Georgia, serif' },
+  lora: { label: "Lora", stack: '"Lora Variable", Georgia, serif' },
+  spacegrotesk: { label: "Space Grotesk", stack: '"Space Grotesk Variable", ui-sans-serif, sans-serif' },
 } as const;
 export type FontKey = keyof typeof FONTS;
 

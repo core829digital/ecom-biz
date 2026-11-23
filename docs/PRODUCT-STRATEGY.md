@@ -46,7 +46,7 @@ Legenda: ✅ presente · 🟡 parziale · ⬜ assente (in backlog)
 | Sconti automatici, BOGO, sconti per prodotto o collezione | ⬜ | Priorità media |
 | Carte regalo | ⬜ | |
 | Recupero dei carrelli abbandonati | ⬜ | **Priorità alta** (impatto diretto sul fatturato) |
-| Consenso cookie GDPR | ⬜ | **Priorità alta** (obbligo UE) |
+| Conformità GDPR sui cookie | ✅ | Solo cookie tecnici (nessun consenso richiesto) e font self-hosted: nessun dato inviato a CDN terzi |
 
 ### Ordini e operatività
 | Funzione | Stato | Note |
@@ -102,7 +102,7 @@ Ordine scelto in base a valore per il merchant, differenziazione e sforzo:
 
 | # | Funzione | Perché |
 |---|---|---|
-| 1 | **Banner consenso cookie GDPR** | Obbligo legale UE; requisito per vendere |
+| 1 | **Conformità GDPR per design** | Solo cookie tecnici e font self-hosted, quindi nessun banner necessario. Va riconsiderato se in futuro si aggiungono analytics di terze parti |
 | 2 | **Fattura stampabile/PDF con riepilogo IVA** | Su Shopify serve un'app; richiesta da ogni merchant UE |
 | 3 | **Recupero carrelli abbandonati** (email con link che ripristina il carrello) | Impatto diretto sul fatturato |
 | 4 | **Recensioni prodotto** con moderazione, stelle e dati strutturati SEO | Su Shopify serve un'app; migliora conversione e SEO |

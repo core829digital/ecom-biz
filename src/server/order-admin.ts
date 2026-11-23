@@ -7,6 +7,7 @@ import { sendOrderCancelled, sendRefundNotification, sendShippingConfirmation } 
 import { emitWebhook } from "@/server/webhooks";
 import { orderPayload } from "@/server/orders";
 import { getTranslator } from "@/lib/i18n";
+import { notifyBackInStock } from "@/server/stock-alerts";
 import { formatMoney } from "@/lib/money";
 
 export class OrderActionError extends Error {
@@ -168,6 +169,7 @@ export async function refundOrder(
     });
   });
   const fresh = await loadOrder(store.id, order.id);
+  if (input.restock) await notifyBackInStock(selection.map((s) => s.line.variantId).filter((v): v is string => !!v));
   if (input.notify && amount > 0) await sendRefundNotification(store, fresh, amount);
   await emitWebhook(store.id, "orders/refunded", orderPayload(fresh));
 }
@@ -210,6 +212,7 @@ export async function cancelOrder(store: Store, orderId: string, input: { reason
     },
   });
   const fresh = await loadOrder(store.id, order.id);
+  if (input.restock) await notifyBackInStock(order.lines.map((l) => l.variantId).filter((v): v is string => !!v));
   if (input.notify) await sendOrderCancelled(store, fresh);
   await emitWebhook(store.id, "orders/cancelled", orderPayload(fresh));
 }

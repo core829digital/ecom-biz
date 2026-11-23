@@ -16,6 +16,7 @@ import { handleize } from "@/lib/slug";
 import { emitWebhook } from "@/server/webhooks";
 import { assertCanAddProducts, PlanLimitError } from "@/server/plans";
 import { audit } from "@/server/audit";
+import { notifyBackInStock } from "@/server/stock-alerts";
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -196,6 +197,7 @@ export async function saveProductAction(slug: string, productId: string | null, 
   });
 
   await emitWebhook(store.id, existing ? "products/update" : "products/create", { id, title: p.title, handle, status: p.status });
+  if (existing) await notifyBackInStock(existing.variants.map((v) => v.id));
   revalidatePath(`/admin/${slug}/products`);
   if (!existing) redirect(`/admin/${slug}/products/${id}?created=1`);
   return ok(t("common.saved"));
@@ -304,6 +306,7 @@ export async function updateInventoryAction(slug: string, _: ActionState, fd: Fo
   const changed = updates.filter((u) => ownedMap.has(u.id) && ownedMap.get(u.id) !== u.qty);
   await db.$transaction(changed.map((u) => db.productVariant.update({ where: { id: u.id }, data: { inventoryQty: u.qty } })));
   for (const u of changed) await emitWebhook(store.id, "inventory/update", { variantId: u.id, available: u.qty });
+  await notifyBackInStock(changed.filter((u) => u.qty > 0).map((u) => u.id));
   revalidatePath(`/admin/${slug}/products/inventory`);
   return ok(t("inventory.updated", { count: changed.length }));
 }
