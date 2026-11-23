@@ -1,0 +1,22 @@
+# Reverse proxy with automatic HTTPS for the app, every store subdomain and
+# verified custom domains. Replace example.com with your platform domain.
+{
+	email ops@example.com
+	on_demand_tls {
+		# Only issue certificates for hosts the platform recognises.
+		ask http://app:3000/api/tls/check
+	}
+}
+
+# Merchant admin + API
+app.example.com {
+	reverse_proxy app:3000
+}
+
+# Store subdomains (*.example.com) and merchant custom domains
+https:// {
+	tls {
+		on_demand
+	}
+	reverse_proxy app:3000
+}

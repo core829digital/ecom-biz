@@ -13,12 +13,18 @@ export async function POST(req: Request) {
   if (!stripe || !env.stripeWebhookSecret) return new Response("Stripe not configured", { status: 503 });
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(body, signature ?? "", env.stripeWebhookSecret);
-  } catch {
-    return new Response("Invalid signature", { status: 400 });
+  // Platform events and Connect (connected-account) events come from two Stripe endpoints
+  // with different signing secrets; accept either.
+  let event: Stripe.Event | null = null;
+  for (const secret of [env.stripeWebhookSecret, process.env.STRIPE_CONNECT_WEBHOOK_SECRET].filter(Boolean) as string[]) {
+    try {
+      event = stripe.webhooks.constructEvent(body, signature ?? "", secret);
+      break;
+    } catch {
+      /* try the next secret */
+    }
   }
+  if (!event) return new Response("Invalid signature", { status: 400 });
 
   // Idempotency: Stripe may deliver the same event more than once.
   const seen = await db.processedEvent.findUnique({ where: { id: event.id } });
