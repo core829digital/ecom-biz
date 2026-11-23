@@ -167,3 +167,9 @@ html.theme-transition, html.theme-transition *, html.theme-transition *::before,
 .prose-store p { margin: 0 0 1em; line-height: 1.7; }
 .prose-store h2 { font-size: 1.25rem; font-weight: 600; margin: 1.5em 0 .5em; }
 .prose-store ul { list-style: disc; padding-left: 1.25rem; margin: 0 0 1em; }
+
+/* Landing page motion primitives */
+@keyframes marquee { to { transform: translateX(-100%); } }
+@property --angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes spin-border { to { --angle: 360deg; } }
+html { scroll-behavior: smooth; }

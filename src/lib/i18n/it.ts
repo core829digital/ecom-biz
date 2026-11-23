@@ -852,4 +852,5 @@ export const it: Record<MessageKey, string> = {
   "audit.action": "Azione",
   "audit.target": "Oggetto",
   "audit.system": "Sistema",
+  "billing.feature.storeOne": "1 negozio",
 };

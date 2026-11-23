@@ -863,6 +863,7 @@ export const en = {
   "audit.action": "Action",
   "audit.target": "Target",
   "audit.system": "System",
+  "billing.feature.storeOne": "1 store",
 } as const;
 
 export type MessageKey = keyof typeof en;
