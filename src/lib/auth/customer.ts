@@ -17,7 +17,7 @@ export async function createCustomerSession(storeId: string, customerId: string)
   await db.customerSession.create({ data: { tokenHash: sha256(token), customerId, expiresAt } });
   (await cookies()).set(customerCookieName(storeId), token, {
     httpOnly: true,
-    secure: env.isProduction,
+    secure: env.secureStoreCookies,
     sameSite: "lax",
     path: "/",
     expires: expiresAt,

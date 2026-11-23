@@ -56,6 +56,14 @@ export const env = {
   get cronSecret() {
     return process.env.CRON_SECRET || "";
   },
+  /** Admin cookies are Secure only when the app is served over https (lets http://localhost work). */
+  get secureAppCookies() {
+    return this.appUrl.startsWith("https://");
+  },
+  /** Storefront cookies are Secure when storefronts are served over https. */
+  get secureStoreCookies() {
+    return this.storefrontProtocol === "https";
+  },
   get isProduction() {
     return process.env.NODE_ENV === "production";
   },

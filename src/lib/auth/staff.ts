@@ -20,7 +20,7 @@ export async function createStaffSession(userId: string) {
   const jar = await cookies();
   jar.set(STAFF_COOKIE, token, {
     httpOnly: true,
-    secure: env.isProduction,
+    secure: env.secureAppCookies,
     sameSite: "lax",
     path: "/",
     expires: expiresAt,

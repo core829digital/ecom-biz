@@ -21,6 +21,9 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://commerce:${POSTGRES_PASSWORD:-commerce}@db:5432/commerce?schema=public
+      STORAGE_DIR: /app/storage
+    volumes:
+      - uploads:/app/storage
     depends_on:
       db: { condition: service_healthy }
     restart: "no"

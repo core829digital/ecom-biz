@@ -41,7 +41,7 @@ export async function getOrCreateCart(storeId: string) {
   const cart = await db.cart.create({ data: { storeId, token }, include: cartInclude });
   (await cookies()).set(cartCookieName(storeId), token, {
     httpOnly: true,
-    secure: env.isProduction,
+    secure: env.secureStoreCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,

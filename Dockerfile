@@ -19,7 +19,7 @@ RUN npx prisma generate && npx next build
 
 # Tooling image used by the `migrate` compose service (prisma CLI + tsx for seeding).
 FROM build AS migrate
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && mkdir -p /app/storage && chown -R 1001:1001 /app/storage"]
 
 FROM base AS runner
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
