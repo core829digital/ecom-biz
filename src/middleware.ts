@@ -30,8 +30,14 @@ function buildCsp(nonce: string) {
   ].join("; ");
 }
 
+const HTTPS = (process.env.APP_URL ?? "").startsWith("https://");
+
 function withCsp(res: NextResponse, csp: string) {
   res.headers.set("Content-Security-Policy", csp);
+  // Isolate our windows from cross-origin openers (popups such as 3-D Secure still work).
+  res.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  // Browsers remember to use https only (2 years), blocking downgrade attacks on public Wi-Fi.
+  if (HTTPS) res.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
   return res;
 }
 

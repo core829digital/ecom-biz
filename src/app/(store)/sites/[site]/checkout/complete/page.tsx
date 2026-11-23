@@ -26,7 +26,7 @@ export default async function CheckoutComplete({ params, searchParams }: { param
     orderToken = (await db.order.findUnique({ where: { id: checkout.orderId }, select: { statusToken: true } }))?.statusToken ?? null;
   } else {
     const pi = await stripe.paymentIntents.retrieve(checkout.paymentRef);
-    if (pi.status === "succeeded" && pi.amount_received === (checkout.pricing as { totalCents: number }).totalCents) {
+    if (pi.status === "succeeded" && pi.amount_received === (checkout.pricing as { totalCents: number }).totalCents && pi.currency === sf.store.currency.toLowerCase()) {
       const { orderId } = await completeCheckout(checkout.id, { paid: true, enforceStock: false });
       orderToken = (await db.order.findUnique({ where: { id: orderId }, select: { statusToken: true } }))?.statusToken ?? null;
     } else if (pi.status === "processing") {

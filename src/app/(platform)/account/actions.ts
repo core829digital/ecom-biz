@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { requireUser, STAFF_COOKIE } from "@/lib/auth/staff";
 import { fail, ok, type ActionState } from "@/lib/action";
 import { getPlatformT } from "@/lib/i18n/server";
-import { hashPassword, isAcceptablePassword, verifyPassword } from "@/lib/auth/password";
+import { hashPassword, passwordIssue, verifyPassword } from "@/lib/auth/password";
 import { sha256 } from "@/lib/crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/server/audit";
@@ -51,7 +51,8 @@ export async function changePasswordAction(_: ActionState, fd: FormData): Promis
   const current = String(fd.get("currentPassword") ?? "");
   const next = String(fd.get("newPassword") ?? "");
   if (!(await verifyPassword(current, user.passwordHash))) return fail(t("validation.fixErrors"), { currentPassword: t("account.error.password") });
-  if (!isAcceptablePassword(next)) return fail(t("validation.fixErrors"), { newPassword: t("validation.passwordLength") });
+  const issue = passwordIssue(next, { email: user.email, name: user.name });
+  if (issue) return fail(t("validation.fixErrors"), { newPassword: t(`validation.password.${issue}`) });
   const token = (await cookies()).get(STAFF_COOKIE)?.value ?? "";
   await db.$transaction([
     db.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } }),

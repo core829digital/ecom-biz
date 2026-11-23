@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { loadStorefront } from "@/server/storefront";
 import { fail, formObject, ok, parseForm, type ActionState } from "@/lib/action";
 import { createCustomerSession, destroyCustomerSession, getCurrentCustomer } from "@/lib/auth/customer";
-import { hashPassword, isAcceptablePassword, verifyPassword } from "@/lib/auth/password";
+import { hashPassword, passwordIssue, verifyPassword } from "@/lib/auth/password";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { emailButton, emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { parseTheme } from "@/lib/theme";
@@ -84,7 +84,8 @@ export async function customerForgotAction(site: string, _: ActionState, fd: For
 export async function customerSetPasswordAction(site: string, token: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const sf = await loadStorefront(site);
   const password = String(fd.get("password") ?? "");
-  if (!isAcceptablePassword(password)) return fail(sf.t("validation.fixErrors"), { password: sf.t("validation.passwordLength") });
+  const issue = passwordIssue(password);
+  if (issue) return fail(sf.t("validation.fixErrors"), { password: sf.t(`validation.password.${issue}`) });
   const reset = await db.customerPasswordReset.findUnique({ where: { tokenHash: sha256(token) }, include: { customer: true } });
   if (!reset || reset.usedAt || reset.expiresAt < new Date() || reset.customer.storeId !== sf.store.id) return fail(sf.t("auth.error.resetInvalid"));
   await db.$transaction([

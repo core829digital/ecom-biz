@@ -9,7 +9,7 @@ import { buildQuote, type Quote } from "@/server/checkout";
 import { shippableCountries } from "@/server/shipping";
 import { availablePaymentMethods, type PaymentMethod } from "@/server/payments";
 import { feeBpsForStore } from "@/server/plans";
-import { completeCheckout, OutOfStockError } from "@/server/orders";
+import { completeCheckout, DiscountUnavailableError, OutOfStockError } from "@/server/orders";
 import { addressSchema } from "@/lib/address";
 import { platformFee } from "@/lib/pricing";
 import { getStripe } from "@/lib/stripe";
@@ -234,6 +234,7 @@ async function placeOrder(site: string, raw: unknown): Promise<PlaceResult> {
   } catch (e) {
     await db.checkout.update({ where: { id: checkout.id }, data: { status: "EXPIRED" } }).catch(() => undefined);
     if (e instanceof OutOfStockError) return { ok: false, error: t("checkout.outOfStock", { title: e.title }) };
+    if (e instanceof DiscountUnavailableError) return { ok: false, error: t("checkout.discountUsedUp", { code: e.code }) };
     console.error("[checkout] complete", e);
     return { ok: false, error: t("checkout.paymentFailed") };
   }

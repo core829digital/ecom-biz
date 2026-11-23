@@ -15,6 +15,12 @@ export class OutOfStockError extends Error {
   }
 }
 
+export class DiscountUnavailableError extends Error {
+  constructor(public code: string) {
+    super(`Discount no longer available: ${code}`);
+  }
+}
+
 export type CompleteOptions = {
   /** Payment already captured (card/test) → PAID; manual methods stay PENDING. */
   paid: boolean;
@@ -106,6 +112,18 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
         }
       }
 
+      // Discount usage limit: incremented atomically and only while below the limit, so concurrent
+      // checkouts can't exceed it. A captured card payment is never dropped: it is flagged instead.
+      if (pricing.discountCode) {
+        const used = await tx.$executeRaw`
+          UPDATE "Discount" SET "usageCount" = "usageCount" + 1
+          WHERE "storeId" = ${store.id} AND "code" = ${pricing.discountCode} AND ("usageLimit" IS NULL OR "usageCount" < "usageLimit")`;
+        if (used === 0) {
+          if (opts.enforceStock) throw new DiscountUnavailableError(pricing.discountCode);
+          warnings.push(et("event.discountOverLimit", { code: pricing.discountCode }));
+        }
+      }
+
       // Snapshot unit costs so profit reports stay correct if costs change later.
       const costRows = await tx.productVariant.findMany({ where: { id: { in: pricing.lines.map((l) => l.variantId) } }, select: { id: true, costCents: true } });
       const unitCost = new Map(costRows.map((r) => [r.id, r.costCents]));
@@ -193,9 +211,6 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
         include: { lines: true },
       });
 
-      if (pricing.discountCode) {
-        await tx.discount.updateMany({ where: { storeId: store.id, code: pricing.discountCode }, data: { usageCount: { increment: 1 } } });
-      }
       await tx.checkout.update({ where: { id: checkout.id }, data: { status: "COMPLETED", orderId: order.id } });
       const cartBefore = await tx.cart.findUnique({ where: { id: checkout.cartId }, select: { recoveryEmailSentAt: true } });
       await tx.cart.update({

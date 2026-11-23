@@ -36,8 +36,9 @@ export async function POST(req: Request) {
         const pi = event.data.object;
         const checkoutId = pi.metadata?.checkoutId;
         if (checkoutId) {
-          const checkout = await db.checkout.findUnique({ where: { id: checkoutId } });
-          if (checkout && checkout.paymentRef === pi.id && pi.amount_received === (checkout.pricing as { totalCents: number }).totalCents) {
+          const checkout = await db.checkout.findUnique({ where: { id: checkoutId }, include: { store: { select: { currency: true } } } });
+          // The order is created only if this exact PaymentIntent paid the exact amount, in the store's currency.
+          if (checkout && checkout.paymentRef === pi.id && pi.amount_received === (checkout.pricing as { totalCents: number }).totalCents && pi.currency === checkout.store.currency.toLowerCase()) {
             await completeCheckout(checkout.id, { paid: true, enforceStock: false });
           } else if (checkout) {
             console.error("[stripe] amount/ref mismatch", { checkoutId, pi: pi.id });

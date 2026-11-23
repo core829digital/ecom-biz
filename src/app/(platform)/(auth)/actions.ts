@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { fail, ok, parseForm, formObject, type ActionState } from "@/lib/action";
-import { hashPassword, isAcceptablePassword, verifyPassword } from "@/lib/auth/password";
+import { hashPassword, passwordIssue, verifyPassword } from "@/lib/auth/password";
 import { createStaffSession, destroyStaffSession } from "@/lib/auth/staff";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/http";
@@ -13,12 +13,13 @@ import { randomToken, sha256 } from "@/lib/crypto";
 import { emailButton, emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
+import { isSafeRelativePath } from "@/lib/safe-path";
 import { sendVerificationEmail, verifyEmailToken } from "@/server/email-verification";
 import { getCurrentUser } from "@/lib/auth/staff";
 
 /** Only allow same-origin relative redirects to avoid open-redirects. */
 function safeNext(next: string | undefined) {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
+  return isSafeRelativePath(next) ? next : "/admin";
 }
 
 export async function loginAction(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -51,10 +52,12 @@ export async function signupAction(_: ActionState, fd: FormData): Promise<Action
   const schema = z.object({
     name: z.string().trim().min(1, t("validation.required")).max(100),
     email: z.string().trim().toLowerCase().email(t("validation.email")),
-    password: z.string().refine(isAcceptablePassword, t("validation.passwordLength")),
+    password: z.string().max(200),
   });
   const parsed = parseForm(schema, formObject(fd));
   if (parsed.fieldErrors) return fail(t("validation.fixErrors"), parsed.fieldErrors);
+  const issue = passwordIssue(parsed.data.password, { email: parsed.data.email, name: parsed.data.name });
+  if (issue) return fail(t("validation.fixErrors"), { password: t(`validation.password.${issue}`) });
   const ip = await clientIp();
   if (!(await rateLimit(`signup:ip:${ip}`, 10, 3600))) return fail(t("auth.error.rateLimited"));
 
@@ -117,7 +120,8 @@ export async function resetPasswordAction(_: ActionState, fd: FormData): Promise
   const { t } = await getPlatformT();
   const token = String(fd.get("token") ?? "");
   const password = String(fd.get("password") ?? "");
-  if (!isAcceptablePassword(password)) return fail(t("validation.fixErrors"), { password: t("validation.passwordLength") });
+  const issue = passwordIssue(password);
+  if (issue) return fail(t("validation.fixErrors"), { password: t(`validation.password.${issue}`) });
   const reset = await db.passwordReset.findUnique({ where: { tokenHash: sha256(token) } });
   if (!reset || reset.usedAt || reset.expiresAt < new Date()) return fail(t("auth.error.resetInvalid"));
   await db.$transaction([

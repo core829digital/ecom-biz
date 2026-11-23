@@ -63,11 +63,16 @@ Topics: `orders/create`, `orders/paid`, `orders/cancelled`, `orders/fulfilled`, 
 Each delivery is a `POST` with body `{ id, topic, created_at, data }` and headers
 `X-Webhook-Id`, `X-Webhook-Topic`, `X-Webhook-Timestamp`, `X-Webhook-Signature`.
 
-Verify the signature on the **raw** body:
+The signature covers the timestamp and the **raw** body (`<timestamp>.<raw body>`), so a captured
+delivery can't be replayed later with a new timestamp. Verify both:
 
 ```js
-const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("base64");
-const valid = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));
+const ts = Number(req.headers["x-webhook-timestamp"]);
+if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) throw new Error("stale or missing timestamp");
+const expected = crypto.createHmac("sha256", secret).update(`${ts}.${rawBody}`).digest("base64");
+const a = Buffer.from(expected), b = Buffer.from(String(req.headers["x-webhook-signature"] ?? ""));
+if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new Error("invalid signature");
+// Deduplicate on X-Webhook-Id: retries reuse the same id.
 ```
 
 Respond with any `2xx` within 10 seconds. Failed deliveries are retried with

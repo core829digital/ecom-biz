@@ -1,4 +1,5 @@
 import "server-only";
+import { isSafeRelativePath } from "@/lib/safe-path";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { resolveStore, storeBase, storePublicUrl } from "@/lib/tenant";
@@ -31,7 +32,7 @@ export type Storefront = Awaited<ReturnType<typeof loadStorefront>>;
 
 /** Prefix internal paths with the store base; allow only safe external schemes. */
 export function sfHref(base: string, url: string): string {
-  if (url.startsWith("/")) return url.startsWith("//") ? "#" : `${base}${url === "/" && base ? "" : url}` || "/";
+  if (url.startsWith("/")) return !isSafeRelativePath(url) ? "#" : `${base}${url === "/" && base ? "" : url}` || "/";
   if (/^(https?:|mailto:|tel:)/i.test(url)) return url;
   return "#";
 }

@@ -719,7 +719,7 @@ export const en = {
   "developers.attempts": "{count} attempts",
   "developers.reference": "API reference",
   "developers.referenceHint": "JSON REST API. Amounts are integers in minor units (cents). Lists accept page and limit (max 250).",
-  "developers.signatureHint": "Webhook signature: base64(HMAC-SHA256(secret, raw body)) in X-Webhook-Signature. Reject requests whose signature doesn't match.",
+  "developers.signatureHint": "Webhook signature: base64(HMAC-SHA256(secret, \"<X-Webhook-Timestamp>.<raw body>\")) in X-Webhook-Signature. Reject requests whose signature doesn't match or whose timestamp is older than 5 minutes.",
   "developers.error.name": "Give the token a name.",
   "developers.error.scopes": "Choose at least one permission.",
   "developers.error.tokenLimit": "You can have up to 25 tokens.",
@@ -1070,6 +1070,11 @@ export const en = {
   "platform.stripeSyncNote": "This account has a Stripe subscription: Stripe events overwrite status and plan, so make lasting changes in Stripe.",
   "platform.hold": "Account on hold",
   "platform.holdHint": "Pauses all the account's stores (set automatically on payment disputes).",
+  "validation.password.length": "Use at least 8 characters",
+  "validation.password.common": "This password is too common and easy to guess. Try a short phrase instead.",
+  "validation.password.personal": "Don't use your name or email in the password.",
+  "event.discountOverLimit": "Discount {code} was used beyond its usage limit (concurrent checkouts)",
+  "checkout.discountUsedUp": "The discount code {code} has just reached its usage limit. Remove it to complete your order.",
 } as const;
 
 export type MessageKey = keyof typeof en;

@@ -44,6 +44,14 @@ export async function emitWebhook(storeId: string, topic: WebhookTopic, payload:
   }
 }
 
+/**
+ * Signature over "<timestamp>.<raw body>" (same scheme as Stripe): the timestamp is authenticated,
+ * so receivers can reject replays older than a few minutes.
+ */
+export function signWebhook(secret: string, timestamp: number, body: string) {
+  return hmacSha256(secret, `${timestamp}.${body}`, "base64");
+}
+
 export async function deliverWebhook(deliveryId: string): Promise<boolean> {
   const d = await db.webhookDelivery.findUnique({ where: { id: deliveryId }, include: { subscription: true } });
   if (!d || d.success || !d.subscription.active) return false;
@@ -51,6 +59,7 @@ export async function deliverWebhook(deliveryId: string): Promise<boolean> {
   const attempts = d.attempts + 1;
   let statusCode: number | null = null;
   let error: string | null = null;
+  const timestamp = Math.floor(Date.now() / 1000);
   try {
     if (!(await isPublicHttpsUrl(d.subscription.url))) throw new Error("Destination is not a public https URL");
     const res = await fetch(d.subscription.url, {
@@ -62,8 +71,8 @@ export async function deliverWebhook(deliveryId: string): Promise<boolean> {
         "User-Agent": "Commerce-Webhooks/1.0",
         "X-Webhook-Id": d.id,
         "X-Webhook-Topic": d.topic,
-        "X-Webhook-Timestamp": String(Math.floor(Date.now() / 1000)),
-        "X-Webhook-Signature": hmacSha256(d.subscription.secret, body, "base64"),
+        "X-Webhook-Timestamp": String(timestamp),
+        "X-Webhook-Signature": signWebhook(d.subscription.secret, timestamp, body),
       },
       body,
     });

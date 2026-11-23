@@ -25,6 +25,11 @@ export async function sendEmail(email: Email): Promise<boolean> {
   const from = `"${(email.fromName ?? env.platformName).replace(/["\r\n]/g, "")}" <${env.emailFrom}>`;
   const t = getTransporter();
   if (!t) {
+    if (env.isProduction) {
+      // Never write message bodies to production logs: they contain sign-in and reset links.
+      console.error(`[email] SMTP_URL is not configured: email to ${email.to} ("${email.subject}") was NOT sent`);
+      return false;
+    }
     console.info(`[email:dev] to=${email.to} subject="${email.subject}"\n${email.text}\n`);
     return true;
   }

@@ -708,7 +708,7 @@ export const it: Record<MessageKey, string> = {
   "developers.attempts": "{count} tentativi",
   "developers.reference": "Riferimento API",
   "developers.referenceHint": "API REST JSON. Gli importi sono interi in centesimi. Gli elenchi accettano page e limit (max 250).",
-  "developers.signatureHint": "Firma webhook: base64(HMAC-SHA256(segreto, corpo grezzo)) in X-Webhook-Signature. Rifiuta le richieste con firma non corrispondente.",
+  "developers.signatureHint": "Firma webhook: base64(HMAC-SHA256(segreto, \"<X-Webhook-Timestamp>.<corpo grezzo>\")) in X-Webhook-Signature. Rifiuta le richieste con firma non corrispondente o con timestamp più vecchio di 5 minuti.",
   "developers.error.name": "Dai un nome al token.",
   "developers.error.scopes": "Scegli almeno un permesso.",
   "developers.error.tokenLimit": "Puoi avere al massimo 25 token.",
@@ -1059,4 +1059,9 @@ export const it: Record<MessageKey, string> = {
   "platform.stripeSyncNote": "Questo account ha un abbonamento Stripe: gli eventi di Stripe sovrascrivono stato e piano, quindi le modifiche durature vanno fatte su Stripe.",
   "platform.hold": "Account sospeso",
   "platform.holdHint": "Mette in pausa tutti i negozi dell'account (impostato in automatico in caso di contestazioni).",
+  "validation.password.length": "Usa almeno 8 caratteri",
+  "validation.password.common": "Questa password è troppo comune e facile da indovinare. Prova una breve frase.",
+  "validation.password.personal": "Non usare il tuo nome o la tua email nella password.",
+  "event.discountOverLimit": "Lo sconto {code} è stato usato oltre il limite di utilizzi (checkout simultanei)",
+  "checkout.discountUsedUp": "Il codice sconto {code} ha appena raggiunto il limite di utilizzi. Rimuovilo per completare l'ordine.",
 };
