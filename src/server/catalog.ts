@@ -55,8 +55,11 @@ export async function collectionProducts(
   const page = Math.max(1, opts.page ?? 1);
   const sort = (opts.sort ?? collection.sortOrder) as CollectionSort;
   const base: Prisma.ProductWhereInput = { storeId: collection.storeId, status: "ACTIVE" };
+  // id "all" is the virtual "All products" collection.
   const where: Prisma.ProductWhereInput =
-    collection.type === "SMART"
+    collection.id === "all"
+      ? base
+      : collection.type === "SMART"
       ? { AND: [base, smartCollectionWhere(parseRules(collection.rules), collection.matchAll)] }
       : { ...base, collections: { some: { collectionId: collection.id } } };
 
