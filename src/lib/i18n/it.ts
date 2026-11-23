@@ -880,4 +880,8 @@ export const it: Record<MessageKey, string> = {
   "security.revoke": "Disconnetti",
   "security.revokeAll": "Disconnetti tutti gli altri dispositivi",
   "security.revokeAllConfirm": "Disconnettere tutti gli altri dispositivi?",
+  "shortcuts.title": "Scorciatoie da tastiera",
+  "shortcuts.palette": "Cerca o vai a…",
+  "shortcuts.switchStore": "Negozio precedente / successivo",
+  "shortcuts.help": "Mostra scorciatoie",
 };

@@ -9,6 +9,7 @@ import { accountActive, assertCanCreateStore, PlanLimitError, storeUsage } from 
 import { AdminShell, type NavItem } from "@/components/admin/sidebar";
 import { UsageMeter } from "@/components/admin/usage-meter";
 import { CommandPalette } from "@/components/admin/command-palette";
+import { KeyboardShortcuts } from "@/components/admin/shortcuts";
 import { I18nProvider } from "@/components/i18n-provider";
 import { logoutAction } from "../../(auth)/actions";
 
@@ -114,6 +115,7 @@ export default async function StoreAdminLayout({ children, params }: { children:
         {children}
       </AdminShell>
       <CommandPalette slug={store.slug} stores={memberships.map((m) => ({ slug: m.store.slug, name: m.store.name }))} />
+      <KeyboardShortcuts slug={store.slug} stores={memberships.map((m) => m.store.slug)} />
     </I18nProvider>
   );
 }

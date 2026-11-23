@@ -891,6 +891,10 @@ export const en = {
   "security.revoke": "Sign out",
   "security.revokeAll": "Sign out all other devices",
   "security.revokeAllConfirm": "Sign out of every other device?",
+  "shortcuts.title": "Keyboard shortcuts",
+  "shortcuts.palette": "Search or jump to…",
+  "shortcuts.switchStore": "Previous / next store",
+  "shortcuts.help": "Show shortcuts",
 } as const;
 
 export type MessageKey = keyof typeof en;
