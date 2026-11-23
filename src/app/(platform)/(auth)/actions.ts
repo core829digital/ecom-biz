@@ -12,6 +12,7 @@ import { getPlatformT } from "@/lib/i18n/server";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { emailButton, emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
+import { audit } from "@/server/audit";
 
 /** Only allow same-origin relative redirects to avoid open-redirects. */
 function safeNext(next: string | undefined) {
@@ -29,9 +30,18 @@ export async function loginAction(_: ActionState, fd: FormData): Promise<ActionS
   const user = await db.user.findUnique({ where: { email } });
   // Always run bcrypt to keep timing uniform whether or not the user exists.
   const valid = await verifyPassword(password, user?.passwordHash ?? "$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva");
-  if (!user || !valid) return fail(t("auth.error.invalidCredentials"));
+  if (!user || !valid) {
+    if (user) await audit({ userId: user.id, action: "auth.login_failed" });
+    return fail(t("auth.error.invalidCredentials"));
+  }
+  const next = safeNext(String(fd.get("next") ?? ""));
+  if (user.totpEnabledAt) {
+    await createStaffSession(user.id, { verified: false });
+    redirect(`/login/verify?next=${encodeURIComponent(next)}`);
+  }
   await createStaffSession(user.id);
-  redirect(safeNext(String(fd.get("next") ?? "")));
+  await audit({ userId: user.id, action: "auth.login" });
+  redirect(next);
 }
 
 export async function signupAction(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -112,4 +122,36 @@ export async function resetPasswordAction(_: ActionState, fd: FormData): Promise
   ]);
   await createStaffSession(reset.userId);
   redirect("/admin");
+}
+
+export async function verifyTwoFactorAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { t } = await getPlatformT();
+  const { getPendingTwoFactorSession } = await import("@/lib/auth/staff");
+  const { verifyTotp } = await import("@/lib/totp");
+  const { open } = await import("@/lib/secret-box");
+  const session = await getPendingTwoFactorSession();
+  if (!session) redirect("/login");
+  if (!(await rateLimit(`2fa:${session.userId}`, 10, 900))) return fail(t("auth.error.rateLimited"));
+  const code = String(fd.get("code") ?? "").trim().toLowerCase();
+  const user = session.user;
+  let ok2 = false;
+  if (/^\d{6}$/.test(code.replace(/\s/g, "")) && user.totpSecret) {
+    ok2 = verifyTotp(open(user.totpSecret), code);
+  } else if (/^[a-z0-9]{4}-?[a-z0-9]{4}$/.test(code)) {
+    const normalized = code.includes("-") ? code : `${code.slice(0, 4)}-${code.slice(4)}`;
+    const hash = sha256(normalized);
+    if (user.recoveryCodes.includes(hash)) {
+      // Recovery codes are single-use.
+      await db.user.update({ where: { id: user.id }, data: { recoveryCodes: user.recoveryCodes.filter((h) => h !== hash) } });
+      await audit({ userId: user.id, action: "auth.recovery_code_used" });
+      ok2 = true;
+    }
+  }
+  if (!ok2) {
+    await audit({ userId: user.id, action: "auth.2fa_failed" });
+    return fail(t("security.error.code"));
+  }
+  await db.session.update({ where: { id: session.id }, data: { verified: true } });
+  await audit({ userId: user.id, action: "auth.login", meta: { twoFactor: true } });
+  redirect(safeNext(String(fd.get("next") ?? "")));
 }

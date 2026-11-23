@@ -10,7 +10,7 @@ async function login(page: Page, email: string, password: string) {
   await page.fill("input[name=email]", email);
   await page.fill("input[name=password]", password);
   await page.click("button[type=submit]");
-  await page.waitForURL(/\/admin\//);
+  await page.waitForURL(/\/admin(\/|$)/);
 }
 
 test.describe.configure({ mode: "serial" });
@@ -89,8 +89,9 @@ test("merchant marks the order paid, fulfils it and refunds one item", async ({ 
   await page.locator("tbody tr a").first().click();
   await page.waitForURL(/\/orders\/[a-z0-9]+$/);
   const orderUrl = page.url();
-  page.on("dialog", (d) => d.accept());
   await page.click('button:has-text("Mark as paid")');
+  // Confirmation happens in the app's own accessible dialog.
+  await page.locator('[role=dialog] button[data-autofocus]').click();
   await expect(page.locator("h1")).toContainText("Paid");
   await page.goto(`${orderUrl}?action=fulfill`, { waitUntil: "networkidle" });
   await page.fill("input[name=trackingNumber]", "TRK123");

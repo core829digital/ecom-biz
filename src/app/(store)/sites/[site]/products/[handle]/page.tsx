@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { cache } from "react";
 import { db } from "@/lib/db";
@@ -77,9 +78,10 @@ export default async function ProductPage({ params, searchParams }: Props) {
     })),
   };
 
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div className="grid gap-10 md:grid-cols-2">
         <Gallery images={product.images} title={product.title} />
         <div>

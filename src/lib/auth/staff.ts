@@ -42,15 +42,35 @@ export async function destroyStaffSession() {
   jar.delete(STAFF_COOKIE);
 }
 
-/** Current platform user, or null. Memoized per request. */
-export const getCurrentUser = cache(async () => {
-  const jar = await cookies();
-  const token = jar.get(STAFF_COOKIE)?.value;
+const loadSession = cache(async () => {
+  const token = (await cookies()).get(STAFF_COOKIE)?.value;
   if (!token) return null;
   const session = await db.session.findUnique({ where: { tokenHash: sha256(token) }, include: { user: true } });
   if (!session || session.expiresAt < new Date()) return null;
+  return session;
+});
+
+/** Current platform user, or null. Sessions awaiting a second factor don't count. Memoized per request. */
+export const getCurrentUser = cache(async () => {
+  const session = await loadSession();
+  if (!session || !session.verified) return null;
+  // Track activity for the sessions list, at most every 5 minutes.
+  if (Date.now() - session.lastSeenAt.getTime() > 5 * 60_000) {
+    await db.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } }).catch(() => undefined);
+  }
   return session.user;
 });
+
+/** A session that passed the password step but still needs the 2FA code. */
+export const getPendingTwoFactorSession = cache(async () => {
+  const session = await loadSession();
+  return session && !session.verified ? session : null;
+});
+
+/** Id of the session making this request (for "this device" markers). */
+export async function currentSessionId(): Promise<string | null> {
+  return (await loadSession())?.id ?? null;
+}
 
 export async function requireUser() {
   const user = await getCurrentUser();

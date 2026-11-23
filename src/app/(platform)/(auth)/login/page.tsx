@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/staff";
+import { getCurrentUser, getPendingTwoFactorSession } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
 import { Input } from "@/components/ui/fields";
@@ -10,6 +10,7 @@ export const metadata = { title: "Log in" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   if (await getCurrentUser()) redirect("/admin");
+  if (await getPendingTwoFactorSession()) redirect("/login/verify");
   const { t } = await getPlatformT();
   const { next } = await searchParams;
   return (
