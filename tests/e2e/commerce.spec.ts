@@ -135,7 +135,11 @@ test("shopper reviews a product, merchant publishes and replies", async ({ page,
   const shopper = await browser.newPage();
   await shopper.goto(`${DEMO}/products/ceramic-mug`, { waitUntil: "networkidle" });
   await shopper.click('button:has-text("Write a review")');
-  await shopper.locator('label:has(input[name=rating][value="5"])').click();
+  // The form animates open: wait until the 5th star is really selected.
+  await expect(async () => {
+    await shopper.locator('label:has(input[name=rating][value="5"])').click();
+    await expect(shopper.locator('input[name=rating][value="5"]')).toBeChecked({ timeout: 500 });
+  }).toPass();
   await shopper.fill("input[name=name]", "E2E Reviewer");
   await shopper.fill("input[name=email]", `reviewer-${unique()}@example.com`);
   await shopper.fill("textarea[name=body]", body);

@@ -1075,6 +1075,7 @@ export const en = {
   "validation.password.personal": "Don't use your name or email in the password.",
   "event.discountOverLimit": "Discount {code} was used beyond its usage limit (concurrent checkouts)",
   "checkout.discountUsedUp": "The discount code {code} has just reached its usage limit. Remove it to complete your order.",
+  "sf.reviews.ratingRequired": "Choose a rating from 1 to 5 stars.",
 } as const;
 
 export type MessageKey = keyof typeof en;

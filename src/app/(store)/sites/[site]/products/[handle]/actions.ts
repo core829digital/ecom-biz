@@ -55,6 +55,7 @@ export async function submitReviewAction(site: string, productId: string, _: Rev
       verifiedPurchase: verified, status: store.reviewsAutoPublish ? "APPROVED" : "PENDING",
     },
   });
-  revalidatePath("/", "layout");
+  // Only this product page shows reviews: never refresh the whole site.
+  revalidatePath("/sites/[site]/products/[handle]", "page");
   return { ok: true, message: store.reviewsAutoPublish ? t("sf.reviews.published") : t("sf.reviews.thanks"), at: Date.now() };
 }

@@ -15,6 +15,8 @@ import { loadStorefront, sfHref } from "@/server/storefront";
 import { getCart, cartItemCount } from "@/server/cart";
 import { themeCssVars } from "@/lib/theme";
 import { MobileNav } from "@/components/storefront/mobile-nav";
+import { NavProgress } from "@/components/storefront/nav-progress";
+import { Suspense } from "react";
 
 type MenuItem = { title: string; url: string };
 const menuItems = (json: unknown): MenuItem[] =>
@@ -52,6 +54,7 @@ export default async function StorefrontLayout({ children, params }: { children:
   return (
     <html lang={store.locale}>
       <body className="storefront min-h-dvh" style={themeCssVars(theme) as React.CSSProperties}>
+        <Suspense fallback={null}><NavProgress /></Suspense>
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:px-3 focus:py-2">
           {t("sf.skip")}
         </a>

@@ -7,7 +7,7 @@ import type { ReviewState } from "@/app/(store)/sites/[site]/products/[handle]/a
 
 export function ReviewForm({ action, labels, defaults }: {
   action: (s: ReviewState, fd: FormData) => Promise<ReviewState>;
-  labels: Record<"write" | "name" | "email" | "title" | "body" | "submit" | "rating" | "emailHint", string>;
+  labels: Record<"write" | "name" | "email" | "title" | "body" | "submit" | "rating" | "emailHint" | "ratingRequired", string>;
   /** Prefilled for signed-in customers. */
   defaults?: { name: string; email: string };
 }) {
@@ -15,12 +15,19 @@ export function ReviewForm({ action, labels, defaults }: {
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
+  const [ratingError, setRatingError] = useState(false);
   const field = "h-11 w-full rounded-lg border border-border bg-bg px-3 text-sm outline-none focus:border-text";
   // Submit through a transition, not the form `action` prop: React resets uncontrolled
   // fields after an action-prop submission, which would wipe the review on a server error.
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (pending) return;
+    if (!rating) {
+      // Explain instead of silently disabling the button, and move focus to the stars.
+      setRatingError(true);
+      e.currentTarget.querySelector<HTMLInputElement>("input[name=rating]")?.focus();
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     startTransition(() => formAction(fd));
   };
@@ -36,14 +43,15 @@ export function ReviewForm({ action, labels, defaults }: {
               <div className="flex gap-1" onMouseLeave={() => setHover(0)}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <label key={n} className="cursor-pointer" onMouseEnter={() => setHover(n)}>
-                    <input type="radio" name="rating" value={n} className="sr-only" checked={rating === n} onChange={() => setRating(n)} required />
-                    <motion.span whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="block">
+                    <input type="radio" name="rating" value={n} className="peer sr-only" checked={rating === n} onChange={() => { setRating(n); setRatingError(false); }} aria-describedby={ratingError ? "rating-error" : undefined} />
+                    <motion.span whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} className="block rounded peer-focus-visible:ring-2 peer-focus-visible:ring-text">
                       <Star className={`size-7 ${n <= (hover || rating) ? "fill-amber-400 text-amber-400" : "text-border-strong"}`} aria-hidden />
                     </motion.span>
                     <span className="sr-only">{n}</span>
                   </label>
                 ))}
               </div>
+              {ratingError && <p id="rating-error" role="alert" className="mt-1 text-sm text-danger">{labels.ratingRequired}</p>}
             </fieldset>
             <div className="grid gap-3 sm:grid-cols-2">
               <input name="name" required maxLength={60} placeholder={labels.name} aria-label={labels.name} defaultValue={defaults?.name} autoComplete="name" className={field} />
@@ -53,7 +61,7 @@ export function ReviewForm({ action, labels, defaults }: {
             <input name="title" maxLength={120} placeholder={labels.title} aria-label={labels.title} className={field} />
             <textarea name="body" required minLength={10} maxLength={4000} rows={4} placeholder={labels.body} aria-label={labels.body} className="w-full rounded-lg border border-border bg-bg p-3 text-sm outline-none focus:border-text" />
             {state?.error && <p role="alert" className="text-sm text-danger">{state.error}</p>}
-            <button type="submit" disabled={pending || !rating} className="inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 text-sm font-medium text-brand-contrast transition-opacity disabled:opacity-50">
+            <button type="submit" disabled={pending} className="inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 text-sm font-medium text-brand-contrast transition-opacity disabled:opacity-50">
               {pending && <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />}
               {labels.submit}
             </button>

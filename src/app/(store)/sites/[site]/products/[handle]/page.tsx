@@ -157,7 +157,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
                   defaults={customer ? { name: [customer.firstName, customer.lastName].filter(Boolean).join(" "), email: customer.email } : undefined}
                   labels={{
                     write: t("sf.reviews.write"), name: t("sf.reviews.name"), email: t("field.email"), title: t("sf.reviews.titleField"),
-                    body: t("sf.reviews.body"), submit: t("sf.reviews.submit"), rating: t("sf.reviews.rating"), emailHint: customer ? t("sf.reviews.emailHint") : t("sf.reviews.emailHintGuest"),
+                    body: t("sf.reviews.body"), submit: t("sf.reviews.submit"), rating: t("sf.reviews.rating"), ratingRequired: t("sf.reviews.ratingRequired"), emailHint: customer ? t("sf.reviews.emailHint") : t("sf.reviews.emailHintGuest"),
                   }}
                 />
               </div>

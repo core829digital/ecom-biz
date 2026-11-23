@@ -1064,4 +1064,5 @@ export const it: Record<MessageKey, string> = {
   "validation.password.personal": "Non usare il tuo nome o la tua email nella password.",
   "event.discountOverLimit": "Lo sconto {code} è stato usato oltre il limite di utilizzi (checkout simultanei)",
   "checkout.discountUsedUp": "Il codice sconto {code} ha appena raggiunto il limite di utilizzi. Rimuovilo per completare l'ordine.",
+  "sf.reviews.ratingRequired": "Scegli un voto da 1 a 5 stelle.",
 };
