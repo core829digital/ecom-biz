@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 import type { ComponentProps, ReactNode } from "react";
 
-export function Card({ className, title, actions, children, ...props }: ComponentProps<"section"> & { title?: ReactNode; actions?: ReactNode }) {
+export function Card({ className, title, actions, children, ...props }: Omit<ComponentProps<"section">, "title"> & { title?: ReactNode; actions?: ReactNode }) {
   return (
     <section className={cn("rounded-xl border border-border bg-surface shadow-sm", className)} {...props}>
       {(title || actions) && (

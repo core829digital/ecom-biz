@@ -26,3 +26,13 @@ export async function checkDiscount(storeId: string, rawCode: string, email?: st
   }
   return { discount };
 }
+
+/** Display status for the admin list. */
+export function discountStatus(d: Discount): "active" | "scheduled" | "expired" | "disabled" {
+  const now = new Date();
+  if (!d.active) return "disabled";
+  if (d.startsAt > now) return "scheduled";
+  if ((d.endsAt && d.endsAt <= now) || (d.usageLimit !== null && d.usageCount >= d.usageLimit)) return "expired";
+  return "active";
+}
+

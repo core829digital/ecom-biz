@@ -89,3 +89,15 @@ describe("slugs", () => {
     expect(isValidStoreSlug("ab")).toBe(false);
   });
 });
+
+import { fromZonedInput, toZonedInput } from "@/lib/dates";
+describe("zoned dates", () => {
+  it("round-trips wall-clock times in a store time zone, across DST", () => {
+    for (const v of ["2026-01-15T10:30", "2026-07-15T10:30", "2026-03-29T12:00", "2026-10-25T12:00"]) {
+      expect(toZonedInput(fromZonedInput(v, "Europe/Bucharest"), "Europe/Bucharest")).toBe(v);
+    }
+    expect(fromZonedInput("2026-01-15T10:30", "Europe/Bucharest")!.toISOString()).toBe("2026-01-15T08:30:00.000Z");
+    expect(fromZonedInput("2026-07-15T10:30", "Europe/Rome")!.toISOString()).toBe("2026-07-15T08:30:00.000Z");
+    expect(fromZonedInput("bad", "UTC")).toBeNull();
+  });
+});

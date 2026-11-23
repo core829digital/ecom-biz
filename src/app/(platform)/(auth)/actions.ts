@@ -53,7 +53,8 @@ export async function signupAction(_: ActionState, fd: FormData): Promise<Action
     data: { name: parsed.data.name, email: parsed.data.email, passwordHash: await hashPassword(parsed.data.password), locale },
   });
   await createStaffSession(user.id);
-  redirect(safeNext(String(fd.get("next") ?? "")) === "/admin" ? "/admin/new" : safeNext(String(fd.get("next"))));
+  const next = safeNext(String(fd.get("next") ?? ""));
+  redirect(next === "/admin" ? "/admin/new" : next);
 }
 
 export async function logoutAction() {

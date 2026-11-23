@@ -39,6 +39,11 @@ export async function saveGeneralAction(slug: string, _: ActionState, fd: FormDa
   const parsed = parseForm(schema, formObject(fd));
   if (parsed.fieldErrors) return fail(t("validation.fixErrors"), parsed.fieldErrors);
   const d = parsed.data;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: d.timezone });
+  } catch {
+    return fail(t("validation.fixErrors"), { timezone: t("settings.general.timezoneInvalid") });
+  }
   if (d.currency !== store.currency && (await db.order.count({ where: { storeId: store.id } })) > 0) {
     return fail(t("validation.fixErrors"), { currency: t("settings.general.currencyLocked") });
   }
