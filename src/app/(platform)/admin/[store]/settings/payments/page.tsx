@@ -3,7 +3,8 @@ import { getPlatformT } from "@/lib/i18n/server";
 import { getStripe } from "@/lib/stripe";
 import { env } from "@/lib/env";
 import { db } from "@/lib/db";
-import { feeBpsFor, parseManualPayments } from "@/server/payments";
+import { parseManualPayments } from "@/server/payments";
+import { feeBpsForStore } from "@/server/plans";
 import { Badge, Card, PageHeader } from "@/components/ui/primitives";
 import { BackLink } from "@/components/admin/back-link";
 import { ActionForm, ConfirmSubmit, SubmitButton } from "@/components/ui/form";
@@ -16,10 +17,10 @@ export default async function PaymentsSettings({ params, searchParams }: { param
   const { store: initial, role } = await requireStoreAccess(slug, "ADMIN");
   const { t } = await getPlatformT();
   if (sp.stripe === "return" && initial.stripeAccountId) await refreshStripeStatus(initial.id, initial.stripeAccountId).catch(() => undefined);
-  const store = await db.store.findUniqueOrThrow({ where: { id: initial.id }, include: { plan: true } });
+  const store = await db.store.findUniqueOrThrow({ where: { id: initial.id } });
   const stripeReady = !!getStripe();
   const manual = parseManualPayments(store.manualPayments);
-  const feePct = (feeBpsFor(store) / 100).toFixed(2);
+  const feePct = ((await feeBpsForStore(store)) / 100).toFixed(2);
 
   return (
     <>

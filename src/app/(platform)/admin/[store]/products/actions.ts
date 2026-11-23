@@ -14,6 +14,8 @@ import { storeImage, UploadError } from "@/lib/storage";
 import { uniqueHandle } from "@/server/catalog";
 import { handleize } from "@/lib/slug";
 import { emitWebhook } from "@/server/webhooks";
+import { assertCanAddProducts, PlanLimitError } from "@/server/plans";
+import { audit } from "@/server/audit";
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -128,6 +130,14 @@ export async function saveProductAction(slug: string, productId: string | null, 
 
   const existing = productId ? await db.product.findFirst({ where: { id: productId, storeId: store.id }, include: { variants: { select: { id: true } } } }) : null;
   if (productId && !existing) return fail(t("common.notFound"));
+  if (!existing) {
+    try {
+      await assertCanAddProducts(store.id);
+    } catch (e) {
+      if (e instanceof PlanLimitError) return fail(t("usage.limitProductsDetail", { count: e.limit ?? 0 }));
+      throw e;
+    }
+  }
 
   const handle = await uniqueHandle(store.id, p.handle ? handleize(p.handle) : p.title, "product", productId ?? undefined);
   const data = {
@@ -208,10 +218,11 @@ export async function uploadImageAction(slug: string, fd: FormData): Promise<{ u
 }
 
 export async function deleteProductAction(slug: string, productId: string) {
-  const { store } = await requireStoreAccess(slug, "ADMIN");
+  const { store, user } = await requireStoreAccess(slug, "ADMIN");
   const product = await db.product.findFirst({ where: { id: productId, storeId: store.id } });
   if (product) {
     await db.product.delete({ where: { id: product.id } });
+    await audit({ userId: user.id, storeId: store.id, action: "product.delete", target: product.title });
     await emitWebhook(store.id, "products/delete", { id: product.id });
   }
   revalidatePath(`/admin/${slug}/products`);
@@ -225,6 +236,12 @@ export async function duplicateProductAction(slug: string, productId: string) {
     include: { options: true, images: true, variants: true, collections: true },
   });
   if (!src) redirect(`/admin/${slug}/products`);
+  try {
+    await assertCanAddProducts(store.id);
+  } catch (e) {
+    if (e instanceof PlanLimitError) redirect(`/admin/${slug}/products/${productId}?limit=products`);
+    throw e;
+  }
   const title = `${src.title} (copy)`;
   const handle = await uniqueHandle(store.id, title, "product");
   const copy = await db.product.create({
@@ -253,12 +270,15 @@ export async function duplicateProductAction(slug: string, productId: string) {
 export async function bulkProductsAction(slug: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const op = String(fd.get("op") ?? "");
   const minRole = op === "delete" ? "ADMIN" : "STAFF";
-  const { store } = await requireStoreAccess(slug, minRole);
+  const { store, user } = await requireStoreAccess(slug, minRole);
   const { t } = await getPlatformT();
   const ids = fd.getAll("ids").map(String).slice(0, 500);
   if (!ids.length) return fail(t("products.bulk.none"));
   const where: Prisma.ProductWhereInput = { storeId: store.id, id: { in: ids } };
-  if (op === "delete") await db.product.deleteMany({ where });
+  if (op === "delete") {
+    await db.product.deleteMany({ where });
+    await audit({ userId: user.id, storeId: store.id, action: "product.bulk_delete", meta: { count: ids.length } });
+  }
   else if (op === "ACTIVE" || op === "DRAFT" || op === "ARCHIVED") {
     await db.product.updateMany({ where, data: { status: op, ...(op === "ACTIVE" ? { publishedAt: new Date() } : {}) } });
   } else return fail(t("products.error.invalid"));
@@ -296,6 +316,7 @@ export async function importProductsAction(slug: string, _: ActionState, fd: For
   if (file.size > 5 * 1024 * 1024) return fail(t("upload.tooLarge"));
   const { importProductsCsv } = await import("@/server/product-csv");
   const res = await importProductsCsv(store.id, await file.text());
+  if (res.limitReached) res.errors.unshift({ line: 0, message: t("usage.limitProductsDetail", { count: res.limitReached }) });
   revalidatePath(`/admin/${slug}/products`);
   const summary = t("import.summary", { created: res.created, updated: res.updated, errors: res.errors.length });
   if (res.errors.length) {

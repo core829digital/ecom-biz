@@ -9,6 +9,7 @@ import { getPlatformT } from "@/lib/i18n/server";
 import { parseMoney } from "@/lib/money";
 import { addOrderEvent, cancelOrder, fulfillOrder, markOrderPaid, OrderActionError, refundOrder } from "@/server/order-admin";
 import type { Translator } from "@/lib/i18n";
+import { audit } from "@/server/audit";
 
 const bool = (v: FormDataEntryValue | null) => v === "on" || v === "true";
 
@@ -51,6 +52,7 @@ export async function markPaidAction(slug: string, orderId: string) {
   const { store, user } = await requireStoreAccess(slug);
   try {
     await markOrderPaid(store, orderId, user.name);
+    await audit({ userId: user.id, storeId: store.id, action: "order.mark_paid", target: orderId });
   } catch {
     /* state already changed; page reload shows current status */
   }
@@ -74,6 +76,7 @@ export async function refundAction(slug: string, orderId: string, _: ActionState
   } catch (e) {
     return fail(errorMessage(t, e));
   }
+  await audit({ userId: user.id, storeId: store.id, action: "order.refund", target: orderId, meta: { amountCents: amount } });
   revalidatePath(`/admin/${slug}/orders`);
   redirect(`/admin/${slug}/orders/${orderId}`);
 }
@@ -92,6 +95,7 @@ export async function cancelAction(slug: string, orderId: string, _: ActionState
   } catch (e) {
     return fail(errorMessage(t, e));
   }
+  await audit({ userId: user.id, storeId: store.id, action: "order.cancel", target: orderId });
   revalidatePath(`/admin/${slug}/orders`);
   redirect(`/admin/${slug}/orders/${orderId}`);
 }

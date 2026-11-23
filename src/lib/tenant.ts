@@ -19,15 +19,6 @@ export const resolveStore = cache(async (siteKey: string): Promise<Store | null>
   return store;
 });
 
-/** Whether the store may sell (billing enforcement is opt-in per deployment). */
-export function storeIsOperational(store: Store): boolean {
-  if (store.status !== "ACTIVE") return false;
-  if (!env.billingEnforced) return true;
-  if (store.subscriptionStatus === "ACTIVE") return true;
-  if (store.subscriptionStatus === "TRIALING") return !store.trialEndsAt || store.trialEndsAt > new Date();
-  return false;
-}
-
 /**
  * Prefix for storefront links. Empty on a real store host (middleware sets the header);
  * "/sites/<key>" when browsing the path-based development URL.

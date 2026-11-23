@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { getPlatformT } from "@/lib/i18n/server";
 import { requirePlatformAdmin } from "@/lib/auth/staff";
@@ -31,7 +32,7 @@ export default async function PlatformUsers({ searchParams }: { searchParams: Pr
           <tbody>
             {users.map((u) => (
               <tr key={u.id}>
-                <Td><span className="font-medium">{u.name}</span> {u.isPlatformAdmin && <Badge tone="info">{t("platform.admin")}</Badge>}<span className="block text-xs text-muted">{u.email}</span></Td>
+                <Td><Link href={`/platform/users/${u.id}`} className="font-medium hover:underline">{u.name}</Link> {u.isPlatformAdmin && <Badge tone="info">{t("platform.admin")}</Badge>}<span className="block text-xs text-muted">{u.email}</span></Td>
                 <Td className="text-muted">{u.memberships.map((m) => m.store.name).join(", ") || "—"}</Td>
                 <Td className="text-muted">{date.format(u.createdAt)}</Td>
                 <Td className="text-right">

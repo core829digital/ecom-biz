@@ -14,28 +14,46 @@ datasource db {
 // ───────────────────────────── Platform ─────────────────────────────
 
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  name            String
-  passwordHash    String
-  locale          String   @default("en")
-  isPlatformAdmin Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  name                 String
+  passwordHash         String
+  locale               String             @default("en")
+  theme                String             @default("system") // light | dark | system
+  accent               String             @default("neutral")
+  isPlatformAdmin      Boolean            @default(false)
+  // Account-level subscription: the plan decides how many stores this user may own.
+  planId               String?
+  subscriptionStatus   SubscriptionStatus @default(TRIALING)
+  trialEndsAt          DateTime?
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  // Two-factor authentication (TOTP, RFC 6238)
+  totpSecret           String?
+  totpEnabledAt        DateTime?
+  recoveryCodes        String[]           @default([]) // SHA-256 hashes of one-time codes
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
+  plan           Plan?           @relation(fields: [planId], references: [id])
+  auditLogs      AuditLog[]
   sessions       Session[]
   memberships    Membership[]
   passwordResets PasswordReset[]
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  userAgent String?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  userAgent  String?
+  ip         String?
+  lastSeenAt DateTime @default(now())
+  /// Set once the second factor is verified (or immediately when 2FA is off).
+  verified   Boolean  @default(true)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -91,11 +109,16 @@ model Plan {
   transactionFeeBps Int      @default(0)
   trialDays         Int      @default(14)
   features          String[]
+  maxStores         Int      @default(1)
+  maxProducts       Int? // null = unlimited
+  maxStaff          Int? // additional staff per store; null = unlimited
+  allowCustomDomain Boolean  @default(true)
+  allowApi          Boolean  @default(true)
   stripePriceId     String?
   active            Boolean  @default(true)
   position          Int      @default(0)
   createdAt         DateTime @default(now())
-  stores            Store[]
+  users             User[]
 }
 
 enum StoreStatus {
@@ -113,15 +136,15 @@ enum SubscriptionStatus {
 }
 
 model Store {
-  id                   String             @id @default(cuid())
-  slug                 String             @unique
+  id                   String      @id @default(cuid())
+  slug                 String      @unique
   name                 String
   email                String
   phone                String?
-  currency             String             @default("EUR")
-  locale               String             @default("en")
-  timezone             String             @default("Europe/Bucharest")
-  status               StoreStatus        @default(ACTIVE)
+  currency             String      @default("EUR")
+  locale               String      @default("en")
+  timezone             String      @default("Europe/Bucharest")
+  status               StoreStatus @default(ACTIVE)
   // Legal / address (shown on invoices and emails)
   legalName            String?
   vatNumber            String?
@@ -130,33 +153,26 @@ model Store {
   city                 String?
   zip                  String?
   province             String?
-  countryCode          String             @default("RO")
+  countryCode          String      @default("RO")
   // Taxes
-  taxesIncluded        Boolean            @default(true)
-  taxShipping          Boolean            @default(true)
+  taxesIncluded        Boolean     @default(true)
+  taxShipping          Boolean     @default(true)
   // Branding (white-label theme): colors, fonts, logo, hero, etc.
-  theme                Json               @default("{}")
+  theme                Json        @default("{}")
   seoTitle             String?
   seoDescription       String?
   // Checkout options
-  orderCounter         Int                @default(1000)
-  manualPayments       Json               @default("{}") // { cod: {enabled, instructions}, bankTransfer: {...} }
-  checkoutRequirePhone Boolean            @default(false)
+  orderCounter         Int         @default(1000)
+  manualPayments       Json        @default("{}") // { cod: {enabled, instructions}, bankTransfer: {...} }
+  checkoutRequirePhone Boolean     @default(false)
   // Payments (Stripe Connect)
-  stripeAccountId      String?            @unique
-  stripeChargesEnabled Boolean            @default(false)
-  stripePayoutsEnabled Boolean            @default(false)
+  stripeAccountId      String?     @unique
+  stripeChargesEnabled Boolean     @default(false)
+  stripePayoutsEnabled Boolean     @default(false)
   platformFeeBps       Int? // per-store override of plan fee
-  // Billing (merchant subscription to the platform)
-  planId               String?
-  subscriptionStatus   SubscriptionStatus @default(TRIALING)
-  trialEndsAt          DateTime?
-  stripeCustomerId     String?            @unique
-  stripeSubscriptionId String?            @unique
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
-  plan          Plan?                 @relation(fields: [planId], references: [id])
   memberships   Membership[]
   invites       StaffInvite[]
   domains       Domain[]
@@ -174,6 +190,7 @@ model Store {
   apiTokens     ApiToken[]
   webhooks      WebhookSubscription[]
   files         StoredFile[]
+  auditLogs     AuditLog[]
 }
 
 model Domain {
@@ -735,4 +752,21 @@ model RateLimit {
   key       String   @id
   count     Int
   expiresAt DateTime
+}
+
+// Who did what, when. Written for security-relevant and destructive actions.
+model AuditLog {
+  id        String   @id @default(cuid())
+  storeId   String?
+  userId    String?
+  action    String // e.g. product.delete, order.refund, staff.invite, auth.login
+  target    String?
+  meta      Json     @default("{}")
+  ip        String?
+  createdAt DateTime @default(now())
+  store     Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, createdAt])
+  @@index([userId, createdAt])
 }

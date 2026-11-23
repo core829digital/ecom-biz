@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import type { Plan, Store } from "@prisma/client";
+import type { Store } from "@prisma/client";
 import { env } from "@/lib/env";
 import { getStripe } from "@/lib/stripe";
 
@@ -25,11 +25,4 @@ export function availablePaymentMethods(store: Store): PaymentMethod[] {
   if (manual.bankTransfer.enabled) methods.push("bank_transfer");
   if (env.testGatewayEnabled && !env.isProduction) methods.push("test");
   return methods;
-}
-
-/** Platform fee in bps: store override → plan → deployment default. */
-export function feeBpsFor(store: Store & { plan?: Plan | null }): number {
-  if (store.platformFeeBps !== null && store.platformFeeBps !== undefined) return store.platformFeeBps;
-  if (store.plan) return store.plan.transactionFeeBps;
-  return env.platformFeeBps;
 }

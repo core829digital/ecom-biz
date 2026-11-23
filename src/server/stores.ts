@@ -14,8 +14,6 @@ export type NewStoreInput = {
 
 /** Creates a store with sensible defaults so a merchant can sell immediately. */
 export async function createStore(input: NewStoreInput) {
-  const defaultPlan = await db.plan.findFirst({ where: { active: true }, orderBy: { position: "asc" } });
-  const trialDays = defaultPlan?.trialDays ?? 14;
   const isEU = input.countryCode in EU_STANDARD_VAT_BPS;
 
   return db.$transaction(async (tx) => {
@@ -28,9 +26,6 @@ export async function createStore(input: NewStoreInput) {
         locale: input.locale,
         countryCode: input.countryCode,
         taxesIncluded: isEU,
-        planId: defaultPlan?.id,
-        subscriptionStatus: "TRIALING",
-        trialEndsAt: new Date(Date.now() + trialDays * 86400_000),
         theme: { primaryColor: "#111827", accentColor: "#111827", font: "system", heroTitle: input.name },
         manualPayments: {
           cod: { enabled: false, instructions: "" },

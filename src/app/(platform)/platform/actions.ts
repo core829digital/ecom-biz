@@ -10,33 +10,47 @@ import { parseMoney } from "@/lib/money";
 import { CURRENCIES } from "@/lib/geo";
 import { getStripe } from "@/lib/stripe";
 import { ensurePlanPrice } from "@/server/billing";
+import { audit } from "@/server/audit";
 
 export async function setStoreStatusAction(storeId: string, status: "ACTIVE" | "SUSPENDED") {
-  await requirePlatformAdmin();
+  const admin = await requirePlatformAdmin();
   await db.store.update({ where: { id: storeId }, data: { status } });
+  await audit({ userId: admin.id, storeId, action: status === "ACTIVE" ? "platform.store_reactivate" : "platform.store_suspend" });
   revalidatePath(`/platform/stores/${storeId}`);
 }
 
-export async function updateStoreBillingAction(storeId: string, _: ActionState, fd: FormData): Promise<ActionState> {
-  await requirePlatformAdmin();
+export async function updateStoreFeeAction(storeId: string, _: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await requirePlatformAdmin();
   const { t } = await getPlatformT();
-  const planId = String(fd.get("planId") ?? "") || null;
   const feeRaw = String(fd.get("feePct") ?? "").trim().replace(",", ".");
   const fee = feeRaw === "" ? null : Math.round(parseFloat(feeRaw) * 100);
   if (fee !== null && (!Number.isFinite(fee) || fee < 0 || fee > 5000)) return fail(t("validation.fixErrors"), { feePct: t("platform.error.fee") });
-  const extend = parseInt(String(fd.get("extendTrialDays") ?? "0"), 10) || 0;
-  const store = await db.store.findUniqueOrThrow({ where: { id: storeId } });
+  await db.store.update({ where: { id: storeId }, data: { platformFeeBps: fee } });
+  await audit({ userId: admin.id, storeId, action: "platform.store_fee", meta: { feeBps: fee } });
+  revalidatePath(`/platform/stores/${storeId}`);
+  return ok(t("common.saved"));
+}
+
+export async function updateUserBillingAction(userId: string, _: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await requirePlatformAdmin();
+  const { t } = await getPlatformT();
+  const planId = String(fd.get("planId") ?? "") || null;
+  const status = String(fd.get("status") ?? "");
   if (planId && !(await db.plan.findUnique({ where: { id: planId } }))) return fail(t("products.error.invalid"));
-  const base = store.trialEndsAt && store.trialEndsAt > new Date() ? store.trialEndsAt : new Date();
-  await db.store.update({
-    where: { id: storeId },
+  if (!["TRIALING", "ACTIVE", "PAST_DUE", "CANCELED", "NONE"].includes(status)) return fail(t("products.error.invalid"));
+  const extend = Math.min(365, Math.max(0, parseInt(String(fd.get("extendTrialDays") ?? "0"), 10) || 0));
+  const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+  const base = user.trialEndsAt && user.trialEndsAt > new Date() ? user.trialEndsAt : new Date();
+  await db.user.update({
+    where: { id: userId },
     data: {
       planId,
-      platformFeeBps: fee,
-      ...(extend > 0 ? { trialEndsAt: new Date(base.getTime() + Math.min(extend, 365) * 86400_000), subscriptionStatus: store.subscriptionStatus === "ACTIVE" ? "ACTIVE" : "TRIALING" } : {}),
+      subscriptionStatus: extend > 0 && status !== "ACTIVE" ? "TRIALING" : (status as "ACTIVE"),
+      ...(extend > 0 ? { trialEndsAt: new Date(base.getTime() + extend * 86400_000) } : {}),
     },
   });
-  revalidatePath(`/platform/stores/${storeId}`);
+  await audit({ userId: admin.id, action: "platform.user_billing", target: user.email, meta: { planId, status, extend } });
+  revalidatePath(`/platform/users/${userId}`);
   return ok(t("common.saved"));
 }
 
@@ -65,6 +79,11 @@ export async function savePlanAction(id: string | null, _: ActionState, fd: Form
     transactionFeeBps: Math.round(feePct * 100),
     trialDays,
     features: get("features").split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 20),
+    maxStores: Math.max(1, parseInt(get("maxStores") || "1", 10) || 1),
+    maxProducts: get("maxProducts") === "" ? null : Math.max(0, parseInt(get("maxProducts"), 10) || 0),
+    maxStaff: get("maxStaff") === "" ? null : Math.max(0, parseInt(get("maxStaff"), 10) || 0),
+    allowCustomDomain: fd.get("allowCustomDomain") === "on",
+    allowApi: fd.get("allowApi") === "on",
     active: fd.get("active") === "on",
     position: parseInt(get("position") || "0", 10) || 0,
   };

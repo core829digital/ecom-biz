@@ -1,33 +1,32 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getPlatformT } from "@/lib/i18n/server";
 import { formatMoney } from "@/lib/money";
 import { storePublicUrl } from "@/lib/tenant";
-import { env } from "@/lib/env";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui/primitives";
 import { BackLink } from "@/components/admin/back-link";
 import { ActionForm, ConfirmSubmit, SubmitButton } from "@/components/ui/form";
-import { Input, Select } from "@/components/ui/fields";
+import { Input } from "@/components/ui/fields";
 import { LinkButton } from "@/components/ui/button";
-import { setStoreStatusAction, updateStoreBillingAction } from "../../actions";
+import { setStoreStatusAction, updateStoreFeeAction } from "../../actions";
 
 export default async function PlatformStore({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { t, locale } = await getPlatformT();
-  const store = await db.store.findUnique({ where: { id }, include: { plan: true, memberships: { include: { user: true } }, domains: true } });
+  const store = await db.store.findUnique({ where: { id }, include: { memberships: { include: { user: { include: { plan: true } } } }, domains: true } });
   if (!store) notFound();
-  const [plans, agg] = await Promise.all([
-    db.plan.findMany({ orderBy: { position: "asc" } }),
-    db.order.aggregate({ where: { storeId: id, status: { not: "CANCELLED" } }, _count: true, _sum: { totalCents: true, refundedCents: true, platformFeeCents: true } }),
-  ]);
+  const agg = await db.order.aggregate({ where: { storeId: id, status: { not: "CANCELLED" } }, _count: true, _sum: { totalCents: true, refundedCents: true, platformFeeCents: true } });
+  const owner = store.memberships.find((m) => m.role === "OWNER")?.user;
   const money = (c: number) => formatMoney(c, store.currency, locale);
   const date = new Intl.DateTimeFormat(locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium" });
+  const url = await storePublicUrl(store);
   return (
     <>
       <PageHeader
         back={<BackLink href="/platform/stores" label={t("platform.stores")} />}
         title={<span className="flex items-center gap-2">{store.name} <Badge tone={store.status === "ACTIVE" ? "success" : "danger"}>{t(`platform.storeStatus.${store.status}`)}</Badge></span>}
-        subtitle={<a href={await storePublicUrl(store)} className="underline" target="_blank" rel="noreferrer">{await storePublicUrl(store)}</a>}
+        subtitle={<a href={url} className="underline" target="_blank" rel="noreferrer">{url}</a>}
         actions={
           <>
             <LinkButton href={`/admin/${store.slug}`} variant="secondary" size="sm">{t("platform.openAdmin")}</LinkButton>
@@ -44,19 +43,16 @@ export default async function PlatformStore({ params }: { params: Promise<{ id: 
         <Stat label={t("nav.payments")} value={store.stripeChargesEnabled ? "Stripe ✓" : "—"} />
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title={t("platform.billing")}>
-          <p className="mb-4 text-sm">
-            {t(`platform.sub.${store.subscriptionStatus}`)}
-            {store.trialEndsAt && <span className="text-muted"> · {t("platform.trialEnds", { date: date.format(store.trialEndsAt) })}</span>}
-            {!env.billingEnforced && <span className="block text-xs text-muted">{t("platform.billingNotEnforced")}</span>}
-          </p>
-          <ActionForm action={updateStoreBillingAction.bind(null, store.id)} className="space-y-4">
-            <Select name="planId" label={t("platform.plan")} defaultValue={store.planId ?? ""}>
-              <option value="">—</option>
-              {plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </Select>
+        <Card title={t("platform.owner")}>
+          {owner ? (
+            <div className="space-y-1 text-sm">
+              <Link href={`/platform/users/${owner.id}`} className="font-medium hover:underline">{owner.name}</Link>
+              <p className="text-muted">{owner.email}</p>
+              <p>{owner.plan?.name ?? "—"} · {t(`platform.sub.${owner.subscriptionStatus}`)}{owner.trialEndsAt && owner.subscriptionStatus === "TRIALING" && <span className="text-muted"> · {t("platform.trialEnds", { date: date.format(owner.trialEndsAt) })}</span>}</p>
+            </div>
+          ) : <p className="text-sm text-muted">—</p>}
+          <ActionForm action={updateStoreFeeAction.bind(null, store.id)} className="mt-5 space-y-3 border-t border-border pt-4">
             <Input name="feePct" label={t("platform.feeOverride")} hint={t("platform.feeOverrideHint")} inputMode="decimal" defaultValue={store.platformFeeBps !== null ? String(store.platformFeeBps / 100) : ""} />
-            <Input name="extendTrialDays" type="number" min={0} max={365} label={t("platform.extendTrial")} defaultValue="0" />
             <SubmitButton>{t("common.save")}</SubmitButton>
           </ActionForm>
         </Card>

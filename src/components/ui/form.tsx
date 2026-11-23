@@ -5,6 +5,9 @@ import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/cn";
 import type { ActionState } from "@/lib/action";
 import { buttonClass } from "./button";
+import { Dialog } from "./dialog";
+import { toast } from "./toast";
+import { useT } from "@/components/i18n-provider";
 
 const FormStateContext = createContext<ActionState>(null);
 const FormPendingContext = createContext(false);
@@ -35,6 +38,7 @@ export function ActionForm({
 
   useEffect(() => {
     if (state?.at) setVisibleAt(state.at);
+    if (state?.ok && state.message) toast(state.message, "success");
     if (state?.ok) {
       if (resetOnSuccess) ref.current?.reset();
       onSuccess?.();
@@ -60,11 +64,6 @@ export function ActionForm({
         {state?.error && visibleAt === state.at && (
           <div role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger">
             {state.error}
-          </div>
-        )}
-        {state?.ok && state.message && visibleAt === state.at && (
-          <div role="status" className="mb-4 rounded-lg border border-success/30 bg-success-bg px-4 py-3 text-sm text-success">
-            {state.message}
           </div>
         )}
         {children}
@@ -104,29 +103,66 @@ export function SubmitButton({
   );
 }
 
-/** Button that submits a tiny inline form, with an optional confirm() guard. */
+/**
+ * Submit button for small inline forms. With `confirmMessage`, it opens an
+ * accessible confirmation dialog and submits the surrounding form on confirm.
+ */
 export function ConfirmSubmit({
   children,
   confirmMessage,
+  confirmLabel,
+  cancelLabel,
   variant = "secondary",
   className,
 }: {
   children: ReactNode;
   confirmMessage?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
   variant?: "primary" | "secondary" | "danger" | "ghost";
   className?: string;
 }) {
   const { pending } = useFormStatus();
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
+  const danger = variant === "danger";
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className={cn(buttonClass(variant, "sm"), className)}
-      onClick={(e) => {
-        if (confirmMessage && !window.confirm(confirmMessage)) e.preventDefault();
-      }}
-    >
-      {children}
-    </button>
+    <>
+      <button
+        ref={ref}
+        type={confirmMessage ? "button" : "submit"}
+        disabled={pending}
+        className={cn(buttonClass(variant, "sm"), className)}
+        onClick={confirmMessage ? () => setOpen(true) : undefined}
+      >
+        {pending && <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />}
+        {children}
+      </button>
+      {confirmMessage && (
+        <Dialog
+          open={open}
+          onClose={() => setOpen(false)}
+          title={confirmMessage}
+          size="sm"
+          footer={
+            <>
+              <button type="button" className={buttonClass("secondary", "md")} onClick={() => setOpen(false)}>{cancelLabel ?? t("common.cancel")}</button>
+              <button
+                type="button"
+                data-autofocus
+                className={buttonClass(danger ? "danger" : "primary", "md")}
+                onClick={() => {
+                  setOpen(false);
+                  ref.current?.form?.requestSubmit();
+                }}
+              >
+                {confirmLabel ?? children}
+              </button>
+            </>
+          }
+        />
+      )}
+    </>
   );
 }

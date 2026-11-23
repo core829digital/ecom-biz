@@ -52,9 +52,9 @@ async function seedPlans() {
   if ((await db.plan.count()) > 0) return;
   await db.plan.createMany({
     data: [
-      { name: "Basic", priceCents: 1900, transactionFeeBps: 200, trialDays: 14, position: 1, features: ["Online store", "Unlimited products", "2 staff accounts"] },
-      { name: "Grow", priceCents: 4900, transactionFeeBps: 100, trialDays: 14, position: 2, features: ["Everything in Basic", "5 staff accounts", "API & webhooks", "Custom domain"] },
-      { name: "Advanced", priceCents: 14900, transactionFeeBps: 50, trialDays: 14, position: 3, features: ["Everything in Grow", "15 staff accounts", "Lowest transaction fee"] },
+      { name: "Basic", priceCents: 1900, transactionFeeBps: 200, trialDays: 14, position: 1, maxStores: 1, maxProducts: 250, maxStaff: 2, allowCustomDomain: true, allowApi: false, features: ["Online store & checkout", "Card, COD and bank transfer", "Discount codes"] },
+      { name: "Grow", priceCents: 4900, transactionFeeBps: 100, trialDays: 14, position: 2, maxStores: 3, maxProducts: null, maxStaff: 5, allowCustomDomain: true, allowApi: true, features: ["Everything in Basic", "API & webhooks", "Priority email support"] },
+      { name: "Advanced", priceCents: 14900, transactionFeeBps: 50, trialDays: 14, position: 3, maxStores: 10, maxProducts: null, maxStaff: null, allowCustomDomain: true, allowApi: true, features: ["Everything in Grow", "Lowest transaction fee", "Dedicated onboarding"] },
     ],
   });
   console.log("✓ plans");
@@ -76,10 +76,19 @@ async function seedAdmin() {
 async function seedDemo() {
   if (process.env.SEED_DEMO !== "true") return;
   if (await db.store.findUnique({ where: { slug: "demo" } })) return console.log("• demo store already exists");
+  const plan = await db.plan.findFirst({ where: { name: "Grow" } }) ?? (await db.plan.findFirst({ orderBy: { position: "asc" } }));
   const user =
     (await db.user.findUnique({ where: { email: "demo@example.com" } })) ??
-    (await db.user.create({ data: { email: "demo@example.com", name: "Demo Merchant", passwordHash: await bcrypt.hash("demo12345", 12) } }));
-  const plan = await db.plan.findFirst({ orderBy: { position: "asc" } });
+    (await db.user.create({
+      data: {
+        email: "demo@example.com",
+        name: "Demo Merchant",
+        passwordHash: await bcrypt.hash("demo12345", 12),
+        planId: plan?.id,
+        subscriptionStatus: "TRIALING",
+        trialEndsAt: new Date(Date.now() + 14 * 86400_000),
+      },
+    }));
   const store = await db.store.create({
     data: {
       slug: "demo",
@@ -89,8 +98,6 @@ async function seedDemo() {
       locale: "en",
       countryCode: "RO",
       taxesIncluded: true,
-      planId: plan?.id,
-      trialEndsAt: new Date(Date.now() + 14 * 86400_000),
       theme: {
         primaryColor: "#1f3a5f", backgroundColor: "#ffffff", textColor: "#111111", font: "dmsans",
         heroTitle: "Everyday essentials, made well", heroSubtitle: "Natural materials, honest prices, shipped across Europe.",

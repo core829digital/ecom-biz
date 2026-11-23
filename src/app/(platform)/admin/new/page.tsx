@@ -4,12 +4,29 @@ import { env } from "@/lib/env";
 import { countryOptions, CURRENCIES } from "@/lib/geo";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n";
 import { NewStoreForm } from "./form";
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { limitsOf, ownedStoreCount } from "@/server/plans";
 
 export const metadata = { title: "Create store" };
 
 export default async function NewStorePage() {
   const user = await requireUser();
   const { t, locale } = await getPlatformT();
+  const account = await db.user.findUniqueOrThrow({ where: { id: user.id }, include: { plan: true } });
+  const limit = limitsOf(account.plan).stores;
+  if (!user.isPlatformAdmin && (await ownedStoreCount(user.id)) >= limit) {
+    return (
+      <main className="mx-auto max-w-md px-4 py-20 text-center">
+        <h1 className="text-xl font-semibold">{t("usage.limitStores")}</h1>
+        <p className="mt-2 text-sm text-muted">{t("usage.limitStoresDetail", { count: limit })}</p>
+        <div className="mt-6 flex justify-center gap-2">
+          <Link href="/admin" className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-medium">{t("common.back")}</Link>
+          <Link href="/account/billing" className="inline-flex h-10 items-center rounded-lg bg-accent px-4 text-sm font-medium text-accent-contrast">{t("billing.choose")}</Link>
+        </div>
+      </main>
+    );
+  }
   return (
     <main className="mx-auto max-w-lg px-4 py-12">
       <h1 className="text-xl font-semibold">{t("stores.new.title")}</h1>

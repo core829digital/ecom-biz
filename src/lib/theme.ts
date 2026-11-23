@@ -59,9 +59,26 @@ export function mixWithBackground(fg: string, bg: string, amount: number): strin
   return `#${ch(1)}${ch(3)}${ch(5)}`;
 }
 
+export function isDark(hexColor: string) {
+  return contrastText(hexColor) === "#ffffff";
+}
+
+/** Ready-made looks merchants can start from (then fine-tune). */
+export const THEME_PRESETS: { id: string; name: string; primaryColor: string; backgroundColor: string; textColor: string; font: FontKey }[] = [
+  { id: "minimal", name: "Minimal", primaryColor: "#111111", backgroundColor: "#ffffff", textColor: "#111111", font: "inter" },
+  { id: "midnight", name: "Midnight", primaryColor: "#fafafa", backgroundColor: "#0a0a0b", textColor: "#f4f4f5", font: "inter" },
+  { id: "sand", name: "Sand", primaryColor: "#7c5a3a", backgroundColor: "#f7f3ec", textColor: "#2b2118", font: "lora" },
+  { id: "ocean", name: "Ocean", primaryColor: "#1f4e79", backgroundColor: "#ffffff", textColor: "#0f1b2a", font: "dmsans" },
+  { id: "forest", name: "Forest", primaryColor: "#2f5d46", backgroundColor: "#f6f7f2", textColor: "#16231c", font: "manrope" },
+  { id: "rose", name: "Rosé", primaryColor: "#b4436c", backgroundColor: "#fff7f8", textColor: "#2a1218", font: "playfair" },
+  { id: "editorial", name: "Editorial", primaryColor: "#1a1a1a", backgroundColor: "#f5f2ea", textColor: "#1a1a1a", font: "playfair" },
+  { id: "neon", name: "Studio", primaryColor: "#c6f432", backgroundColor: "#111214", textColor: "#f4f4f5", font: "spacegrotesk" },
+];
+
 /** CSS custom properties applied on the storefront root. */
 export function themeCssVars(theme: Theme): Record<string, string> {
   return {
+    "color-scheme": isDark(theme.backgroundColor) ? "dark" : "light",
     "--brand": theme.primaryColor,
     "--brand-contrast": contrastText(theme.primaryColor),
     "--bg": theme.backgroundColor,

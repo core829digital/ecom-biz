@@ -6,7 +6,9 @@ import { Input, Select, Textarea } from "@/components/ui/fields";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/primitives";
 import { useT } from "@/components/i18n-provider";
-import { contrastText, type Theme } from "@/lib/theme";
+import { contrastText, THEME_PRESETS, type Theme } from "@/lib/theme";
+import { motion } from "framer-motion";
+import { Check } from "lucide-react";
 import type { ActionState } from "@/lib/action";
 
 export function ThemeEditor({
@@ -34,6 +36,36 @@ export function ThemeEditor({
       <input type="hidden" name="payload" value={payload} />
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <div className="space-y-5">
+          <Card title={t("theme.presets")}>
+            <p className="mb-4 text-sm text-muted">{t("theme.presetsHint")}</p>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {THEME_PRESETS.map((preset) => {
+                const active = th.primaryColor === preset.primaryColor && th.backgroundColor === preset.backgroundColor && th.textColor === preset.textColor;
+                return (
+                  <li key={preset.id}>
+                    <motion.button
+                      type="button"
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => update({ primaryColor: preset.primaryColor, backgroundColor: preset.backgroundColor, textColor: preset.textColor, font: preset.font })}
+                      aria-pressed={active}
+                      className={`relative w-full overflow-hidden rounded-xl border text-left transition-shadow hover:shadow-elevated ${active ? "border-accent ring-1 ring-accent" : "border-border"}`}
+                    >
+                      <span className="block p-3" style={{ background: preset.backgroundColor, color: preset.textColor }}>
+                        <span className="block h-2 w-10 rounded-full" style={{ background: preset.textColor, opacity: 0.85 }} />
+                        <span className="mt-1.5 block h-1.5 w-16 rounded-full" style={{ background: preset.textColor, opacity: 0.35 }} />
+                        <span className="mt-3 inline-block rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ background: preset.primaryColor, color: contrastText(preset.primaryColor) }}>Shop</span>
+                      </span>
+                      <span className="flex items-center justify-between border-t border-border bg-surface px-3 py-2 text-xs font-medium">
+                        {preset.name}
+                        {active && <Check className="size-3.5" aria-hidden />}
+                      </span>
+                    </motion.button>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
           <Card title={t("theme.brand")}>
             <div className="grid gap-4 sm:grid-cols-2">
               <ImageField label={t("theme.logo")} value={th.logoUrl} onChange={(logoUrl) => update({ logoUrl })} uploadImage={uploadImage} name="logoUrl" />

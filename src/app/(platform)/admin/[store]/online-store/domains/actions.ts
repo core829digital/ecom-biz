@@ -8,12 +8,20 @@ import { fail, ok, type ActionState } from "@/lib/action";
 import { getPlatformT } from "@/lib/i18n/server";
 import { randomToken } from "@/lib/crypto";
 import { env } from "@/lib/env";
+import { assertFeature, PlanLimitError } from "@/server/plans";
+import { audit } from "@/server/audit";
 
 const HOST_RE = /^(?=.{4,253}$)(?!-)([a-z0-9-]{1,63}\.)+[a-z]{2,63}$/;
 
 export async function addDomainAction(slug: string, _: ActionState, fd: FormData): Promise<ActionState> {
-  const { store } = await requireStoreAccess(slug, "OWNER");
+  const { store, user } = await requireStoreAccess(slug, "OWNER");
   const { t } = await getPlatformT();
+  try {
+    await assertFeature(store.id, "customDomain");
+  } catch (e) {
+    if (e instanceof PlanLimitError) return fail(t("usage.featureCustomDomain"));
+    throw e;
+  }
   const hostname = String(fd.get("hostname") ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   const root = env.storefrontRootDomain.split(":")[0];
   if (!HOST_RE.test(hostname) || hostname === root || hostname.endsWith(`.${root}`) || hostname === new URL(env.appUrl).hostname) {
@@ -22,6 +30,7 @@ export async function addDomainAction(slug: string, _: ActionState, fd: FormData
   if (await db.domain.findUnique({ where: { hostname } })) return fail(t("validation.fixErrors"), { hostname: t("domains.error.taken") });
   if ((await db.domain.count({ where: { storeId: store.id } })) >= 10) return fail(t("domains.error.limit"));
   await db.domain.create({ data: { storeId: store.id, hostname, verificationToken: `verify-${randomToken(16)}` } });
+  await audit({ userId: user.id, storeId: store.id, action: "domain.add", target: hostname });
   revalidatePath(`/admin/${slug}/online-store/domains`);
   return ok(t("domains.added"));
 }

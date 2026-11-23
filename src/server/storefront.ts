@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { resolveStore, storeBase, storeIsOperational, storePublicUrl } from "@/lib/tenant";
+import { resolveStore, storeBase, storePublicUrl } from "@/lib/tenant";
+import { storeOperational } from "@/server/plans";
 import { parseTheme } from "@/lib/theme";
 import { getTranslator } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money";
@@ -19,7 +20,7 @@ export const loadStorefront = cache(async (siteKey: string) => {
     theme,
     t,
     locale: store.locale,
-    operational: storeIsOperational(store),
+    operational: await storeOperational(store),
     publicUrl: await storePublicUrl(store),
     money: (cents: number) => formatMoney(cents, store.currency, store.locale),
     href: (path: string) => sfHref(base, path),

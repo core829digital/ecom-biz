@@ -10,13 +10,21 @@ import type { Role } from "@prisma/client";
 export const STAFF_COOKIE = "sid";
 const SESSION_DAYS = 30;
 
-export async function createStaffSession(userId: string) {
+export async function createStaffSession(userId: string, opts: { verified?: boolean } = {}) {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
   const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
   await db.session.create({
-    data: { tokenHash: sha256(token), userId, expiresAt, userAgent: h.get("user-agent")?.slice(0, 255) },
+    data: { tokenHash: sha256(token), userId, expiresAt, userAgent: h.get("user-agent")?.slice(0, 255), ip, verified: opts.verified ?? true },
   });
+  // Restore the user's saved appearance on this device.
+  const prefs = await db.user.findUnique({ where: { id: userId }, select: { theme: true, accent: true } });
+  if (prefs) {
+    const { writeAppearanceCookies } = await import("@/lib/appearance-server");
+    const { normalizeAccent, normalizeTheme } = await import("@/lib/appearance");
+    await writeAppearanceCookies(normalizeTheme(prefs.theme), normalizeAccent(prefs.accent));
+  }
   const jar = await cookies();
   jar.set(STAFF_COOKIE, token, {
     httpOnly: true,

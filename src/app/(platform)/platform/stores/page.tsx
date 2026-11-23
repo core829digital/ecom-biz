@@ -14,7 +14,7 @@ export default async function PlatformStores({ searchParams }: { searchParams: P
   const where = q ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { slug: { contains: q.toLowerCase() } }, { email: { contains: q, mode: "insensitive" as const } }] } : {};
   const [total, stores] = await Promise.all([
     db.store.count({ where }),
-    db.store.findMany({ where, include: { plan: { select: { name: true } }, _count: { select: { orders: true } } }, orderBy: { createdAt: "desc" }, skip: (page - 1) * PER_PAGE, take: PER_PAGE }),
+    db.store.findMany({ where, include: { memberships: { where: { role: "OWNER" }, take: 1, include: { user: { select: { email: true, subscriptionStatus: true, plan: { select: { name: true } } } } } }, _count: { select: { orders: true } } }, orderBy: { createdAt: "desc" }, skip: (page - 1) * PER_PAGE, take: PER_PAGE }),
   ]);
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
   const date = new Intl.DateTimeFormat(locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium" });
@@ -29,7 +29,7 @@ export default async function PlatformStores({ searchParams }: { searchParams: P
             {stores.map((s) => (
               <tr key={s.id} className="hover:bg-surface-2/50">
                 <Td><Link href={`/platform/stores/${s.id}`} className="font-medium hover:underline">{s.name}</Link><span className="block text-xs text-muted">{s.slug}</span></Td>
-                <Td>{s.plan?.name ?? "—"} <span className="text-xs text-muted">· {t(`platform.sub.${s.subscriptionStatus}`)}</span></Td>
+                <Td>{s.memberships[0]?.user.plan?.name ?? "—"} {s.memberships[0] && <span className="text-xs text-muted">· {t(`platform.sub.${s.memberships[0].user.subscriptionStatus}`)}</span>}<span className="block text-xs text-muted">{s.memberships[0]?.user.email}</span></Td>
                 <Td><Badge tone={s.status === "ACTIVE" ? "success" : "danger"}>{t(`platform.storeStatus.${s.status}`)}</Badge></Td>
                 <Td className="tabular-nums">{s._count.orders}</Td>
                 <Td className="text-muted">{date.format(s.createdAt)}</Td>

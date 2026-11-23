@@ -49,8 +49,17 @@ export async function signupAction(_: ActionState, fd: FormData): Promise<Action
   const exists = await db.user.findUnique({ where: { email: parsed.data.email } });
   if (exists) return fail(t("validation.fixErrors"), { email: t("auth.error.emailTaken") });
 
+  const entryPlan = await db.plan.findFirst({ where: { active: true }, orderBy: { position: "asc" } });
   const user = await db.user.create({
-    data: { name: parsed.data.name, email: parsed.data.email, passwordHash: await hashPassword(parsed.data.password), locale },
+    data: {
+      name: parsed.data.name,
+      email: parsed.data.email,
+      passwordHash: await hashPassword(parsed.data.password),
+      locale,
+      planId: entryPlan?.id,
+      subscriptionStatus: "TRIALING",
+      trialEndsAt: new Date(Date.now() + (entryPlan?.trialDays ?? 14) * 86400_000),
+    },
   });
   await createStaffSession(user.id);
   const next = safeNext(String(fd.get("next") ?? ""));

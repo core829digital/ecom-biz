@@ -7,7 +7,8 @@ import { loadStorefront } from "@/server/storefront";
 import { cartCookieName, getCart } from "@/server/cart";
 import { buildQuote, type Quote } from "@/server/checkout";
 import { shippableCountries } from "@/server/shipping";
-import { availablePaymentMethods, feeBpsFor, type PaymentMethod } from "@/server/payments";
+import { availablePaymentMethods, type PaymentMethod } from "@/server/payments";
+import { feeBpsForStore } from "@/server/plans";
 import { completeCheckout, OutOfStockError } from "@/server/orders";
 import { addressSchema } from "@/lib/address";
 import { platformFee } from "@/lib/pricing";
@@ -167,8 +168,7 @@ async function placeOrder(site: string, raw: unknown): Promise<PlaceResult> {
   const method: PaymentMethod | "free" = free ? "free" : input.paymentMethod;
   if (!free && !methods.includes(input.paymentMethod)) return { ok: false, error: t("checkout.paymentUnavailable") };
 
-  const storeWithPlan = await db.store.findUniqueOrThrow({ where: { id: store.id }, include: { plan: true } });
-  const fee = method === "stripe" ? platformFee(p.totalCents, feeBpsFor(storeWithPlan)) : 0;
+  const fee = method === "stripe" ? platformFee(p.totalCents, await feeBpsForStore(store)) : 0;
 
   const checkout = await db.checkout.create({
     data: {

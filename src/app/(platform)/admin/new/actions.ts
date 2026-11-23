@@ -10,6 +10,8 @@ import { isValidStoreSlug } from "@/lib/slug";
 import { COUNTRY_CODES, CURRENCIES } from "@/lib/geo";
 import { createStore } from "@/server/stores";
 import { rateLimit } from "@/lib/rate-limit";
+import { assertCanCreateStore, PlanLimitError } from "@/server/plans";
+import { audit } from "@/server/audit";
 
 export async function createStoreAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser();
@@ -25,9 +27,16 @@ export async function createStoreAction(_: ActionState, fd: FormData): Promise<A
   const parsed = parseForm(schema, formObject(fd));
   if (parsed.fieldErrors) return fail(t("validation.fixErrors"), parsed.fieldErrors);
   if (!(await rateLimit(`create-store:${user.id}`, 10, 86400))) return fail(t("auth.error.rateLimited"));
+  try {
+    await assertCanCreateStore(await db.user.findUniqueOrThrow({ where: { id: user.id }, include: { plan: true } }));
+  } catch (e) {
+    if (e instanceof PlanLimitError) return fail(t("usage.limitStoresDetail", { count: e.limit ?? 0 }));
+    throw e;
+  }
   if (await db.store.findUnique({ where: { slug: parsed.data.slug } })) {
     return fail(t("validation.fixErrors"), { slug: t("stores.new.slugTaken") });
   }
   const store = await createStore({ ownerId: user.id, ...parsed.data });
+  await audit({ userId: user.id, storeId: store.id, action: "store.create", target: store.slug });
   redirect(`/admin/${store.slug}`);
 }

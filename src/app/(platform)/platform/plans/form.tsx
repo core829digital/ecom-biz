@@ -24,6 +24,13 @@ export function PlanForm({ action, plan, t }: { action: (s: ActionState, fd: For
           </div>
           <Input name="feePct" label={t("platform.transactionFee")} inputMode="decimal" defaultValue={plan ? String(plan.transactionFeeBps / 100) : "0"} hint={t("platform.transactionFeeHint")} />
           <Input name="trialDays" type="number" min={0} max={365} label={t("platform.trialDays")} defaultValue={String(plan?.trialDays ?? 14)} />
+          <Input name="maxStores" type="number" min={1} label={t("platform.maxStores")} defaultValue={String(plan?.maxStores ?? 1)} required />
+          <Input name="maxProducts" type="number" min={0} label={t("platform.maxProducts")} hint={t("platform.unlimitedHint")} defaultValue={plan?.maxProducts ?? ""} />
+          <Input name="maxStaff" type="number" min={0} label={t("platform.maxStaff")} hint={t("platform.unlimitedHint")} defaultValue={plan?.maxStaff ?? ""} />
+          <div className="space-y-2 pt-6">
+            <Checkbox name="allowCustomDomain" label={t("billing.feature.customDomain")} defaultChecked={plan?.allowCustomDomain ?? true} />
+            <Checkbox name="allowApi" label={t("billing.feature.api")} defaultChecked={plan?.allowApi ?? true} />
+          </div>
           <Textarea name="features" label={t("platform.features")} hint={t("platform.featuresHint")} rows={5} defaultValue={plan?.features.join("\n")} wrapperClassName="sm:col-span-2" />
           <Checkbox name="active" label={t("platform.planActive")} defaultChecked={plan?.active ?? true} className="sm:col-span-2" />
         </div>

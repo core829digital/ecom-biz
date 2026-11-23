@@ -11,6 +11,8 @@ import { emailButton, emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
 import type { Role } from "@prisma/client";
+import { assertCanAddStaff, PlanLimitError } from "@/server/plans";
+import { audit } from "@/server/audit";
 
 export async function inviteStaffAction(slug: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const { store, user, role } = await requireStoreAccess(slug, "ADMIN");
@@ -23,7 +25,14 @@ export async function inviteStaffAction(slug: string, _: ActionState, fd: FormDa
   const existing = await db.membership.findFirst({ where: { storeId: store.id, user: { email } } });
   if (existing) return fail(t("validation.fixErrors"), { email: t("staff.alreadyMember") });
 
+  try {
+    await assertCanAddStaff(store.id);
+  } catch (e) {
+    if (e instanceof PlanLimitError) return fail(t("usage.limitStaffDetail", { count: e.limit ?? 0 }));
+    throw e;
+  }
   const token = randomToken();
+  await audit({ userId: user.id, storeId: store.id, action: "staff.invite", target: email, meta: { role: inviteRole } });
   await db.staffInvite.deleteMany({ where: { storeId: store.id, email, acceptedAt: null } });
   await db.staffInvite.create({ data: { storeId: store.id, email, role: inviteRole, tokenHash: sha256(token), expiresAt: new Date(Date.now() + 7 * 86400_000) } });
   const url = `${env.appUrl}/invite/${token}`;
@@ -61,5 +70,6 @@ export async function removeMemberAction(slug: string, membershipId: string) {
   // Owners can't be removed; admins can only remove staff; nobody removes themselves here.
   if (!m || m.role === "OWNER" || m.userId === user.id || (m.role === "ADMIN" && role !== "OWNER")) return;
   await db.membership.delete({ where: { id: m.id } });
+  await audit({ userId: user.id, storeId: store.id, action: "staff.remove", target: m.userId });
   revalidatePath(`/admin/${slug}/settings/staff`);
 }

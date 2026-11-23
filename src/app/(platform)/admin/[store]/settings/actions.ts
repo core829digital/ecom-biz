@@ -11,6 +11,7 @@ import { COUNTRY_CODES, CURRENCIES } from "@/lib/geo";
 import { parseMoney } from "@/lib/money";
 import { getStripe } from "@/lib/stripe";
 import { env } from "@/lib/env";
+import { audit } from "@/server/audit";
 
 const bool = (v: unknown) => v === "on" || v === "true";
 
@@ -63,7 +64,8 @@ export async function saveGeneralAction(slug: string, _: ActionState, fd: FormDa
 
 // ── Payments ──────────────────────────────────────────────
 export async function connectStripeAction(slug: string) {
-  const { store } = await requireStoreAccess(slug, "OWNER");
+  const { store, user } = await requireStoreAccess(slug, "OWNER");
+  await audit({ userId: user.id, storeId: store.id, action: "settings.stripe_connect" });
   const stripe = getStripe();
   if (!stripe) redirect(`/admin/${slug}/settings/payments?error=stripe`);
   let accountId = store.stripeAccountId;
@@ -104,7 +106,7 @@ export async function stripeDashboardAction(slug: string) {
 }
 
 export async function saveManualPaymentsAction(slug: string, _: ActionState, fd: FormData): Promise<ActionState> {
-  const { store } = await requireStoreAccess(slug, "ADMIN");
+  const { store, user } = await requireStoreAccess(slug, "ADMIN");
   const { t } = await getPlatformT();
   const manualPayments = {
     cod: { enabled: bool(fd.get("codEnabled")), instructions: String(fd.get("codInstructions") ?? "").slice(0, 2000) },
@@ -114,6 +116,7 @@ export async function saveManualPaymentsAction(slug: string, _: ActionState, fd:
     return fail(t("validation.fixErrors"), { bankInstructions: t("settings.payments.bankInstructionsRequired") });
   }
   await db.store.update({ where: { id: store.id }, data: { manualPayments } });
+  await audit({ userId: user.id, storeId: store.id, action: "settings.payments", meta: { cod: manualPayments.cod.enabled, bankTransfer: manualPayments.bankTransfer.enabled } });
   revalidatePath(`/admin/${slug}/settings/payments`);
   return ok(t("common.saved"));
 }

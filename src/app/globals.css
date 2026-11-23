@@ -1,58 +1,120 @@
 @import "tailwindcss";
 
-/* Neutral, brand-free design tokens for the admin. Storefront themes override --brand*. */
+/*
+ * Design tokens. Neutral (zinc) palette; light is the default.
+ * Theme:  <html data-theme="light|dark">  (absent = follow the OS)
+ * Accent: <html data-accent="neutral|blue|violet|emerald|rose|amber">
+ * Storefronts override --brand* and surfaces from the merchant theme.
+ */
 :root {
-  --bg: #f6f6f7;
+  --bg: #fafafa;
   --surface: #ffffff;
-  --surface-2: #f1f2f4;
-  --border: #e3e5e8;
-  --text: #1a1c1f;
-  --muted: #5f6570;
-  --accent: #1f2937;
-  --accent-contrast: #ffffff;
-  --success: #0f7b4b;
-  --success-bg: #e3f5ec;
-  --warning: #8a5a00;
-  --warning-bg: #fff3d6;
-  --danger: #b42318;
-  --danger-bg: #fde8e7;
+  --surface-2: #f4f4f5;
+  --surface-3: #e4e4e7;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text: #09090b;
+  --muted: #71717a;
+  --accent: #18181b;
+  --accent-contrast: #fafafa;
+  --accent-soft: #f4f4f5;
+  --success: #15803d;
+  --success-bg: #f0fdf4;
+  --warning: #a16207;
+  --warning-bg: #fefce8;
+  --danger: #b91c1c;
+  --danger-bg: #fef2f2;
   --info: #1d4ed8;
-  --info-bg: #e5edff;
-  --sidebar: #ebecef;
-  --ring: #2563eb;
-  --brand: #111827;
+  --info-bg: #eff6ff;
+  --sidebar: #f4f4f5;
+  --ring: #a1a1aa;
+  --shadow-color: 240 6% 10%;
+  --brand: #18181b;
   --brand-contrast: #ffffff;
   --store-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
 
+/* Dark values, applied explicitly or when following a dark OS preference. */
+:root[data-theme="dark"] {
+  --bg: #09090b;
+  --surface: #111113;
+  --surface-2: #18181b;
+  --surface-3: #27272a;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --text: #fafafa;
+  --muted: #a1a1aa;
+  --accent: #fafafa;
+  --accent-contrast: #09090b;
+  --accent-soft: #27272a;
+  --success: #4ade80;
+  --success-bg: #052e16;
+  --warning: #facc15;
+  --warning-bg: #2a2205;
+  --danger: #f87171;
+  --danger-bg: #2c0b0b;
+  --info: #93c5fd;
+  --info-bg: #0b1a33;
+  --sidebar: #0c0c0e;
+  --ring: #52525b;
+  --shadow-color: 0 0% 0%;
+  color-scheme: dark;
+}
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #111214;
-    --surface: #1a1c1f;
-    --surface-2: #22252a;
-    --border: #2e3238;
-    --text: #eceef1;
-    --muted: #9aa1ab;
-    --accent: #eceef1;
-    --accent-contrast: #111214;
+  :root:not([data-theme]) {
+    --bg: #09090b;
+    --surface: #111113;
+    --surface-2: #18181b;
+    --surface-3: #27272a;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #fafafa;
+    --accent-contrast: #09090b;
+    --accent-soft: #27272a;
     --success: #4ade80;
-    --success-bg: #0f2a1c;
-    --warning: #fbbf24;
-    --warning-bg: #2d2309;
+    --success-bg: #052e16;
+    --warning: #facc15;
+    --warning-bg: #2a2205;
     --danger: #f87171;
-    --danger-bg: #331414;
-    --info: #93b4ff;
-    --info-bg: #162040;
-    --sidebar: #16181b;
+    --danger-bg: #2c0b0b;
+    --info: #93c5fd;
+    --info-bg: #0b1a33;
+    --sidebar: #0c0c0e;
+    --ring: #52525b;
+    --shadow-color: 0 0% 0%;
     color-scheme: dark;
   }
+}
+
+/* Accent presets (admin appearance). Each keeps AA contrast for text on accent. */
+:root[data-accent="blue"] { --accent: #2563eb; --accent-contrast: #ffffff; --accent-soft: #eff6ff; --ring: #93c5fd; }
+:root[data-accent="violet"] { --accent: #7c3aed; --accent-contrast: #ffffff; --accent-soft: #f5f3ff; --ring: #c4b5fd; }
+:root[data-accent="emerald"] { --accent: #047857; --accent-contrast: #ffffff; --accent-soft: #ecfdf5; --ring: #6ee7b7; }
+:root[data-accent="rose"] { --accent: #e11d48; --accent-contrast: #ffffff; --accent-soft: #fff1f2; --ring: #fda4af; }
+:root[data-accent="amber"] { --accent: #b45309; --accent-contrast: #ffffff; --accent-soft: #fffbeb; --ring: #fcd34d; }
+:root[data-theme="dark"][data-accent="blue"] { --accent: #60a5fa; --accent-contrast: #09090b; --accent-soft: #172554; }
+:root[data-theme="dark"][data-accent="violet"] { --accent: #a78bfa; --accent-contrast: #09090b; --accent-soft: #2e1065; }
+:root[data-theme="dark"][data-accent="emerald"] { --accent: #34d399; --accent-contrast: #09090b; --accent-soft: #022c22; }
+:root[data-theme="dark"][data-accent="rose"] { --accent: #fb7185; --accent-contrast: #09090b; --accent-soft: #4c0519; }
+:root[data-theme="dark"][data-accent="amber"] { --accent: #fbbf24; --accent-contrast: #09090b; --accent-soft: #451a03; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme])[data-accent="blue"] { --accent: #60a5fa; --accent-contrast: #09090b; --accent-soft: #172554; }
+  :root:not([data-theme])[data-accent="violet"] { --accent: #a78bfa; --accent-contrast: #09090b; --accent-soft: #2e1065; }
+  :root:not([data-theme])[data-accent="emerald"] { --accent: #34d399; --accent-contrast: #09090b; --accent-soft: #022c22; }
+  :root:not([data-theme])[data-accent="rose"] { --accent: #fb7185; --accent-contrast: #09090b; --accent-soft: #4c0519; }
+  :root:not([data-theme])[data-accent="amber"] { --accent: #fbbf24; --accent-contrast: #09090b; --accent-soft: #451a03; }
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-strong: var(--border-strong);
+  --color-accent-soft: var(--accent-soft);
   --color-border: var(--border);
   --color-text: var(--text);
   --color-muted: var(--muted);
@@ -74,13 +136,31 @@
 }
 
 html, body { background: var(--bg); color: var(--text); }
-body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+body { font-family: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
 :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Smooth theme switches without animating the first paint. */
+html.theme-transition, html.theme-transition *, html.theme-transition *::before, html.theme-transition *::after {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, fill 200ms ease !important;
+}
+
+.shadow-soft { box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 1px 1px hsl(var(--shadow-color) / 0.03); }
+.shadow-elevated { box-shadow: 0 10px 30px -10px hsl(var(--shadow-color) / 0.25), 0 4px 10px -6px hsl(var(--shadow-color) / 0.12); }
+
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+.skeleton { position: relative; overflow: hidden; background: var(--surface-2); border-radius: 0.5rem; }
+.skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface) 60%, transparent), transparent); animation: shimmer 1.4s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
 
 /* Storefront surface: light by default, follows the merchant theme, not the OS. */
 .storefront {
   --bg: #ffffff; --surface: #ffffff; --surface-2: #f5f5f5; --border: #e5e5e5;
   --text: #111111; --muted: #6b6b6b; color-scheme: light;
+  --success: #15803d; --success-bg: #f0fdf4; --danger: #b91c1c; --danger-bg: #fef2f2; --warning: #a16207; --warning-bg: #fefce8;
   background: var(--bg); color: var(--text); font-family: var(--store-font);
 }
 

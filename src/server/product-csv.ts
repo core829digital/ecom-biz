@@ -4,6 +4,7 @@ import { parseCsv } from "@/lib/csv";
 import { parseMoney } from "@/lib/money";
 import { handleize } from "@/lib/slug";
 import { variantTitle, MAX_VARIANTS } from "@/lib/variants";
+import { assertCanAddProducts, PlanLimitError } from "@/server/plans";
 
 /** Column layout compatible with the common Shopify product CSV for the core fields. */
 export const PRODUCT_CSV_HEADERS = [
@@ -18,7 +19,7 @@ export const MAX_IMPORT_ROWS = 5000;
 
 const bool = (v: string | undefined, dflt: boolean) => (v === undefined || v.trim() === "" ? dflt : /^(true|1|yes|y)$/i.test(v.trim()));
 
-export type ImportResult = { created: number; updated: number; errors: { line: number; message: string }[] };
+export type ImportResult = { created: number; updated: number; errors: { line: number; message: string }[]; limitReached?: number };
 
 /**
  * Import (create or update by handle). Each product's rows are applied atomically;
@@ -111,6 +112,17 @@ export async function importProductsCsv(storeId: string, text: string): Promise<
       const status = statusRaw === "ACTIVE" || statusRaw === "ARCHIVED" ? statusRaw : "DRAFT";
 
       const existing = await db.product.findUnique({ where: { storeId_handle: { storeId, handle } } });
+      if (!existing) {
+        try {
+          await assertCanAddProducts(storeId);
+        } catch (e) {
+          if (e instanceof PlanLimitError) {
+            result.limitReached = e.limit;
+            break;
+          }
+          throw e;
+        }
+      }
       const data = {
         title: title || existing?.title || handle,
         description: get(first, "Description") || existing?.description || "",

@@ -1,10 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { apiRoute, list, pagination, productApiInclude, productPayload, sinceFilter } from "@/server/api";
+import { ApiError, apiRoute, list, pagination, productApiInclude, productPayload, sinceFilter } from "@/server/api";
 import { apiProductCreate, validationError, variantRows } from "@/server/api-products";
 import { uniqueHandle } from "@/server/catalog";
 import { handleize } from "@/lib/slug";
 import { emitWebhook } from "@/server/webhooks";
+import { assertCanAddProducts, PlanLimitError } from "@/server/plans";
 
 export const GET = apiRoute("read_products", async ({ store }, req) => {
   const url = new URL(req.url);
@@ -29,6 +30,12 @@ export const POST = apiRoute("write_products", async ({ store }, req) => {
   if (!parsed.success) throw validationError(parsed.error);
   const p = parsed.data;
   const variants = variantRows(p);
+  try {
+    await assertCanAddProducts(store.id);
+  } catch (e) {
+    if (e instanceof PlanLimitError) throw new ApiError(403, "plan_limit", `Product limit of the current plan reached (${e.limit}).`);
+    throw e;
+  }
   const status = p.status.toUpperCase() as "ACTIVE" | "DRAFT" | "ARCHIVED";
   const product = await db.product.create({
     data: {
