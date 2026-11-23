@@ -42,13 +42,13 @@ export function Receipt({ store, order, lines, t, locale, backHref }: { store: S
           <div><p className="mb-1 font-semibold">{t("receipt.seller")}</p>{seller.map((l, i) => <p key={i}>{l}</p>)}</div>
         </section>
 
-        <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[28rem] text-sm">
+        <div className="mt-8">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-black/20 text-left">
                 <th className="py-2 font-semibold">{t("receipt.item")}</th>
-                <th className="py-2 text-right font-semibold">{t("receipt.unitPrice")}</th>
-                <th className="py-2 text-right font-semibold">{t("receipt.qty")}</th>
+                <th className="hidden py-2 text-right font-semibold sm:table-cell">{t("receipt.unitPrice")}</th>
+                <th className="hidden py-2 text-right font-semibold sm:table-cell">{t("receipt.qty")}</th>
                 <th className="py-2 text-right font-semibold">{t("receipt.amount")}</th>
               </tr>
             </thead>
@@ -58,12 +58,13 @@ export function Receipt({ store, order, lines, t, locale, backHref }: { store: S
                   <td className="py-2">
                     {l.title}
                     {l.variantTitle && <span className="block text-xs">{l.variantTitle}</span>}
+                    <span className="block text-xs sm:hidden">{l.quantity} × {money(l.priceCents)}</span>
                     {l.sku && <span className="block text-xs text-black/60">SKU {l.sku}</span>}
                     {l.discountCents > 0 && <span className="block text-xs">{t("checkout.discount")} −{money(l.discountCents)}</span>}
                   </td>
-                  <td className="py-2 text-right tabular-nums">{money(l.priceCents)}</td>
-                  <td className="py-2 text-right tabular-nums">{l.quantity}</td>
-                  <td className="py-2 text-right tabular-nums">{money(l.priceCents * l.quantity - l.discountCents)}</td>
+                  <td className="hidden py-2 text-right tabular-nums sm:table-cell">{money(l.priceCents)}</td>
+                  <td className="hidden py-2 text-right tabular-nums sm:table-cell">{l.quantity}</td>
+                  <td className="py-2 pl-4 text-right tabular-nums">{money(l.priceCents * l.quantity - l.discountCents)}</td>
                 </tr>
               ))}
             </tbody>

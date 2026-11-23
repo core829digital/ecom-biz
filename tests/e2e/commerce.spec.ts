@@ -129,7 +129,9 @@ test("API: scopes, validation and CRUD", async ({ page, request }) => {
 });
 
 test("shopper reviews a product, merchant publishes and replies", async ({ page, browser }) => {
+  // Note: the storefront allows 5 reviews per IP per hour, so rapid local re-runs can hit the limit.
   const body = `Lovely mug, keeps coffee warm ${unique()}`;
+  const reply = `Thanks for the kind words! ${unique()}`;
   const shopper = await browser.newPage();
   await shopper.goto(`${DEMO}/products/ceramic-mug`, { waitUntil: "networkidle" });
   await shopper.click('button:has-text("Write a review")');
@@ -148,12 +150,12 @@ test("shopper reviews a product, merchant publishes and replies", async ({ page,
   await page.goto(`${APP}/admin/demo/reviews?view=approved`, { waitUntil: "networkidle" });
   const published = page.locator("li", { hasText: body });
   await published.locator("summary").click();
-  await published.locator("textarea[name=reply]").fill("Thanks for the kind words!");
+  await published.locator("textarea[name=reply]").fill(reply);
   await published.locator('button:has-text("Save")').click();
   await expect(page.getByText("Reply published")).toBeVisible();
 
   await shopper.reload({ waitUntil: "networkidle" });
   await expect(shopper.getByText(body)).toBeVisible();
-  await expect(shopper.getByText("Thanks for the kind words!")).toBeVisible();
+  await expect(shopper.getByText(reply)).toBeVisible();
   await shopper.close();
 });
