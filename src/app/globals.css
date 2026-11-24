@@ -202,3 +202,62 @@ html { scroll-behavior: smooth; }
 .legal-prose ul { margin: 0 0 0.75rem 1.25rem; list-style: disc; }
 .legal-prose li { margin-bottom: 0.35rem; }
 .legal-prose a { text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── Storefront motion ─────────────────────────────────────────────────────────
+   Presets set duration/distance; sections carry data-reveal (entrance type) and receive
+   data-in from MotionRuntime when visible. The first section is never hidden (fast first
+   paint); <noscript> in the layout shows everything without JavaScript. */
+.storefront { --m-dur: .6s; --m-dist: 16px; --m-ease: cubic-bezier(.22, 1, .36, 1); }
+.storefront[data-motion="subtle"] { --m-dur: .55s; --m-dist: 14px; }
+.storefront[data-motion="smooth"] { --m-dur: .85s; --m-dist: 30px; }
+.storefront[data-motion="cinematic"] { --m-dur: 1.15s; --m-dist: 56px; }
+
+.storefront:not([data-motion="none"]) [data-reveal],
+.storefront:not([data-motion="none"]) [data-reveal] [data-reveal-item] {
+  transition: opacity var(--m-dur) var(--m-ease), transform var(--m-dur) var(--m-ease), filter var(--m-dur) var(--m-ease), clip-path var(--m-dur) var(--m-ease);
+}
+.storefront:not([data-motion="none"]) [data-reveal] [data-reveal-item] { transition-delay: calc(var(--i, 0) * 80ms); }
+
+/* Hidden state, per entrance type. "auto" follows the preset. */
+.storefront:not([data-motion="none"]) [data-reveal]:not([data-in]):not([data-reveal="none"]):not([data-stagger]) { opacity: 0; }
+.storefront:not([data-motion="none"]) [data-reveal]:not([data-in]):is([data-reveal="rise"], [data-reveal="auto"]):not([data-stagger]) { transform: translateY(var(--m-dist)); }
+.storefront:not([data-motion="none"]) [data-reveal="zoom"]:not([data-in]) { transform: scale(.94); }
+.storefront:not([data-motion="none"]) [data-reveal="slide-left"]:not([data-in]) { transform: translateX(calc(var(--m-dist) * -2)); }
+.storefront:not([data-motion="none"]) [data-reveal="slide-right"]:not([data-in]) { transform: translateX(calc(var(--m-dist) * 2)); }
+.storefront:not([data-motion="none"]) [data-reveal="blur"]:not([data-in]) { filter: blur(14px); transform: scale(1.02); }
+.storefront[data-motion="cinematic"] [data-reveal="auto"]:not([data-in]):not([data-stagger]) { filter: blur(10px); }
+/* Grids: the items come in one after another instead of the whole block. */
+.storefront:not([data-motion="none"]) [data-reveal][data-stagger]:not([data-in]) [data-reveal-item] { opacity: 0; transform: translateY(calc(var(--m-dist) * .7)); }
+
+/* Opening section: plays on load without JavaScript. */
+@keyframes sf-rise { from { opacity: 0; transform: translateY(var(--m-dist)); } to { opacity: 1; transform: none; } }
+@keyframes sf-kenburns { from { transform: scale(1.12); } to { transform: scale(1); } }
+@keyframes sf-clip { from { clip-path: inset(0 0 100% 0); transform: translateY(.3em); } to { clip-path: inset(0 0 0 0); transform: none; } }
+.storefront:not([data-motion="none"]) [data-hero-text] > * { animation: sf-rise var(--m-dur) var(--m-ease) both; }
+.storefront:not([data-motion="none"]) [data-hero-text] > :nth-child(2) { animation-delay: .12s; }
+.storefront:not([data-motion="none"]) [data-hero-text] > :nth-child(3) { animation-delay: .24s; }
+.storefront[data-motion="cinematic"] [data-hero-text] > h1 { animation: sf-clip 1.2s var(--m-ease) both; }
+.storefront:is([data-motion="smooth"], [data-motion="cinematic"]) [data-hero-img] { animation: sf-kenburns 14s ease-out both; }
+
+/* Interactions */
+.storefront:not([data-motion="none"]) .group img { transition: transform .7s var(--m-ease), opacity .3s; }
+.storefront:not([data-motion="none"]) .group:hover img { transform: scale(1.04); }
+.storefront:not([data-motion="none"]) a.rounded-btn, .storefront:not([data-motion="none"]) button.rounded-btn { transition: transform .3s var(--m-ease), box-shadow .3s, opacity .2s, background-color .2s; }
+.storefront:not([data-motion="none"]) a.rounded-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgb(0 0 0 / .45); }
+.storefront:is([data-motion="smooth"], [data-motion="cinematic"]) a.rounded-btn { position: relative; overflow: hidden; }
+.storefront:is([data-motion="smooth"], [data-motion="cinematic"]) a.rounded-btn::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / .28) 50%, transparent 65%);
+  transform: translateX(-120%); transition: transform .8s var(--m-ease);
+}
+.storefront:is([data-motion="smooth"], [data-motion="cinematic"]) a.rounded-btn:hover::after { transform: translateX(120%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront [data-reveal], .storefront [data-reveal] [data-reveal-item] { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .storefront [data-hero-text] > *, .storefront [data-hero-img] { animation: none !important; }
+}
+@media print { .storefront [data-reveal], .storefront [data-reveal-item] { opacity: 1 !important; transform: none !important; filter: none !important; } }
+
+/* Site editor: motion preset thumbnails */
+@keyframes sketch-rise { 0%, 15% { opacity: 0; transform: translateY(8px); } 45%, 100% { opacity: 1; transform: none; } }
+@keyframes sketch-blur { 0%, 15% { opacity: 0; filter: blur(4px); transform: translateY(10px) scale(1.04); } 50%, 100% { opacity: 1; filter: none; transform: none; } }

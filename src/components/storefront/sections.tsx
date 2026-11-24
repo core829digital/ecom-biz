@@ -15,8 +15,8 @@ export async function HomeSections({ sf, site, sections }: { sf: Storefront; sit
   const data = await loadSectionData(sf, visible);
   return (
     <>
-      {visible.map((s) => (
-        <SectionFrame key={s.id} section={s} hero={s.type === "hero"}>
+      {visible.map((s, i) => (
+        <SectionFrame key={s.id} section={s} hero={s.type === "hero"} first={i === 0}>
           <SectionBody section={s} sf={sf} site={site} data={data} />
         </SectionFrame>
       ))}
@@ -61,18 +61,26 @@ const BG: Record<SectionStyle["background"], string> = {
 const PAD: Record<SectionStyle["spacing"], string> = { compact: "py-8 sm:py-10", normal: "py-14 sm:py-20", roomy: "py-20 sm:py-28" };
 const WIDTH: Record<SectionStyle["width"], string> = { narrow: "max-w-3xl", normal: "max-w-6xl", full: "max-w-none" };
 
-function SectionFrame({ section, hero, children }: { section: Section; hero?: boolean; children: React.ReactNode }) {
-  const { background, spacing } = section.style;
+/** Sections whose items enter one after another rather than as a block. */
+const STAGGERED = new Set<Section["type"]>(["featured-products", "collections", "features", "testimonials", "blog-posts", "container"]);
+
+function SectionFrame({ section, hero, first, children }: { section: Section; hero?: boolean; first?: boolean; children: React.ReactNode }) {
+  const { background, spacing, reveal } = section.style;
+  // The opening section is never hidden: it animates on load (CSS) so the first paint stays fast.
+  const motion = first ? {} : { "data-reveal": reveal, ...(STAGGERED.has(section.type) && reveal === "auto" ? { "data-stagger": "" } : {}) };
   return (
-    <section data-section-id={section.id} className={cn("relative scroll-mt-20", BG[background], !hero && PAD[spacing])}>
+    <section data-section-id={section.id} {...motion} className={cn("relative scroll-mt-20", BG[background], !hero && PAD[spacing])}>
       {children}
     </section>
   );
 }
 
-function Container({ section, className, children }: { section: Section; className?: string; children: React.ReactNode }) {
-  return <div className={cn("mx-auto px-4 sm:px-6", WIDTH[section.style.width], className)}>{children}</div>;
+function Container({ section, className, children, ...rest }: { section: Section; className?: string; children: React.ReactNode; "data-hero-text"?: boolean }) {
+  return <div className={cn("mx-auto px-4 sm:px-6", WIDTH[section.style.width], className)} {...rest}>{children}</div>;
 }
+
+/** Marks a grid item for the staggered entrance (index drives the delay). */
+const item = (i: number) => ({ "data-reveal-item": "", style: { "--i": Math.min(i, 8) } as React.CSSProperties });
 
 /** Solid buttons invert on colored sections so they never disappear into the background. */
 function buttonClass(section: Section, variant: "solid" | "outline" | "link" = "solid") {
@@ -94,10 +102,10 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
       const img = !!s.imageUrl;
       return (
         <div className={cn("relative overflow-hidden", !img && s.style.background === "default" && "bg-surface-2")}>
-          {img && <img src={s.imageUrl} alt="" className="absolute inset-0 size-full object-cover" />}
+          {img && <img src={s.imageUrl} alt="" data-hero-img className="absolute inset-0 size-full object-cover" />}
           {img && <div className="absolute inset-0 bg-black" style={{ opacity: s.overlay / 100 }} aria-hidden />}
           <div className={cn(tall, "relative w-full", img && "text-white")}>
-            <Container section={s} className={cn("w-full", s.align === "center" && "text-center")}>
+            <Container section={s} className={cn("w-full", s.align === "center" && "text-center")} data-hero-text>
               <h1 className={cn("max-w-2xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl", s.align === "center" && "mx-auto")}>{s.title || sf.store.name}</h1>
               {s.subtitle && <p className={cn("mt-5 max-w-xl text-pretty text-lg opacity-90", s.align === "center" && "mx-auto")}>{s.subtitle}</p>}
               <a href={sfHref(sf.base, s.ctaUrl || "/collections/all")} className={cn(buttonClass(s), "mt-8", img && "bg-white text-black")}>
@@ -116,7 +124,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
             <Heading>{s.title || d?.collection?.title || t("sf.featured")}</Heading>
             <Link href={sf.href(d?.collection ? `/collections/${d.collection.handle}` : "/collections/all")} className="shrink-0 text-sm underline">{t("sf.viewAll")}</Link>
           </div>
-          {d?.products.length ? <ProductGrid products={d.products} sf={sf} /> : <p className="opacity-70">{t("sf.noProducts")}</p>}
+          {d?.products.length ? <ProductGrid products={d.products} sf={sf} stagger /> : <p className="opacity-70">{t("sf.noProducts")}</p>}
         </Container>
       );
     }
@@ -127,8 +135,8 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
         <Container section={s}>
           <Heading className="mb-8">{s.title || t("sf.collections")}</Heading>
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {list.map((c) => (
-              <li key={c.id}>
+            {list.map((c, i) => (
+              <li key={c.id} {...item(i)}>
                 <Link href={sf.href(`/collections/${c.handle}`)} className="group relative block aspect-[4/3] overflow-hidden rounded-card bg-surface-2 text-text">
                   {c.imageUrl && <img src={c.imageUrl} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />}
                   <span className={cn("absolute bottom-3 left-3 rounded-btn px-3 py-1 text-sm font-medium", c.imageUrl && "bg-bg")}>{c.title} →</span>
@@ -167,7 +175,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
           {s.title && <Heading className="mb-10 text-center">{s.title}</Heading>}
           <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {s.items.filter((i) => i.title || i.body).map((i, n) => (
-              <li key={n} className="text-center">
+              <li key={n} className="text-center" {...item(n)}>
                 <span className="mx-auto mb-3 block h-1 w-8 rounded-full bg-current opacity-40" aria-hidden />
                 <p className="font-semibold">{i.title}</p>
                 {i.body && <p className="mt-1.5 text-sm opacity-75">{i.body}</p>}
@@ -182,7 +190,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
           {s.title && <Heading className="mb-10 text-center">{s.title}</Heading>}
           <ul className="grid gap-5 md:grid-cols-3">
             {s.items.filter((i) => i.quote).map((i, n) => (
-              <li key={n}>
+              <li key={n} {...item(n)}>
                 <figure className="h-full rounded-card border border-current/15 p-6">
                   <blockquote className="text-pretty leading-relaxed">“{i.quote}”</blockquote>
                   {i.author && <figcaption className="mt-4 text-sm font-medium opacity-75">— {i.author}</figcaption>}
@@ -249,8 +257,8 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
             <Link href={sf.href("/blog")} className="shrink-0 text-sm underline">{t("sf.viewAll")}</Link>
           </div>
           <ul className="grid gap-6 md:grid-cols-3">
-            {posts.map((p) => (
-              <li key={p.id}>
+            {posts.map((p, i) => (
+              <li key={p.id} {...item(i)}>
                 <Link href={sf.href(`/blog/${p.handle}`)} className="group block">
                   <div className="mb-3 aspect-[16/10] overflow-hidden rounded-card bg-surface-2">
                     {p.coverUrl && <img src={p.coverUrl} alt="" loading="lazy" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />}
@@ -268,7 +276,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
       const cols = { 1: "", 2: "md:grid-cols-2", 3: "md:grid-cols-3", 4: "sm:grid-cols-2 lg:grid-cols-4" }[s.columns];
       return (
         <Container section={s} className={cn("grid gap-6", cols, s.verticalAlign === "center" && "items-center", s.align === "center" && "text-center")}>
-          {s.blocks.map((b) => <BlockView key={b.id} block={b} section={s} sf={sf} data={data} />)}
+          {s.blocks.map((b, i) => <div key={b.id} {...item(i)} className={cn("min-w-0", s.columns > 1 && (b.type === "spacer" || b.type === "divider") && "md:col-span-full")}><BlockView block={b} section={s} sf={sf} data={data} /></div>)}
         </Container>
       );
     }
@@ -276,7 +284,6 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
 }
 
 function BlockView({ block: b, section, sf, data }: { block: Block; section: SectionOf<"container">; sf: Storefront; data: SectionData }) {
-  const wide = section.columns > 1 && (b.type === "spacer" || b.type === "divider") ? "md:col-span-full" : "";
   switch (b.type) {
     case "heading": {
       const size = { sm: "text-lg", md: "text-2xl", lg: "text-3xl sm:text-4xl", xl: "text-4xl sm:text-6xl" }[b.size];
@@ -297,8 +304,8 @@ function BlockView({ block: b, section, sf, data }: { block: Block; section: Sec
       return p ? <div className="text-left"><ProductCard product={p} sf={sf} /></div> : null;
     }
     case "spacer":
-      return <div className={wide} style={{ height: { sm: 16, md: 40, lg: 80 }[b.size] }} aria-hidden />;
+      return <div style={{ height: { sm: 16, md: 40, lg: 80 }[b.size] }} aria-hidden />;
     case "divider":
-      return <hr className={cn("border-current opacity-15", wide)} />;
+      return <hr className="border-current opacity-15" />;
   }
 }

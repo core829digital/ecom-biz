@@ -31,11 +31,11 @@ export function ProductCard({ product, sf }: { product: ProductCardData; sf: Sto
   );
 }
 
-export function ProductGrid({ products, sf }: { products: ProductCardData[]; sf: Storefront }) {
+export function ProductGrid({ products, sf, stagger }: { products: ProductCardData[]; sf: Storefront; stagger?: boolean }) {
   return (
     <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
-      {products.map((p) => (
-        <li key={p.id}><ProductCard product={p} sf={sf} /></li>
+      {products.map((p, i) => (
+        <li key={p.id} {...(stagger ? { "data-reveal-item": "", style: { "--i": Math.min(i, 8) } as React.CSSProperties } : {})}><ProductCard product={p} sf={sf} /></li>
       ))}
     </ul>
   );

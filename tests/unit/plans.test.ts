@@ -16,7 +16,7 @@ describe("plan entitlements", () => {
     expect(accountActive({ subscriptionStatus: "CANCELED", trialEndsAt: null }, now)).toBe(false);
   });
   it("maps plan limits, with safe defaults when there is no plan", () => {
-    expect(limitsOf(plan())).toEqual({ stores: 3, products: null, staff: 5, customDomain: true, api: false });
-    expect(limitsOf(null)).toEqual({ stores: 1, products: null, staff: null, customDomain: false, api: false });
+    expect(limitsOf(plan({ motionLevel: 2, allowCustomCss: true }))).toEqual({ stores: 3, products: null, staff: 5, customDomain: true, api: false, motion: 2, customCss: true });
+    expect(limitsOf(null)).toEqual({ stores: 1, products: null, staff: null, customDomain: false, api: false, motion: 1, customCss: false });
   });
 });

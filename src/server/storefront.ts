@@ -3,7 +3,8 @@ import { isSafeRelativePath } from "@/lib/safe-path";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { resolveStore, storeBase, storePublicUrl } from "@/lib/tenant";
-import { storeOperational } from "@/server/plans";
+import { limitsOf, storeOperational, storeOwner } from "@/server/plans";
+import { clampTheme, type ThemeCapabilities } from "@/lib/theme-capabilities";
 import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/staff";
@@ -16,8 +17,8 @@ export const loadStorefront = cache(async (siteKey: string) => {
   const store = await resolveStore(siteKey);
   if (!store) notFound();
   const base = await storeBase(siteKey);
-  const preview = await previewTheme(store);
-  const theme = preview ?? parseTheme(store.theme);
+  const [preview, caps] = await Promise.all([previewTheme(store), storeThemeCapabilities(store.id)]);
+  const theme = clampTheme(preview ?? parseTheme(store.theme), caps);
   const t = getTranslator(store.locale);
   return {
     store,
@@ -35,6 +36,13 @@ export const loadStorefront = cache(async (siteKey: string) => {
 });
 
 export const PREVIEW_COOKIE = "sf_preview";
+
+/** Site-editor features the store owner's plan includes (animations, custom CSS). */
+export async function storeThemeCapabilities(storeId: string): Promise<ThemeCapabilities> {
+  const owner = await storeOwner(storeId);
+  const { motion, customCss } = limitsOf(owner?.plan ?? null);
+  return { motion, customCss };
+}
 
 /**
  * The unpublished draft theme, only for the store's own staff, only on the platform host

@@ -26,6 +26,10 @@ export const themeSchema = z.object({
   headingFont: z.enum(["same", ...Object.keys(FONTS)] as ["same", ...FontKey[]]).catch("same"),
   buttonShape: z.enum(["pill", "rounded", "square"]).catch("pill"),
   cornerStyle: z.enum(["sharp", "soft", "round"]).catch("soft"),
+  /** Storefront animation preset (availability depends on the plan, see theme-capabilities). */
+  motion: z.enum(["none", "subtle", "smooth", "cinematic"]).catch("subtle"),
+  /** Merchant CSS, sanitized on save and on render. Top plans only. */
+  customCss: z.string().max(20000).catch(""),
   logoUrl: safeUrl.catch(""),
   logoHeight: z.number().int().min(16).max(120).catch(32),
   faviconUrl: safeUrl.catch(""),

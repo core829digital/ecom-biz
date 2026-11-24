@@ -8,6 +8,8 @@ import { fail, ok, type ActionState } from "@/lib/action";
 import { getPlatformT } from "@/lib/i18n/server";
 import { FONTS, parseTheme, themeDraft, type Theme } from "@/lib/theme";
 import { audit } from "@/server/audit";
+import { clampTheme } from "@/lib/theme-capabilities";
+import { storeThemeCapabilities } from "@/server/storefront";
 import type { MessageKey } from "@/lib/i18n/en";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -22,7 +24,8 @@ async function validate(storeId: string, raw: Record<string, unknown>, t: (k: Me
     if (k in raw && (typeof raw[k] !== "string" || !HEX.test(raw[k] as string))) errors[k] = t("theme.error.color");
   }
   if (!(String(raw.font) in FONTS)) errors.font = t("products.error.invalid");
-  const theme = parseTheme(raw);
+  // Plan limits (animations, custom CSS) are enforced here, not only hidden in the UI.
+  const theme = clampTheme(parseTheme(raw), await storeThemeCapabilities(storeId));
 
   const images = [theme.logoUrl, theme.faviconUrl, theme.heroImageUrl];
   const collectionIds: string[] = [];

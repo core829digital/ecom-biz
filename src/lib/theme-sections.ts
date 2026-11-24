@@ -14,9 +14,12 @@ export const sectionStyleSchema = z.object({
   background: z.enum(["default", "muted", "brand", "inverse"]).catch("default"),
   spacing: z.enum(["compact", "normal", "roomy"]).catch("normal"),
   width: z.enum(["narrow", "normal", "full"]).catch("normal"),
+  /** Entrance animation; "auto" follows the store's motion preset. Premium plans only. */
+  reveal: z.enum(["auto", "none", "fade", "rise", "zoom", "slide-left", "slide-right", "blur"]).catch("auto"),
 });
 export type SectionStyle = z.infer<typeof sectionStyleSchema>;
-const DEFAULT_STYLE: SectionStyle = { background: "default", spacing: "normal", width: "normal" };
+export const REVEALS = ["auto", "none", "fade", "rise", "zoom", "slide-left", "slide-right", "blur"] as const;
+const DEFAULT_STYLE: SectionStyle = { background: "default", spacing: "normal", width: "normal", reveal: "auto" };
 
 const base = {
   id: z.string().regex(/^[a-z0-9]{4,16}$/),

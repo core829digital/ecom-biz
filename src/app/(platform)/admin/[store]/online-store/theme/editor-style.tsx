@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Wand2 } from "lucide-react";
+import { Check, Lock, Wand2 } from "lucide-react";
+import { MOTION_PRESETS, type ThemeCapabilities } from "@/lib/theme-capabilities";
+import { MAX_CUSTOM_CSS } from "@/lib/css-sanitize";
 import { cn } from "@/lib/cn";
 import { useT } from "@/components/i18n-provider";
 import type { MessageKey } from "@/lib/i18n/en";
@@ -20,7 +22,7 @@ function Swatches({ colors }: { colors: string[] }) {
   );
 }
 
-export function StylePanel({ theme, update, fonts, uploadImage }: { theme: Theme; update: Patch; fonts: { value: string; label: string }[]; uploadImage: UploadImage }) {
+export function StylePanel({ theme, update, fonts, caps, uploadImage }: { theme: Theme; update: Patch; fonts: { value: string; label: string }[]; caps: ThemeCapabilities; uploadImage: UploadImage }) {
   const t = useT();
   const tk = (k: string, v?: Record<string, string | number>) => t(k as MessageKey, v);
   return (
@@ -63,6 +65,30 @@ export function StylePanel({ theme, update, fonts, uploadImage }: { theme: Theme
           check={{ ratio: contrastRatio(theme.textColor, theme.backgroundColor), min: 4.5, fix: () => update({ textColor: fixContrast(theme.textColor, theme.backgroundColor, 7) }) }} />
       </Group>
 
+      <Group title={tk("editor.motion.title")}>
+        <p className="text-xs text-muted">{tk("editor.motion.hint")}</p>
+        <ul className="grid grid-cols-2 gap-2">
+          {MOTION_PRESETS.map((m) => {
+            const locked = m.minLevel > caps.motion;
+            const active = theme.motion === m.id;
+            return (
+              <li key={m.id}>
+                <button type="button" disabled={locked} aria-pressed={active} onClick={() => update({ motion: m.id })}
+                  className={cn("group relative w-full overflow-hidden rounded-lg border p-2.5 text-left transition-colors", active ? "border-text ring-1 ring-text" : "border-border hover:border-text/40", locked && "cursor-not-allowed opacity-60")}>
+                  <MotionSketch kind={m.id} />
+                  <span className="mt-2 flex items-center justify-between text-xs font-medium">
+                    {tk(`editor.motion.${m.id}`)}
+                    {locked ? <Lock className="size-3" aria-label={tk("editor.locked")} /> : active && <Check className="size-3" aria-hidden />}
+                  </span>
+                  <span className="block text-[11px] leading-snug text-muted">{tk(`editor.motion.${m.id}Hint`)}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {caps.motion < 2 && <p className="text-xs text-muted">{tk("editor.motion.upgrade")}</p>}
+      </Group>
+
       <Group title={tk("editor.typography")}>
         <SelectField label={tk("editor.font.body")} value={theme.font} onChange={(font) => update({ font: font as Theme["font"] })} options={fonts} />
         <SelectField label={tk("editor.font.heading")} value={theme.headingFont} onChange={(headingFont) => update({ headingFont: headingFont as Theme["headingFont"] })}
@@ -87,6 +113,18 @@ export function StylePanel({ theme, update, fonts, uploadImage }: { theme: Theme
         <ImageField label={tk("theme.favicon")} value={theme.faviconUrl} onChange={(faviconUrl) => update({ faviconUrl })} uploadImage={uploadImage} aspect="logo" />
       </Group>
     </div>
+  );
+}
+
+/** Tiny looping demo of each animation preset (pure CSS, stops for reduced motion). */
+function MotionSketch({ kind }: { kind: Theme["motion"] }) {
+  const anim = { none: "", subtle: "animate-[sketch-rise_2.4s_ease-out_infinite]", smooth: "animate-[sketch-rise_2s_cubic-bezier(.22,1,.36,1)_infinite]", cinematic: "animate-[sketch-blur_2.6s_cubic-bezier(.22,1,.36,1)_infinite]" }[kind];
+  return (
+    <span className="flex h-12 flex-col justify-center gap-1 rounded-md bg-surface-2 px-2.5 motion-reduce:[&_*]:animate-none" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <span key={i} className={cn("block h-1.5 rounded-full bg-text/60", anim)} style={{ width: `${80 - i * 22}%`, animationDelay: `${i * 0.12}s` }} />
+      ))}
+    </span>
   );
 }
 
@@ -177,7 +215,7 @@ function PaletteGenerator({ theme, update }: { theme: Theme; update: Patch }) {
   );
 }
 
-export function SettingsPanel({ theme, update }: { theme: Theme; update: Patch }) {
+export function SettingsPanel({ theme, update, caps }: { theme: Theme; update: Patch; caps: ThemeCapabilities }) {
   const t = useT();
   return (
     <div>
@@ -189,6 +227,19 @@ export function SettingsPanel({ theme, update }: { theme: Theme; update: Patch }
         {(["instagram", "facebook", "tiktok", "youtube"] as const).map((k) => (
           <TextField key={k} label={k[0].toUpperCase() + k.slice(1)} value={theme.social[k]} max={200} placeholder="https://" onChange={(v) => update({ social: { ...theme.social, [k]: v } })} />
         ))}
+      </Group>
+      <Group title={t("editor.css.title")} defaultOpen={false}>
+        {caps.customCss ? (
+          <div>
+            <textarea value={theme.customCss} maxLength={MAX_CUSTOM_CSS} spellCheck={false} rows={12} aria-label={t("editor.css.title")}
+              onChange={(e) => update({ customCss: e.target.value })}
+              placeholder={".storefront h1 {\n  letter-spacing: -0.04em;\n}"}
+              className="block w-full resize-y rounded-lg border border-border bg-[#0b0b0d] p-3 font-mono text-xs leading-relaxed text-zinc-200 placeholder:text-zinc-500 focus:border-ring focus:outline-none" />
+            <p className="mt-1 flex justify-between text-[11px] text-muted"><span>{t("editor.css.hint")}</span><span className="tabular-nums">{theme.customCss.length}/{MAX_CUSTOM_CSS}</span></p>
+          </div>
+        ) : (
+          <p className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted"><Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />{t("editor.css.locked")}</p>
+        )}
       </Group>
     </div>
   );

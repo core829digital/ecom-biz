@@ -11,8 +11,10 @@ import { useT } from "@/components/i18n-provider";
 import type { MessageKey } from "@/lib/i18n/en";
 import {
   BLOCK_TYPES, MAX_BLOCKS, MAX_SECTIONS, SECTION_TYPES, blankBlock, blankSection, newSectionId,
-  type Block, type BlockType, type Section, type SectionOf, type SectionType,
+  REVEALS, type Block, type BlockType, type Section, type SectionOf, type SectionType,
 } from "@/lib/theme-sections";
+import type { ThemeCapabilities } from "@/lib/theme-capabilities";
+import { Lock } from "lucide-react";
 import { Group, ImageField, PlusMinus, Segmented, SelectField, TextField, Toggle, type UploadImage } from "./editor-fields";
 
 export const SECTION_ICONS: Record<SectionType, typeof Type> = {
@@ -118,8 +120,8 @@ function SectionRow({ section: s, active, onSelect, onToggle }: { section: Secti
   );
 }
 
-export function SectionInspector({ section, catalog, uploadImage, onChange, onBack, onDuplicate, onDelete }: {
-  section: Section; catalog: Catalog; uploadImage: UploadImage;
+export function SectionInspector({ section, catalog, caps, uploadImage, onChange, onBack, onDuplicate, onDelete }: {
+  section: Section; catalog: Catalog; caps: ThemeCapabilities; uploadImage: UploadImage;
   onChange: (s: Section) => void; onBack: () => void; onDuplicate: () => void; onDelete: () => void;
 }) {
   const tk = useTk();
@@ -148,6 +150,14 @@ export function SectionInspector({ section, catalog, uploadImage, onChange, onBa
         )}
         <Segmented label={tk("editor.style.width")} value={style.width} onChange={(width) => set({ style: { ...style, width } })}
           options={(["narrow", "normal", "full"] as const).map((v) => ({ value: v, label: tk(`editor.width.${v}`) }))} />
+      </Group>
+      <Group title={tk("editor.motion.entrance")} defaultOpen={false}>
+        {caps.motion >= 2 ? (
+          <SelectField label={tk("editor.motion.entranceLabel")} value={style.reveal} onChange={(reveal) => set({ style: { ...style, reveal } })}
+            options={REVEALS.map((v) => ({ value: v, label: tk(`editor.reveal.${v}`) }))} />
+        ) : (
+          <p className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted"><Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />{tk("editor.motion.lockedEntrance")}</p>
+        )}
       </Group>
       <div className="flex gap-2 p-4">
         <button type="button" onClick={onDuplicate} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border text-sm hover:bg-surface-2">

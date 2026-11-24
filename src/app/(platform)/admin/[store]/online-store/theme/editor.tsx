@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/toast";
 import { themeCssVars, themeContrastIssues, type Theme } from "@/lib/theme";
 import { newSectionId, type Section } from "@/lib/theme-sections";
 import type { ActionState } from "@/lib/action";
+import type { ThemeCapabilities } from "@/lib/theme-capabilities";
 import { SectionInspector, SectionList, type Catalog } from "./editor-sections";
 import { SettingsPanel, StylePanel } from "./editor-style";
 import { Segmented, type UploadImage } from "./editor-fields";
@@ -20,9 +21,9 @@ type Status = "idle" | "saving" | "saved" | "error";
 
 const HISTORY = 60;
 
-export function SiteEditor({ initial, hasDraft: initialDraft, storeName, backHref, previewSrc, storeUrl, fonts, catalog, saveDraft, publish, discard, uploadImage }: {
+export function SiteEditor({ initial, hasDraft: initialDraft, storeName, backHref, previewSrc, storeUrl, fonts, catalog, caps, saveDraft, publish, discard, uploadImage }: {
   initial: Theme; hasDraft: boolean; storeName: string; backHref: string; previewSrc: string; storeUrl: string;
-  fonts: { value: string; label: string }[]; catalog: Catalog;
+  fonts: { value: string; label: string }[]; catalog: Catalog; caps: ThemeCapabilities;
   saveDraft: Action; publish: Action; discard: () => Promise<{ theme: Theme }>; uploadImage: UploadImage;
 }) {
   const t = useT();
@@ -229,7 +230,7 @@ export function SiteEditor({ initial, hasDraft: initialDraft, storeName, backHre
               <motion.div key={tab + (sel ? sel.id : "")} initial={{ opacity: 0, x: sel ? 16 : -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}>
                 {tab === "sections" && !sel && <SectionList sections={theme.sections} selected={selected} onSelect={setSelected} onChange={setSections} />}
                 {tab === "sections" && sel && (
-                  <SectionInspector section={sel} catalog={catalog} uploadImage={uploadImage}
+                  <SectionInspector section={sel} catalog={catalog} caps={caps} uploadImage={uploadImage}
                     onChange={(next) => setSections(theme.sections.map((s) => (s.id === next.id ? next : s)))}
                     onBack={() => setSelected(null)}
                     onDuplicate={() => {
@@ -240,8 +241,8 @@ export function SiteEditor({ initial, hasDraft: initialDraft, storeName, backHre
                     }}
                     onDelete={() => { setSections(theme.sections.filter((s) => s.id !== sel.id)); setSelected(null); }} />
                 )}
-                {tab === "style" && <StylePanel theme={theme} update={update} fonts={fonts} uploadImage={uploadImage} />}
-                {tab === "settings" && <SettingsPanel theme={theme} update={update} />}
+                {tab === "style" && <StylePanel theme={theme} update={update} fonts={fonts} caps={caps} uploadImage={uploadImage} />}
+                {tab === "settings" && <SettingsPanel theme={theme} update={update} caps={caps} />}
               </motion.div>
             </AnimatePresence>
           </div>

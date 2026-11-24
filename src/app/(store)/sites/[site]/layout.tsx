@@ -17,6 +17,7 @@ import { themeCssVars } from "@/lib/theme";
 import { STORE_LEGAL_PAGES } from "@/lib/legal/store-templates";
 import { MobileNav } from "@/components/storefront/mobile-nav";
 import { NavProgress } from "@/components/storefront/nav-progress";
+import { MotionRuntime } from "@/components/storefront/motion-runtime";
 import { SimpleActionForm } from "@/components/storefront/simple-action";
 import { subscribeAction } from "./newsletter/actions";
 import { Suspense } from "react";
@@ -59,8 +60,17 @@ export default async function StorefrontLayout({ children, params }: { children:
 
   return (
     <html lang={store.locale}>
-      <body className="storefront min-h-dvh" style={themeCssVars(theme) as React.CSSProperties}>
+      <body className="storefront min-h-dvh" data-motion={theme.motion} style={themeCssVars(theme) as React.CSSProperties}>
         <Suspense fallback={null}><NavProgress /></Suspense>
+        {theme.motion !== "none" && (
+          <>
+            <MotionRuntime />
+            {/* Without JavaScript nothing waits for a scroll reveal. */}
+            <noscript><style>{".storefront [data-reveal],.storefront [data-reveal-item]{opacity:1!important;transform:none!important;filter:none!important}"}</style></noscript>
+          </>
+        )}
+        {/* Merchant CSS (plan feature), sanitized in clampTheme: no resource loading, no HTML breakout. */}
+        {theme.customCss && <style>{theme.customCss}</style>}
         {sf.preview && (
           <div role="status" className="pointer-events-none fixed bottom-3 left-3 z-50 rounded-full bg-black/85 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
             {t("sf.preview.badge")}
