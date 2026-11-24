@@ -32,6 +32,8 @@ online con clienti paganti è un rischio.
 | 8 | Carte regalo, bozze d'ordine, portale resi | Medio | 3–4 gg ciascuno | Parità |
 | 9 | Caricamento diretto delle immagini di blog e condivisione (oggi si usa un link) | Basso | 1 gg | Comodità |
 | 10 | Notifiche push (PWA per il merchant) | Basso-medio | 3 gg | "Nuovo ordine" sul telefono |
+| 11 | **Editor del sito, fase 2**: sezioni anche nelle pagine prodotto, collezione e pagine libere; modelli di sezione salvabili; video; modifica del testo direttamente nell'anteprima | Alto | 6–8 gg | Oggi l'editor a sezioni copre la homepage |
+| 12 | **Libreria immagini** del negozio (riusare immagini già caricate in editor, prodotti e blog) | Medio | 2 gg | Evita caricamenti doppi |
 
 ## C. Tecnica (per crescere oltre 10.000 utenti)
 

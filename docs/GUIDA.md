@@ -30,7 +30,8 @@ Una piattaforma e-commerce **white-label e multi-negozio**, sullo stesso modello
 - **Recensioni:** stelle e recensioni sui prodotti con moderazione, risposta pubblica del
   negozio e badge "acquisto verificato" (aiutano anche la SEO su Google)
 - **Analisi:** vendite, profitto lordo e margine (dal costo dei prodotti), prodotti più venduti
-- **Negozio online:** tema personalizzabile (logo, colori, font, banner), pagine, menu, dominio
+- **Negozio online:** editor del sito a sezioni (12 tipi di sezione, contenitori a colonne con blocchi liberi: titolo, testo, immagine, pulsante, prodotto), anteprima dal vivo desktop/telefono, bozza salvata in automatico e pubblicazione con un clic, annulla/ripristina; palette colori completa con 12 stili pronti, generatore di palette dal colore del brand o dal logo e controllo di leggibilità; pagine, menu, dominio
+- **Onboarding:** alla creazione del negozio si sceglie uno stile e una homepage di partenza già scritta (Classica, Editoriale, Minimale), poi la guida di configurazione in 8 passi
 - **Clienti:** account con storico ordini e indirizzi salvati
 - **Team:** inviti allo staff con ruoli (proprietario, amministratore, staff), registro delle attività
 - **Sicurezza:** verifica in due passaggi (app di autenticazione), controllo delle sessioni attive
