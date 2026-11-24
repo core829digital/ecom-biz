@@ -183,13 +183,27 @@ Quando nel terminale compare **`Ready`**, apri il browser:
 
 | Cosa | Indirizzo | Accesso |
 |---|---|---|
-| Pannello merchant | <http://localhost:3000> | `demo@example.com` / `demo12345` |
-| Negozio demo | <http://demo.localhost:3000> | oppure <http://localhost:3000/sites/demo> |
+| Pannello merchant | <http://localhost:3000/login> | `demo@example.com` / `demo12345` |
+| Negozio demo (vetrina pubblica) | <http://demo.localhost:3000> | nessun accesso richiesto; oppure <http://localhost:3000/sites/demo> |
+| Area amministratore piattaforma | <http://localhost:3000/platform> | l'account creato con il comando qui sotto |
 
-Per diventare **amministratore della piattaforma** (area `/platform`):
-```bash
-npm run platform:admin -- tua@email.com "Nome Cognome" unapasswordsicura
-```
+### Account disponibili
+
+- **Merchant demo** (`demo@example.com` / `demo12345`): proprietario del negozio "Atelier Demo",
+  piano Grow in prova gratuita. Serve per provare tutto il pannello del negozio.
+- **Amministratore della piattaforma** (area `/platform`: piani, negozi, utenti, commissioni): non
+  esiste di default, si crea con:
+  ```bash
+  npm run platform:admin -- tua@email.com "Nome Cognome" unapasswordsicura
+  ```
+  Per dare questi poteri anche all'account demo: `npm run platform:admin -- demo@example.com`.
+- **Cliente del negozio**: non esiste di default. Registrati dalla vetrina (icona account → "Crea
+  account") con un'email qualsiasi, anche inventata.
+- **Nuovo merchant**: registrati da <http://localhost:3000/signup>. Il link di verifica email
+  compare nel terminale dove gira `npm run dev`.
+
+Queste credenziali valgono **solo in locale**: online non vanno mai create (il negozio demo si crea
+solo con `SEED_DEMO=true`).
 
 Per **fermare** il server: nel terminale dove gira, premi **Ctrl + C**.
 

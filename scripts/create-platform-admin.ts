@@ -1,7 +1,8 @@
 /**
  * Create or promote a platform administrator.
  *   npm run platform:admin -- admin@example.com "Full Name" [password]
- * If the user exists it is promoted; otherwise it is created (password required, min 8 chars).
+ * If the user exists it is promoted; otherwise it is created (password required, min 8 chars) with the
+ * address counted as verified, since the operator running this command chose it.
  */
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
@@ -20,7 +21,7 @@ async function main() {
       return;
     }
     if (!password || password.length < 8) throw new Error("New users need a password of at least 8 characters.");
-    await db.user.create({ data: { email, name, passwordHash: await bcrypt.hash(password, 12), isPlatformAdmin: true } });
+    await db.user.create({ data: { email, name, passwordHash: await bcrypt.hash(password, 12), isPlatformAdmin: true, emailVerifiedAt: new Date() } });
     console.log(`Created platform admin ${email}.`);
   } finally {
     await db.$disconnect();

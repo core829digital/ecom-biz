@@ -75,6 +75,8 @@ async function seedAdmin() {
 
 async function seedDemo() {
   if (process.env.SEED_DEMO !== "true") return;
+  // example.com cannot receive mail: the demo account counts as verified (also fixes older seeds).
+  await db.user.updateMany({ where: { email: "demo@example.com", emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } });
   if (await db.store.findUnique({ where: { slug: "demo" } })) return console.log("• demo store already exists");
   const plan = await db.plan.findFirst({ where: { name: "Grow" } }) ?? (await db.plan.findFirst({ orderBy: { position: "asc" } }));
   const user =
@@ -84,6 +86,7 @@ async function seedDemo() {
         email: "demo@example.com",
         name: "Demo Merchant",
         passwordHash: await bcrypt.hash("demo12345", 12),
+        emailVerifiedAt: new Date(),
         planId: plan?.id,
         subscriptionStatus: "TRIALING",
         trialEndsAt: new Date(Date.now() + 14 * 86400_000),
