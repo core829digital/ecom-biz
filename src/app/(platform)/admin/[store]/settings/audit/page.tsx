@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireStoreAccess } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n";
 import { Card, EmptyState, PageHeader, Table, Td, Th } from "@/components/ui/primitives";
 import { BackLink } from "@/components/admin/back-link";
 import { Pagination, parsePage } from "@/components/admin/list";
@@ -31,7 +32,14 @@ export default async function AuditPage({ params, searchParams }: { params: Prom
                 <tr key={l.id}>
                   <Td className="whitespace-nowrap text-muted">{date.format(l.createdAt)}</Td>
                   <Td>{l.user ? <><span className="font-medium">{l.user.name}</span><span className="block text-xs text-muted">{l.user.email}</span></> : <span className="text-muted">{t("audit.system")}</span>}</Td>
-                  <Td><code className="rounded bg-surface-2 px-1.5 py-0.5 text-xs">{l.action}</code></Td>
+                  <Td>
+                    {(() => {
+                      // Readable label when known; the technical code stays visible for support and exports.
+                      const key = `auditAction.${l.action.replace(/\./g, "_")}` as MessageKey;
+                      const label = t(key);
+                      return label === key ? <code className="rounded bg-surface-2 px-1.5 py-0.5 text-xs">{l.action}</code> : <><span>{label}</span><code className="block text-[11px] text-muted">{l.action}</code></>;
+                    })()}
+                  </Td>
                   <Td className="max-w-64 truncate">{l.target}</Td>
                   <Td className="font-mono text-xs text-muted">{l.ip}</Td>
                 </tr>

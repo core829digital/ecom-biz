@@ -76,6 +76,17 @@ versione e data dell'accettazione.
   (con diritto di recesso di 14 giorni), Resi e Spedizioni, precompilati con i suoi dati. Una volta
   pubblicati compaiono da soli nel footer e al checkout; la P.IVA del negozio appare nel footer.
 
+## Documentazione
+
+| Documento | Contenuto |
+|---|---|
+| `ABBONAMENTI.md` | Prova gratuita, regole anti-abuso, tutti i casi d'uso dei pagamenti, configurazione Stripe |
+| `SICUREZZA.md` | Audit OWASP Top 10, header di sicurezza, cosa resta da fare |
+| `GDPR.md` | Ruoli, diritti degli interessati, tempi di conservazione, sub-responsabili |
+| `DEPLOY-PRODUZIONE.md` | Database, hosting, costi e dimensionamento per 10.000 utenti |
+| `PRODUCT-STRATEGY.md` | Confronto con Shopify e differenziatori |
+| `ROADMAP.md` | Cosa fare prima del lancio e dopo, con priorità |
+
 ## Decisioni che spettano a te
 
 - **Nome e dominio** della piattaforma

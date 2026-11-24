@@ -7,6 +7,7 @@ import { defineConfig } from "@playwright/test";
  * Storefronts are reached via <slug>.localhost (Chromium resolves *.localhost to loopback).
  */
 export default defineConfig({
+  globalSetup: "./tests/e2e/global-setup.ts",
   testDir: "tests/e2e",
   timeout: 90_000,
   expect: { timeout: 15_000 },

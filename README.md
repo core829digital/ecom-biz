@@ -21,6 +21,9 @@ and every storefront uses the merchant's own logo, colors, fonts and copy.
 | **Accounts & plans** | Account-level subscription; plans cap stores, products and staff and gate custom domains and the API; usage meter in the admin |
 | **Security** | TOTP two-factor auth with recovery codes, session list with remote sign-out, audit log, nonce-based CSP, self-hosted fonts (no third-party requests) |
 | **UX** | Store rail and quick switcher (Ctrl/⌘ K), keyboard shortcuts (G then a letter, `?` for help), light/dark/system themes with accent colors, animated landing page |
+| **Content & marketing** | Blog with RSS and article structured data, newsletter with double opt-in and consent records (CSV export), contact page with spam protection and an admin inbox, live Google preview, social share image |
+| **Notifications** | In-app bell and notification centre with per-type email preferences: orders, low stock, reviews, disputes, failing webhooks, team, billing and security events |
+| **Onboarding & legal** | Guided first store, dashboard setup guide; platform Terms, Privacy, Cookie, DPA, Subscriptions and Acceptable Use pages; legal page templates for stores (EU 14-day withdrawal) |
 | **Developers** | REST API v1 with scoped, hashed tokens and rate limiting; signed webhooks with retries and delivery logs |
 | **Platform admin** | Stores (suspend, plan, fee override, trial extension), plans synced to Stripe Billing, users, GMV and fee reporting |
 | **i18n** | English and Italian across admin, storefront and emails (type-checked dictionaries) |
