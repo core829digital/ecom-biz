@@ -163,9 +163,9 @@ export function CheckoutForm(props: {
             <section>
               <h2 className="mb-3 text-lg font-semibold">{L["checkout.shippingMethod"]}</h2>
               {!view ? (
-                <p className="rounded-lg bg-surface-2 p-4 text-sm text-muted">{L["checkout.enterAddress"]}</p>
+                <p className="rounded-card bg-surface-2 p-4 text-sm text-muted">{L["checkout.enterAddress"]}</p>
               ) : view.rates.length === 0 ? (
-                <p className="rounded-lg bg-surface-2 p-4 text-sm text-muted">{L["checkout.noRates"]}</p>
+                <p className="rounded-card bg-surface-2 p-4 text-sm text-muted">{L["checkout.noRates"]}</p>
               ) : (
                 <div className="divide-y divide-border rounded-lg border border-border">
                   {view.rates.map((r) => (
@@ -187,7 +187,7 @@ export function CheckoutForm(props: {
               <h2 className="mb-1 text-lg font-semibold">{L["checkout.payment"]}</h2>
               <p className="mb-3 text-sm text-muted">{L["checkout.secure"]}</p>
               {props.methods.length === 0 ? (
-                <p className="rounded-lg bg-surface-2 p-4 text-sm text-danger">{L["checkout.noPaymentMethods"]}</p>
+                <p className="rounded-card bg-surface-2 p-4 text-sm text-danger">{L["checkout.noPaymentMethods"]}</p>
               ) : (
                 <div className="divide-y divide-border rounded-lg border border-border">
                   {props.methods.map((m) => (
@@ -229,7 +229,7 @@ export function CheckoutForm(props: {
             <button
               type="submit"
               disabled={placing || quoting || !view || (!free && !method) || (view.requiresShipping && !rateId)}
-              className="h-14 w-full rounded-full bg-brand px-8 text-base font-semibold text-brand-contrast hover:opacity-90 disabled:opacity-50 sm:w-auto"
+              className="h-14 w-full rounded-btn bg-brand px-8 text-base font-semibold text-brand-contrast hover:opacity-90 disabled:opacity-50 sm:w-auto"
             >
               {placing ? L["checkout.processing"] : free ? L["checkout.freeOrder"] : method === "stripe" ? L["checkout.payNow"] : L["checkout.placeOrder"]}
             </button>
@@ -300,7 +300,7 @@ function StripePay({ returnUrl, labels, onError }: { returnUrl: string; labels: 
           if (error) onError(error.message ?? labels["checkout.processing"]);
           setBusy(false);
         }}
-        className="h-14 w-full rounded-full bg-brand text-base font-semibold text-brand-contrast disabled:opacity-50"
+        className="h-14 w-full rounded-btn bg-brand text-base font-semibold text-brand-contrast disabled:opacity-50"
       >
         {busy ? labels["checkout.processing"] : labels["checkout.payNow"]}
       </button>

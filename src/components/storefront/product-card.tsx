@@ -12,7 +12,7 @@ export function ProductCard({ product, sf }: { product: ProductCardData; sf: Sto
   const [img, hover] = product.images;
   return (
     <Link href={sf.href(`/products/${product.handle}`)} className="group block">
-      <div className="relative mb-3 aspect-[4/5] overflow-hidden rounded-lg bg-surface-2">
+      <div className="relative mb-3 aspect-[4/5] overflow-hidden rounded-card bg-surface-2">
         {img && <img src={img.url} alt={img.alt ?? product.title} loading="lazy" className="absolute inset-0 size-full object-cover transition-opacity duration-300 group-hover:opacity-90" />}
         {hover && <img src={hover.url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100" />}
         {(soldOut || onSale) && (
@@ -24,7 +24,7 @@ export function ProductCard({ product, sf }: { product: ProductCardData; sf: Sto
       <h3 className="text-sm font-medium group-hover:underline">{product.title}</h3>
       <p className="mt-1 text-sm tabular-nums">
         {varies && <span className="text-muted">{sf.t("sf.from")} </span>}
-        <span className={onSale ? "text-brand font-medium" : ""}>{sf.money(min)}</span>
+        <span className={onSale ? "text-sf-accent font-medium" : ""}>{sf.money(min)}</span>
         {onSale && <s className="ml-2 text-muted">{sf.money(cheapest!.compareAtCents!)}</s>}
       </p>
     </Link>

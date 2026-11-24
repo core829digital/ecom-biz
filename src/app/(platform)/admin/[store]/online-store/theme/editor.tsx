@@ -1,198 +1,271 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ActionForm, SubmitButton, useFieldError } from "@/components/ui/form";
-import { Input, Select, Textarea } from "@/components/ui/fields";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/primitives";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, ExternalLink, Laptop, Loader2, Redo2, Smartphone, Undo2 } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { useT } from "@/components/i18n-provider";
-import { contrastText, THEME_PRESETS, type Theme } from "@/lib/theme";
-import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import { themeCssVars, themeContrastIssues, type Theme } from "@/lib/theme";
+import { newSectionId, type Section } from "@/lib/theme-sections";
 import type { ActionState } from "@/lib/action";
+import { SectionInspector, SectionList, type Catalog } from "./editor-sections";
+import { SettingsPanel, StylePanel } from "./editor-style";
+import { Segmented, type UploadImage } from "./editor-fields";
 
-export function ThemeEditor({
-  initial,
-  storeName,
-  fonts,
-  collections,
-  action,
-  uploadImage,
-}: {
-  initial: Theme;
-  storeName: string;
-  fonts: { value: string; label: string }[];
-  collections: { id: string; title: string }[];
-  action: (s: ActionState, fd: FormData) => Promise<ActionState>;
-  uploadImage: (fd: FormData) => Promise<{ url?: string; error?: string }>;
+type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
+type Tab = "sections" | "style" | "settings";
+type Status = "idle" | "saving" | "saved" | "error";
+
+const HISTORY = 60;
+
+export function SiteEditor({ initial, hasDraft: initialDraft, storeName, backHref, previewSrc, storeUrl, fonts, catalog, saveDraft, publish, discard, uploadImage }: {
+  initial: Theme; hasDraft: boolean; storeName: string; backHref: string; previewSrc: string; storeUrl: string;
+  fonts: { value: string; label: string }[]; catalog: Catalog;
+  saveDraft: Action; publish: Action; discard: () => Promise<{ theme: Theme }>; uploadImage: UploadImage;
 }) {
   const t = useT();
-  const [th, setTh] = useState<Theme>(initial);
-  const update = (patch: Partial<Theme>) => setTh((p) => ({ ...p, ...patch }));
-  const payload = useMemo(() => JSON.stringify(th), [th]);
+  const [history, setHistory] = useState<{ past: Theme[]; present: Theme; future: Theme[] }>({ past: [], present: initial, future: [] });
+  const theme = history.present;
+  const [tab, setTab] = useState<Tab>("sections");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [status, setStatus] = useState<Status>("idle");
+  const [hasDraft, setHasDraft] = useState(initialDraft);
+  const [publishing, setPublishing] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const lastPush = useRef(0);
+  const saveSeq = useRef(0);
+  const skipSave = useRef(true);
+
+  /** Records an undo step at most every 600 ms, so typing a word is one step, not one per letter. */
+  const commit = useCallback((next: Theme) => {
+    setHistory((h) => {
+      const now = Date.now();
+      const coalesce = now - lastPush.current < 600 && h.past.length > 0;
+      lastPush.current = now;
+      return { past: coalesce ? h.past : [...h.past, h.present].slice(-HISTORY), present: next, future: [] };
+    });
+  }, []);
+  const update = useCallback((patch: Partial<Theme>) => commit({ ...history.present, ...patch }), [commit, history.present]);
+  const setSections = (sections: Section[]) => update({ sections });
+  const undo = useCallback(() => setHistory((h) => (h.past.length ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] } : h)), []);
+  const redo = useCallback(() => setHistory((h) => (h.future.length ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) } : h)), []);
+
+  // Keyboard shortcuts (outside text fields, where the browser's own undo applies).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (el.closest("input, textarea, select, [contenteditable]") || !(e.metaKey || e.ctrlKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
+
+  const previewDoc = () => {
+    try { return frame.current?.contentDocument ?? null; } catch { return null; }
+  };
+
+  /** Colors and shapes apply instantly in the preview; content changes arrive with the reload. */
+  const paintPreview = useCallback(() => {
+    const doc = previewDoc();
+    const body = doc?.querySelector<HTMLElement>("body.storefront");
+    if (!body) return;
+    for (const [k, v] of Object.entries(themeCssVars(theme))) body.style.setProperty(k, v);
+    doc!.querySelectorAll(".sf-editing").forEach((n) => n.classList.remove("sf-editing"));
+    if (selected) doc!.querySelector(`[data-section-id="${selected}"]`)?.classList.add("sf-editing");
+  }, [theme, selected]);
+  useEffect(paintPreview, [paintPreview]);
+
+  const reloadPreview = () => {
+    const win = frame.current?.contentWindow;
+    if (!win) return;
+    try {
+      sessionStorage.setItem("editor-scroll", String(win.scrollY));
+      win.location.reload();
+    } catch { /* cross-origin navigation inside the preview: leave it */ }
+  };
+
+  const onFrameLoad = () => {
+    const doc = previewDoc();
+    if (!doc) return;
+    const y = Number(sessionStorage.getItem("editor-scroll") ?? 0);
+    sessionStorage.removeItem("editor-scroll");
+    if (y) doc.defaultView?.scrollTo({ top: y });
+    paintPreview();
+    // Clicking a homepage section in the preview opens it in the sidebar.
+    doc.addEventListener("click", (e) => {
+      const sec = (e.target as HTMLElement).closest<HTMLElement>("[data-section-id]");
+      if (!sec) return;
+      e.preventDefault();
+      setTab("sections");
+      setSelected(sec.dataset.sectionId ?? null);
+    }, true);
+  };
+
+  // Autosave the draft shortly after the last change, then refresh the preview.
+  useEffect(() => {
+    if (skipSave.current) { skipSave.current = false; return; }
+    setStatus("saving");
+    const seq = ++saveSeq.current;
+    const timer = setTimeout(async () => {
+      const fd = new FormData();
+      fd.set("payload", JSON.stringify(theme));
+      const res = await saveDraft(null, fd).catch(() => null);
+      if (seq !== saveSeq.current) return;
+      if (res?.ok) { setStatus("saved"); setHasDraft(true); reloadPreview(); }
+      else { setStatus("error"); toast(res?.error ?? t("editor.saveFailed"), "error"); }
+    }, 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
+
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => { if (status === "saving") e.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [status]);
+
+  // Scroll the preview to the section being edited.
+  useEffect(() => {
+    if (!selected) return;
+    previewDoc()?.querySelector(`[data-section-id="${selected}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selected]);
+
+  const doPublish = async () => {
+    setPublishing(true);
+    const fd = new FormData();
+    fd.set("payload", JSON.stringify(theme));
+    const res = await publish(null, fd).catch(() => null);
+    setPublishing(false);
+    if (res?.ok) { setHasDraft(false); toast(t("theme.published")); }
+    else toast(res?.error ?? t("editor.saveFailed"), "error");
+  };
+
+  const doDiscard = async () => {
+    if (!confirmDiscard) { setConfirmDiscard(true); setTimeout(() => setConfirmDiscard(false), 3500); return; }
+    setConfirmDiscard(false);
+    const { theme: published } = await discard();
+    skipSave.current = true;
+    setHistory({ past: [], present: published, future: [] });
+    setHasDraft(false);
+    setSelected(null);
+    setStatus("idle");
+    reloadPreview();
+  };
+
+  const sel = theme.sections.find((s) => s.id === selected) ?? null;
+  const issues = themeContrastIssues(theme);
 
   return (
-    <ActionForm action={action}>
-      <input type="hidden" name="payload" value={payload} />
-      <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-5">
-          <Card title={t("theme.presets")}>
-            <p className="mb-4 text-sm text-muted">{t("theme.presetsHint")}</p>
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {THEME_PRESETS.map((preset) => {
-                const active = th.primaryColor === preset.primaryColor && th.backgroundColor === preset.backgroundColor && th.textColor === preset.textColor;
-                return (
-                  <li key={preset.id}>
-                    <motion.button
-                      type="button"
-                      whileHover={{ y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => update({ primaryColor: preset.primaryColor, backgroundColor: preset.backgroundColor, textColor: preset.textColor, font: preset.font })}
-                      aria-pressed={active}
-                      className={`relative w-full overflow-hidden rounded-xl border text-left transition-shadow hover:shadow-elevated ${active ? "border-accent ring-1 ring-accent" : "border-border"}`}
-                    >
-                      <span className="block p-3" style={{ background: preset.backgroundColor, color: preset.textColor }}>
-                        <span className="block h-2 w-10 rounded-full" style={{ background: preset.textColor, opacity: 0.85 }} />
-                        <span className="mt-1.5 block h-1.5 w-16 rounded-full" style={{ background: preset.textColor, opacity: 0.35 }} />
-                        <span className="mt-3 inline-block rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ background: preset.primaryColor, color: contrastText(preset.primaryColor) }}>Shop</span>
-                      </span>
-                      <span className="flex items-center justify-between border-t border-border bg-surface px-3 py-2 text-xs font-medium">
-                        {preset.name}
-                        {active && <Check className="size-3.5" aria-hidden />}
-                      </span>
-                    </motion.button>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-          <Card title={t("theme.brand")}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ImageField label={t("theme.logo")} value={th.logoUrl} onChange={(logoUrl) => update({ logoUrl })} uploadImage={uploadImage} name="logoUrl" />
-              <ImageField label={t("theme.favicon")} value={th.faviconUrl} onChange={(faviconUrl) => update({ faviconUrl })} uploadImage={uploadImage} name="faviconUrl" />
-            </div>
-            {th.logoUrl && (
-              <Input className="mt-4 max-w-40" wrapperClassName="mt-4" type="number" min={16} max={120} label={t("theme.logoHeight")} value={String(th.logoHeight)} onChange={(e) => update({ logoHeight: Math.min(120, Math.max(16, parseInt(e.target.value || "32", 10) || 32)) })} />
-            )}
-          </Card>
-          <Card title={t("theme.colors")}>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <ColorField name="primaryColor" label={t("theme.primary")} value={th.primaryColor} onChange={(primaryColor) => update({ primaryColor })} />
-              <ColorField name="backgroundColor" label={t("theme.background")} value={th.backgroundColor} onChange={(backgroundColor) => update({ backgroundColor })} />
-              <ColorField name="textColor" label={t("theme.text")} value={th.textColor} onChange={(textColor) => update({ textColor })} />
-            </div>
-            <Select wrapperClassName="mt-4" label={t("theme.font")} value={th.font} onChange={(e) => update({ font: e.target.value as Theme["font"] })}>
-              {fonts.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-            </Select>
-          </Card>
-          <Card title={t("theme.announcement")}>
-            <Input label={t("theme.announcementText")} maxLength={200} value={th.announcement} onChange={(e) => update({ announcement: e.target.value })} hint={t("theme.announcementHint")} />
-          </Card>
-          <Card title={t("theme.hero")}>
-            <div className="space-y-4">
-              <Input label={t("theme.heroTitle")} maxLength={120} value={th.heroTitle} onChange={(e) => update({ heroTitle: e.target.value })} />
-              <Textarea label={t("theme.heroSubtitle")} rows={2} maxLength={300} value={th.heroSubtitle} onChange={(e) => update({ heroSubtitle: e.target.value })} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input label={t("theme.heroCta")} maxLength={40} value={th.heroCtaLabel} onChange={(e) => update({ heroCtaLabel: e.target.value })} />
-                <Input label={t("theme.heroCtaUrl")} value={th.heroCtaUrl} onChange={(e) => update({ heroCtaUrl: e.target.value })} />
-              </div>
-              <ImageField label={t("theme.heroImage")} value={th.heroImageUrl} onChange={(heroImageUrl) => update({ heroImageUrl })} uploadImage={uploadImage} name="heroImageUrl" wide />
-            </div>
-          </Card>
-          <Card title={t("theme.featured")}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select name="featuredCollectionId" label={t("theme.featuredCollection")} value={th.featuredCollectionId} onChange={(e) => update({ featuredCollectionId: e.target.value })}>
-                <option value="">{t("theme.newestProducts")}</option>
-                {collections.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-              </Select>
-              <Input label={t("theme.featuredTitle")} maxLength={80} value={th.featuredTitle} onChange={(e) => update({ featuredTitle: e.target.value })} />
-            </div>
-          </Card>
-          <Card title={t("theme.footer")}>
-            <div className="space-y-4">
-              <Textarea label={t("theme.footerText")} rows={3} maxLength={500} value={th.footerText} onChange={(e) => update({ footerText: e.target.value })} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                {(["instagram", "facebook", "tiktok", "youtube"] as const).map((k) => (
-                  <Input key={k} label={k[0].toUpperCase() + k.slice(1)} placeholder="https://" value={th.social[k]} onChange={(e) => update({ social: { ...th.social, [k]: e.target.value } })} />
-                ))}
-              </div>
-            </div>
-          </Card>
+    <div className="fixed inset-0 z-40 flex flex-col bg-surface-2 text-text">
+      {/* Top bar */}
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3">
+        <Link href={backHref} className="flex size-9 items-center justify-center rounded-lg hover:bg-surface-2" aria-label={t("common.back")}><ArrowLeft className="size-4" aria-hidden /></Link>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight">{storeName}</p>
+          <SaveStatus status={status} hasDraft={hasDraft} />
         </div>
-        <div>
-          <div className="sticky top-6">
-            <p className="mb-2 text-sm font-medium">{t("theme.preview")}</p>
-            <div className="overflow-hidden rounded-xl border border-border shadow-sm" style={{ background: th.backgroundColor, color: th.textColor }}>
-              {th.announcement && <div className="px-3 py-1.5 text-center text-xs" style={{ background: th.primaryColor, color: contrastText(th.primaryColor) }}>{th.announcement}</div>}
-              <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: th.textColor + "22" }}>
-                {th.logoUrl ? <img src={th.logoUrl} alt="" style={{ height: Math.min(th.logoHeight, 32) }} /> : <span className="font-semibold">{storeName}</span>}
-                <span className="text-xs opacity-70">☰</span>
-              </div>
-              <div className="relative px-4 py-10">
-                {th.heroImageUrl && <img src={th.heroImageUrl} alt="" className="absolute inset-0 size-full object-cover opacity-40" />}
-                <div className="relative">
-                  <p className="text-lg font-semibold">{th.heroTitle || storeName}</p>
-                  {th.heroSubtitle && <p className="mt-1 text-xs opacity-80">{th.heroSubtitle}</p>}
-                  <span className="mt-4 inline-block rounded-full px-4 py-1.5 text-xs font-medium" style={{ background: th.primaryColor, color: contrastText(th.primaryColor) }}>
-                    {th.heroCtaLabel || "Shop now"}
-                  </span>
-                </div>
-              </div>
-            </div>
+        <div className="ml-2 hidden items-center gap-0.5 sm:flex">
+          <IconBtn label={t("editor.undo")} onClick={undo} disabled={!history.past.length}><Undo2 className="size-4" aria-hidden /></IconBtn>
+          <IconBtn label={t("editor.redo")} onClick={redo} disabled={!history.future.length}><Redo2 className="size-4" aria-hidden /></IconBtn>
+        </div>
+        <div className="mx-auto hidden lg:block">
+          <Segmented hideLabel label={t("editor.device")} value={device} onChange={setDevice} options={[
+            { value: "desktop", label: <Laptop className="size-4" aria-hidden />, title: t("editor.desktop") },
+            { value: "mobile", label: <Smartphone className="size-4" aria-hidden />, title: t("editor.mobile") },
+          ]} />
+        </div>
+        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+          <a href={storeUrl} target="_blank" rel="noreferrer" className="hidden h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-surface-2 hover:text-text md:flex">
+            {t("nav.viewStore")}<ExternalLink className="size-3.5" aria-hidden />
+          </a>
+          <button type="button" onClick={() => setShowPreview((v) => !v)} className="h-9 rounded-lg border border-border px-3 text-sm lg:hidden">{showPreview ? t("editor.edit") : t("theme.preview")}</button>
+          {hasDraft && (
+            <button type="button" onClick={doDiscard} className={cn("hidden h-9 rounded-lg px-3 text-sm transition-colors sm:block", confirmDiscard ? "bg-danger-bg text-danger" : "text-muted hover:bg-surface-2 hover:text-text")}>
+              {confirmDiscard ? t("editor.discardConfirm") : t("editor.discard")}
+            </button>
+          )}
+          <button type="button" onClick={doPublish} disabled={publishing || status === "saving" || !hasDraft}
+            className="relative flex h-9 items-center gap-2 overflow-hidden rounded-lg bg-accent px-4 text-sm font-medium text-accent-contrast transition-opacity hover:opacity-90 disabled:opacity-40">
+            {publishing && <Loader2 className="size-4 animate-spin" aria-hidden />}
+            {t("editor.publish")}
+          </button>
+        </div>
+      </header>
+
+      <div className="flex min-h-0 flex-1">
+        {/* Sidebar */}
+        <aside className={cn("flex w-full shrink-0 flex-col border-r border-border bg-surface lg:w-[340px]", showPreview && "hidden lg:flex")}>
+          <nav className="flex shrink-0 gap-1 border-b border-border p-2" aria-label={t("editor.panels")}>
+            {(["sections", "style", "settings"] as const).map((k) => (
+              <button key={k} type="button" onClick={() => { setTab(k); if (k !== "sections") setSelected(null); }} aria-current={tab === k}
+                className={cn("relative h-8 flex-1 rounded-md text-sm font-medium transition-colors", tab === k ? "text-text" : "text-muted hover:text-text")}>
+                {tab === k && <motion.span layoutId="editor-tab" className="absolute inset-0 -z-0 rounded-md bg-surface-2" transition={{ type: "spring", stiffness: 500, damping: 40 }} />}
+                <span className="relative">{t(`editor.tab.${k}`)}</span>
+                {k === "style" && issues.length > 0 && <span className="absolute right-2 top-1.5 size-1.5 rounded-full bg-danger" aria-label={t("editor.contrast.fail")} />}
+              </button>
+            ))}
+          </nav>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.div key={tab + (sel ? sel.id : "")} initial={{ opacity: 0, x: sel ? 16 : -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}>
+                {tab === "sections" && !sel && <SectionList sections={theme.sections} selected={selected} onSelect={setSelected} onChange={setSections} />}
+                {tab === "sections" && sel && (
+                  <SectionInspector section={sel} catalog={catalog} uploadImage={uploadImage}
+                    onChange={(next) => setSections(theme.sections.map((s) => (s.id === next.id ? next : s)))}
+                    onBack={() => setSelected(null)}
+                    onDuplicate={() => {
+                      const i = theme.sections.findIndex((s) => s.id === sel.id);
+                      const copy = { ...structuredClone(sel), id: newSectionId() } as Section;
+                      setSections([...theme.sections.slice(0, i + 1), copy, ...theme.sections.slice(i + 1)]);
+                      setSelected(copy.id);
+                    }}
+                    onDelete={() => { setSections(theme.sections.filter((s) => s.id !== sel.id)); setSelected(null); }} />
+                )}
+                {tab === "style" && <StylePanel theme={theme} update={update} fonts={fonts} uploadImage={uploadImage} />}
+                {tab === "settings" && <SettingsPanel theme={theme} update={update} />}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
-      </div>
-      <div className="sticky bottom-0 z-10 mt-6 flex justify-end border-t border-border bg-bg/90 py-3 backdrop-blur">
-        <SubmitButton pendingLabel={t("common.saving")}>{t("common.save")}</SubmitButton>
-      </div>
-    </ActionForm>
-  );
-}
+        </aside>
 
-function ColorField({ name, label, value, onChange }: { name: string; label: string; value: string; onChange: (v: string) => void }) {
-  const error = useFieldError(name);
-  return (
-    <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
-      <div className="flex items-center gap-2">
-        <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : "#000000"} onChange={(e) => onChange(e.target.value)} className="h-10 w-12 cursor-pointer rounded border border-border bg-surface" aria-label={label} />
-        <input value={value} onChange={(e) => onChange(e.target.value)} className="h-10 w-full rounded-lg border border-border bg-surface px-2 font-mono text-sm" aria-label={`${label} hex`} />
+        {/* Live preview */}
+        <main className={cn("min-w-0 flex-1 items-start justify-center overflow-hidden p-3 lg:flex lg:p-5", showPreview ? "flex" : "hidden")}>
+          <motion.div layout transition={{ type: "spring", stiffness: 260, damping: 32 }}
+            className={cn("h-full overflow-hidden bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_12px_40px_-12px_rgb(0_0_0/0.25)]", device === "mobile" ? "w-[390px] max-w-full rounded-[28px] border-[6px] border-black" : "w-full rounded-xl border border-border")}>
+            <iframe ref={frame} src={previewSrc} onLoad={onFrameLoad} title={t("theme.preview")} className="size-full bg-white" />
+          </motion.div>
+        </main>
       </div>
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   );
 }
 
-function ImageField({ label, value, onChange, uploadImage, name, wide }: {
-  label: string; value: string; onChange: (v: string) => void; uploadImage: (fd: FormData) => Promise<{ url?: string; error?: string }>; name: string; wide?: boolean;
-}) {
+function IconBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} title={label} aria-label={label} className="flex size-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-30 disabled:hover:bg-transparent">
+      {children}
+    </button>
+  );
+}
+
+function SaveStatus({ status, hasDraft }: { status: Status; hasDraft: boolean }) {
   const t = useT();
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const fieldError = useFieldError(name);
+  const text = status === "saving" ? t("common.saving") : status === "error" ? t("editor.saveFailed") : hasDraft ? t("editor.draftUnpublished") : t("editor.upToDate");
   return (
-    <div>
-      <p className="mb-1 text-sm font-medium">{label}</p>
-      {value && <img src={value} alt="" className={`mb-2 rounded-lg border border-border object-contain ${wide ? "aspect-[3/1] w-full object-cover" : "h-16"}`} />}
-      <div className="flex gap-2">
-        <label className="inline-flex h-8 cursor-pointer items-center rounded-lg border border-border px-3 text-sm hover:bg-surface-2">
-          {busy ? "…" : value ? t("collections.image.replace") : t("collections.image.add")}
-          <input type="file" accept="image/*" className="sr-only" onChange={async (e) => {
-            const f = e.target.files?.[0];
-            if (!f) return;
-            setBusy(true);
-            setError(null);
-            const fd = new FormData();
-            fd.append("file", f);
-            const res = await uploadImage(fd);
-            setBusy(false);
-            if (res.url) onChange(res.url);
-            else setError(res.error ?? t("upload.failed"));
-          }} />
-        </label>
-        {value && <Button variant="ghost" size="sm" className="text-danger" onClick={() => onChange("")}>{t("common.delete")}</Button>}
-      </div>
-      {(error || fieldError) && <p className="mt-1 text-xs text-danger">{error || fieldError}</p>}
-    </div>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.p key={text} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -3 }} transition={{ duration: 0.15 }}
+        className={cn("flex items-center gap-1.5 text-[11px] leading-tight", status === "error" ? "text-danger" : "text-muted")}>
+        <span className={cn("size-1.5 rounded-full", status === "saving" ? "animate-pulse bg-warning" : status === "error" ? "bg-danger" : hasDraft ? "bg-warning" : "bg-success")} aria-hidden />
+        {text}
+      </motion.p>
+    </AnimatePresence>
   );
 }

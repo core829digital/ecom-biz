@@ -175,7 +175,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
                     {r.verifiedPurchase && <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 font-medium text-text">✓ {t("sf.reviews.verified")}</span>}
                   </p>
                   {r.reply && (
-                    <div className="mt-3 rounded-lg bg-surface-2 p-3 text-sm">
+                    <div className="mt-3 rounded-card bg-surface-2 p-3 text-sm">
                       <p className="mb-1 text-xs font-semibold">{t("sf.reviews.replyFrom", { store: store.name })}</p>
                       <p className="whitespace-pre-line">{r.reply}</p>
                     </div>

@@ -20,8 +20,8 @@ export default async function StoreNotFound() {
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">{t("sf.notFound.title")}</h1>
       <p className="mt-2 text-muted">{t("sf.notFound.body")}</p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link href="/" className="inline-flex h-11 items-center rounded-full bg-brand px-6 font-medium text-brand-contrast">{t("sf.notFound.home")}</Link>
-        <Link href="/search" className="inline-flex h-11 items-center rounded-full border border-border px-6 font-medium hover:bg-surface-2">{t("sf.search")}</Link>
+        <Link href="/" className="inline-flex h-11 items-center rounded-btn bg-brand px-6 font-medium text-brand-contrast">{t("sf.notFound.home")}</Link>
+        <Link href="/search" className="inline-flex h-11 items-center rounded-btn border border-border px-6 font-medium hover:bg-surface-2">{t("sf.search")}</Link>
       </div>
     </div>
   );

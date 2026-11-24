@@ -20,7 +20,7 @@ export default async function CartPage({ params }: { params: Promise<{ site: str
       <div className="mx-auto max-w-xl px-4 py-24 text-center">
         <h1 className="text-3xl font-semibold tracking-tight">{t("sf.cart")}</h1>
         <p className="mt-3 text-muted">{t("sf.cart.empty")}</p>
-        <Link href={sf.href("/collections/all")} className="mt-8 inline-flex h-12 items-center rounded-full bg-brand px-7 font-medium text-brand-contrast">{t("sf.continueShopping")}</Link>
+        <Link href={sf.href("/collections/all")} className="mt-8 inline-flex h-12 items-center rounded-btn bg-brand px-7 font-medium text-brand-contrast">{t("sf.continueShopping")}</Link>
       </div>
     );
   }
@@ -41,7 +41,7 @@ export default async function CartPage({ params }: { params: Promise<{ site: str
             if (!unavailable) subtotal += v.priceCents * Math.min(l.quantity, max);
             return (
               <li key={l.id} className="flex gap-4 py-5">
-                <Link href={sf.href(`/products/${v.product.handle}?variant=${v.id}`)} className="size-24 shrink-0 overflow-hidden rounded-lg bg-surface-2">
+                <Link href={sf.href(`/products/${v.product.handle}?variant=${v.id}`)} className="size-24 shrink-0 overflow-hidden rounded-card bg-surface-2">
                   {v.product.images[0] && <img src={v.product.images[0].url} alt="" className="size-full object-cover" />}
                 </Link>
                 <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:justify-between">
@@ -84,7 +84,7 @@ export default async function CartPage({ params }: { params: Promise<{ site: str
           <Link
             href={sf.href("/checkout")}
             aria-disabled={hasProblem || subtotal === 0}
-            className={`mt-6 flex h-12 items-center justify-center rounded-full bg-brand font-medium text-brand-contrast hover:opacity-90 ${hasProblem || subtotal === 0 ? "pointer-events-none opacity-50" : ""}`}
+            className={`mt-6 flex h-12 items-center justify-center rounded-btn bg-brand font-medium text-brand-contrast hover:opacity-90 ${hasProblem || subtotal === 0 ? "pointer-events-none opacity-50" : ""}`}
           >
             {t("sf.checkout")}
           </Link>

@@ -34,7 +34,7 @@ export function ReviewForm({ action, labels, defaults }: {
   if (state?.ok) return <p role="status" className="rounded-xl bg-surface-2 p-4 text-sm">{state.message}</p>;
   return (
     <div>
-      {!open && <button type="button" onClick={() => setOpen(true)} className="h-11 rounded-full border border-text px-6 text-sm font-medium transition-colors hover:bg-text hover:text-bg">{labels.write}</button>}
+      {!open && <button type="button" onClick={() => setOpen(true)} className="h-11 rounded-btn border border-text px-6 text-sm font-medium transition-colors hover:bg-text hover:text-bg">{labels.write}</button>}
       <AnimatePresence>
         {open && (
           <motion.form onSubmit={onSubmit} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
@@ -61,7 +61,7 @@ export function ReviewForm({ action, labels, defaults }: {
             <input name="title" maxLength={120} placeholder={labels.title} aria-label={labels.title} className={field} />
             <textarea name="body" required minLength={10} maxLength={4000} rows={4} placeholder={labels.body} aria-label={labels.body} className="w-full rounded-lg border border-border bg-bg p-3 text-sm outline-none focus:border-text" />
             {state?.error && <p role="alert" className="text-sm text-danger">{state.error}</p>}
-            <button type="submit" disabled={pending} className="inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 text-sm font-medium text-brand-contrast transition-opacity disabled:opacity-50">
+            <button type="submit" disabled={pending} className="inline-flex h-11 items-center gap-2 rounded-btn bg-brand px-6 text-sm font-medium text-brand-contrast transition-opacity disabled:opacity-50">
               {pending && <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />}
               {labels.submit}
             </button>

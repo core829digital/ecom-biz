@@ -58,7 +58,7 @@ export function VariantPicker({
       <p className="text-2xl tabular-nums" aria-live="polite">
         {variant ? (
           <>
-            <span className={variant.compareAt ? "text-brand font-medium" : ""}>{variant.price}</span>
+            <span className={variant.compareAt ? "text-sf-accent font-medium" : ""}>{variant.price}</span>
             {variant.compareAt && <s className="ml-3 text-lg text-muted">{variant.compareAt}</s>}
           </>
         ) : (
@@ -81,7 +81,7 @@ export function VariantPicker({
                   type="button"
                   onClick={() => choose(i, val)}
                   aria-pressed={active}
-                  className={`min-w-12 rounded-full border px-4 py-2 text-sm transition-colors ${active ? "border-text bg-text text-bg" : "border-border hover:border-text"} ${!avail ? "text-muted line-through decoration-1" : ""}`}
+                  className={`min-w-12 rounded-btn border px-4 py-2 text-sm transition-colors ${active ? "border-text bg-text text-bg" : "border-border hover:border-text"} ${!avail ? "text-muted line-through decoration-1" : ""}`}
                 >
                   {val}
                 </button>
@@ -95,7 +95,7 @@ export function VariantPicker({
 
       <div className="flex gap-3">
         <label className="sr-only" htmlFor="qty">{labels.quantity}</label>
-        <div className="flex h-12 items-center rounded-full border border-border">
+        <div className="flex h-12 items-center rounded-btn border border-border">
           <button type="button" className="h-full px-4" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="−">−</button>
           <input id="qty" inputMode="numeric" className="w-10 bg-transparent text-center tabular-nums outline-none" value={qty} onChange={(e) => setQty(Math.max(1, Math.min(999, parseInt(e.target.value || "1", 10) || 1)))} />
           <button type="button" className="h-full px-4" onClick={() => setQty((q) => Math.min(999, q + 1))} aria-label="+">+</button>
@@ -111,7 +111,7 @@ export function VariantPicker({
               if (res.ok) router.refresh();
             })
           }
-          className="h-12 flex-1 rounded-full bg-brand px-6 font-medium text-brand-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="h-12 flex-1 rounded-btn bg-brand px-6 font-medium text-brand-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {pending ? "…" : soldOut ? (variant ? labels.soldOut : labels.unavailable) : labels.add}
         </button>
@@ -132,8 +132,8 @@ export function VariantPicker({
             <p role="status" className="text-sm">{alertMsg.text}</p>
           ) : (
             <div className="flex gap-2">
-              <input type="email" required value={alertEmail} onChange={(e) => setAlertEmail(e.target.value)} placeholder={labels.email} aria-label={labels.email} className="h-11 min-w-0 flex-1 rounded-full border border-border bg-bg px-4 text-sm" />
-              <button disabled={pending} className="h-11 shrink-0 rounded-full border border-text px-5 text-sm font-medium hover:bg-text hover:text-bg">{labels.notifyCta}</button>
+              <input type="email" required value={alertEmail} onChange={(e) => setAlertEmail(e.target.value)} placeholder={labels.email} aria-label={labels.email} className="h-11 min-w-0 flex-1 rounded-btn border border-border bg-bg px-4 text-sm" />
+              <button disabled={pending} className="h-11 shrink-0 rounded-btn border border-text px-5 text-sm font-medium hover:bg-text hover:text-bg">{labels.notifyCta}</button>
             </div>
           )}
           {alertMsg && !alertMsg.ok && <p className="mt-2 text-sm text-danger">{alertMsg.text}</p>}

@@ -4,7 +4,10 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { resolveStore, storeBase, storePublicUrl } from "@/lib/tenant";
 import { storeOperational } from "@/server/plans";
-import { parseTheme } from "@/lib/theme";
+import { cookies, headers } from "next/headers";
+import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth/staff";
+import { parseTheme, themeDraft, type Theme } from "@/lib/theme";
 import { getTranslator } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money";
 
@@ -13,12 +16,15 @@ export const loadStorefront = cache(async (siteKey: string) => {
   const store = await resolveStore(siteKey);
   if (!store) notFound();
   const base = await storeBase(siteKey);
-  const theme = parseTheme(store.theme);
+  const preview = await previewTheme(store);
+  const theme = preview ?? parseTheme(store.theme);
   const t = getTranslator(store.locale);
   return {
     store,
     base,
     theme,
+    /** True while a merchant looks at unpublished site-editor changes. */
+    preview: !!preview,
     t,
     locale: store.locale,
     operational: await storeOperational(store),
@@ -27,6 +33,23 @@ export const loadStorefront = cache(async (siteKey: string) => {
     href: (path: string) => sfHref(base, path),
   };
 });
+
+export const PREVIEW_COOKIE = "sf_preview";
+
+/**
+ * The unpublished draft theme, only for the store's own staff, only on the platform host
+ * (path-based /sites/<slug>, where the staff session cookie exists) and only after the
+ * editor set the preview cookie. Visitors on the store's own domain can never see it.
+ */
+async function previewTheme(store: { id: string; theme: unknown }): Promise<Theme | null> {
+  const [jar, h] = await Promise.all([cookies(), headers()]);
+  if (jar.get(PREVIEW_COOKIE)?.value !== store.id || h.has("x-store-base")) return null;
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const member = user.isPlatformAdmin || (await db.membership.count({ where: { userId: user.id, storeId: store.id } })) > 0;
+  if (!member) return null;
+  return themeDraft(store.theme) ?? parseTheme(store.theme);
+}
 
 export type Storefront = Awaited<ReturnType<typeof loadStorefront>>;
 

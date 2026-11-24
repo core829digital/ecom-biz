@@ -40,8 +40,8 @@ export default async function SearchPage({ params, searchParams }: { params: Pro
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <h1 className="mb-6 text-3xl font-semibold tracking-tight">{sf.t("sf.search")}</h1>
       <form action={sf.href("/search")} role="search" className="mb-8 flex max-w-xl gap-2">
-        <input type="search" name="q" defaultValue={q} autoFocus placeholder={sf.t("sf.searchPlaceholder")} aria-label={sf.t("sf.search")} className="h-12 min-w-0 flex-1 rounded-full border border-border bg-bg px-5" />
-        <button className="h-12 shrink-0 rounded-full bg-brand px-5 font-medium text-brand-contrast">{sf.t("sf.search")}</button>
+        <input type="search" name="q" defaultValue={q} autoFocus placeholder={sf.t("sf.searchPlaceholder")} aria-label={sf.t("sf.search")} className="h-12 min-w-0 flex-1 rounded-btn border border-border bg-bg px-5" />
+        <button className="h-12 shrink-0 rounded-btn bg-brand px-5 font-medium text-brand-contrast">{sf.t("sf.search")}</button>
       </form>
       {q && <p className="mb-6 text-sm text-muted">{sf.t("sf.searchResults", { count: total, q })}</p>}
       {products.length > 0 && <ProductGrid products={products} sf={sf} />}

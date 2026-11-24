@@ -61,6 +61,11 @@ export default async function StorefrontLayout({ children, params }: { children:
     <html lang={store.locale}>
       <body className="storefront min-h-dvh" style={themeCssVars(theme) as React.CSSProperties}>
         <Suspense fallback={null}><NavProgress /></Suspense>
+        {sf.preview && (
+          <div role="status" className="pointer-events-none fixed bottom-3 left-3 z-50 rounded-full bg-black/85 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+            {t("sf.preview.badge")}
+          </div>
+        )}
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:px-3 focus:py-2">
           {t("sf.skip")}
         </a>
@@ -129,9 +134,9 @@ export default async function StorefrontLayout({ children, params }: { children:
               <div>
                 <p className="font-semibold">{t("sf.newsletter.title")}</p>
                 <p className="mt-1 text-muted">{t("sf.newsletter.body")}</p>
-                <SimpleActionForm action={subscribeAction.bind(null, site)} submitLabel={t("sf.newsletter.cta")} className="mt-3 flex flex-wrap gap-2" buttonClassName="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-brand px-4 text-sm font-medium text-brand-contrast disabled:opacity-60">
+                <SimpleActionForm action={subscribeAction.bind(null, site)} submitLabel={t("sf.newsletter.cta")} className="mt-3 flex flex-wrap gap-2" buttonClassName="inline-flex h-10 shrink-0 items-center gap-2 rounded-btn bg-brand px-4 text-sm font-medium text-brand-contrast disabled:opacity-60">
                   <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
-                  <input type="email" name="email" required maxLength={200} autoComplete="email" placeholder={t("field.email")} aria-label={t("field.email")} className="h-10 min-w-0 flex-1 rounded-full border border-border bg-bg px-4 text-sm outline-none focus:border-text" />
+                  <input type="email" name="email" required maxLength={200} autoComplete="email" placeholder={t("field.email")} aria-label={t("field.email")} className="h-10 min-w-0 flex-1 rounded-btn border border-border bg-bg px-4 text-sm outline-none focus:border-text" />
                 </SimpleActionForm>
                 <p className="mt-2 text-xs text-muted">{t("sf.newsletter.consent")}</p>
               </div>

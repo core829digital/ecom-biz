@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { parseSections, type Section } from "./theme-sections";
+import { contrastRatio } from "./palette";
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const safeUrl = z.string().max(2000).refine((u) => u === "" || u.startsWith("https://") || u.startsWith("/files/"));
@@ -18,7 +20,12 @@ export const themeSchema = z.object({
   primaryColor: hex.catch("#111827"),
   backgroundColor: hex.catch("#ffffff"),
   textColor: hex.catch("#111111"),
+  /** Secondary color: sale prices, badges, highlights. */
+  accentColor: hex.catch("#b91c1c"),
   font: z.enum(Object.keys(FONTS) as [FontKey, ...FontKey[]]).catch("system"),
+  headingFont: z.enum(["same", ...Object.keys(FONTS)] as ["same", ...FontKey[]]).catch("same"),
+  buttonShape: z.enum(["pill", "rounded", "square"]).catch("pill"),
+  cornerStyle: z.enum(["sharp", "soft", "round"]).catch("soft"),
   logoUrl: safeUrl.catch(""),
   logoHeight: z.number().int().min(16).max(120).catch(32),
   faviconUrl: safeUrl.catch(""),
@@ -34,13 +41,40 @@ export const themeSchema = z.object({
   social: z
     .object({ instagram: z.string().max(200).catch(""), facebook: z.string().max(200).catch(""), tiktok: z.string().max(200).catch(""), youtube: z.string().max(200).catch("") })
     .catch({ instagram: "", facebook: "", tiktok: "", youtube: "" }),
+  /** Homepage layout. Absent on themes saved before the site editor: derived from the legacy fields. */
+  sections: z.unknown().optional(),
 });
 
-export type Theme = z.infer<typeof themeSchema>;
+export type Theme = Omit<z.infer<typeof themeSchema>, "sections"> & { sections: Section[] };
 
-/** Parse stored theme JSON; any invalid field falls back to its default. */
+/** The homepage older themes rendered (banner, featured products, collections). */
+function legacySections(t: z.infer<typeof themeSchema>): Section[] {
+  return parseSections([
+    { id: "hero0001", type: "hero", title: t.heroTitle, subtitle: t.heroSubtitle, imageUrl: t.heroImageUrl, ctaLabel: t.heroCtaLabel, ctaUrl: t.heroCtaUrl, height: "large", style: { background: "muted" } },
+    { id: "feat0001", type: "featured-products", title: t.featuredTitle, collectionId: t.featuredCollectionId },
+    { id: "coll0001", type: "collections" },
+  ]) ?? [];
+}
+
+/** Parse stored theme JSON; any invalid field falls back to its default. Ignores the unpublished draft. */
 export function parseTheme(json: unknown): Theme {
-  return themeSchema.parse(json && typeof json === "object" ? json : {});
+  const raw = themeSchema.parse(json && typeof json === "object" ? json : {});
+  return { ...raw, sections: parseSections(raw.sections) ?? legacySections(raw) };
+}
+
+/** The store's theme JSON keeps unpublished editor changes under `draft` until "Publish". */
+export function themeDraft(json: unknown): Theme | null {
+  const d = json && typeof json === "object" ? (json as { draft?: unknown }).draft : undefined;
+  return d && typeof d === "object" ? parseTheme(d) : null;
+}
+
+/** Contrast problems a merchant should fix before publishing (WCAG AA). */
+export function themeContrastIssues(t: Theme): ("text" | "button" | "accent")[] {
+  const issues: ("text" | "button" | "accent")[] = [];
+  if (contrastRatio(t.textColor, t.backgroundColor) < 4.5) issues.push("text");
+  if (contrastRatio(contrastText(t.primaryColor), t.primaryColor) < 4.5) issues.push("button");
+  if (contrastRatio(t.accentColor, t.backgroundColor) < 3) issues.push("accent");
+  return issues;
 }
 
 /** WCAG relative luminance → pick black or white text for a background. */
@@ -64,16 +98,24 @@ export function isDark(hexColor: string) {
 }
 
 /** Ready-made looks merchants can start from (then fine-tune). */
-export const THEME_PRESETS: { id: string; name: string; primaryColor: string; backgroundColor: string; textColor: string; font: FontKey }[] = [
-  { id: "minimal", name: "Minimal", primaryColor: "#111111", backgroundColor: "#ffffff", textColor: "#111111", font: "inter" },
-  { id: "midnight", name: "Midnight", primaryColor: "#fafafa", backgroundColor: "#0a0a0b", textColor: "#f4f4f5", font: "inter" },
-  { id: "sand", name: "Sand", primaryColor: "#7c5a3a", backgroundColor: "#f7f3ec", textColor: "#2b2118", font: "lora" },
-  { id: "ocean", name: "Ocean", primaryColor: "#1f4e79", backgroundColor: "#ffffff", textColor: "#0f1b2a", font: "dmsans" },
-  { id: "forest", name: "Forest", primaryColor: "#2f5d46", backgroundColor: "#f6f7f2", textColor: "#16231c", font: "manrope" },
-  { id: "rose", name: "Rosé", primaryColor: "#b4436c", backgroundColor: "#fff7f8", textColor: "#2a1218", font: "playfair" },
-  { id: "editorial", name: "Editorial", primaryColor: "#1a1a1a", backgroundColor: "#f5f2ea", textColor: "#1a1a1a", font: "playfair" },
-  { id: "neon", name: "Studio", primaryColor: "#c6f432", backgroundColor: "#111214", textColor: "#f4f4f5", font: "spacegrotesk" },
+export type ThemePreset = { id: string; name: string; primaryColor: string; accentColor: string; backgroundColor: string; textColor: string; font: FontKey; headingFont: Theme["headingFont"]; buttonShape: Theme["buttonShape"]; cornerStyle: Theme["cornerStyle"] };
+export const THEME_PRESETS: ThemePreset[] = [
+  { id: "minimal", name: "Minimal", primaryColor: "#111111", accentColor: "#b91c1c", backgroundColor: "#ffffff", textColor: "#111111", font: "inter", headingFont: "same", buttonShape: "pill", cornerStyle: "soft" },
+  { id: "midnight", name: "Midnight", primaryColor: "#fafafa", accentColor: "#f87171", backgroundColor: "#0a0a0b", textColor: "#f4f4f5", font: "inter", headingFont: "same", buttonShape: "pill", cornerStyle: "soft" },
+  { id: "sand", name: "Sand", primaryColor: "#7c5a3a", accentColor: "#9a3412", backgroundColor: "#f7f3ec", textColor: "#2b2118", font: "lora", headingFont: "same", buttonShape: "rounded", cornerStyle: "soft" },
+  { id: "ocean", name: "Ocean", primaryColor: "#1f4e79", accentColor: "#c2410c", backgroundColor: "#ffffff", textColor: "#0f1b2a", font: "dmsans", headingFont: "same", buttonShape: "rounded", cornerStyle: "soft" },
+  { id: "forest", name: "Forest", primaryColor: "#2f5d46", accentColor: "#a16207", backgroundColor: "#f6f7f2", textColor: "#16231c", font: "manrope", headingFont: "lora", buttonShape: "pill", cornerStyle: "round" },
+  { id: "rose", name: "Rosé", primaryColor: "#b4436c", accentColor: "#9f1239", backgroundColor: "#fff7f8", textColor: "#2a1218", font: "dmsans", headingFont: "playfair", buttonShape: "pill", cornerStyle: "round" },
+  { id: "editorial", name: "Editorial", primaryColor: "#1a1a1a", accentColor: "#b91c1c", backgroundColor: "#f5f2ea", textColor: "#1a1a1a", font: "inter", headingFont: "playfair", buttonShape: "square", cornerStyle: "sharp" },
+  { id: "neon", name: "Studio", primaryColor: "#c6f432", accentColor: "#f472b6", backgroundColor: "#111214", textColor: "#f4f4f5", font: "spacegrotesk", headingFont: "same", buttonShape: "square", cornerStyle: "sharp" },
+  { id: "terracotta", name: "Terracotta", primaryColor: "#b4532a", accentColor: "#7c2d12", backgroundColor: "#fbf6f1", textColor: "#2a1a12", font: "manrope", headingFont: "lora", buttonShape: "rounded", cornerStyle: "soft" },
+  { id: "nordic", name: "Nordic", primaryColor: "#334155", accentColor: "#0f766e", backgroundColor: "#f8fafc", textColor: "#0f172a", font: "inter", headingFont: "same", buttonShape: "rounded", cornerStyle: "soft" },
+  { id: "lavender", name: "Lavender", primaryColor: "#6d28d9", accentColor: "#be185d", backgroundColor: "#faf8ff", textColor: "#1e1433", font: "dmsans", headingFont: "same", buttonShape: "pill", cornerStyle: "round" },
+  { id: "noir", name: "Noir & Gold", primaryColor: "#d4af37", accentColor: "#e5c76b", backgroundColor: "#0c0c0c", textColor: "#f5f1e6", font: "manrope", headingFont: "playfair", buttonShape: "square", cornerStyle: "sharp" },
 ];
+
+const RADIUS = { pill: "9999px", rounded: "0.625rem", square: "0px" } as const;
+const CORNERS = { sharp: "0px", soft: "0.5rem", round: "1.25rem" } as const;
 
 /** CSS custom properties applied on the storefront root. */
 export function themeCssVars(theme: Theme): Record<string, string> {
@@ -88,5 +130,10 @@ export function themeCssVars(theme: Theme): Record<string, string> {
     "--text": theme.textColor,
     "--muted": mixWithBackground(theme.textColor, theme.backgroundColor, 0.6),
     "--store-font": FONTS[theme.font].stack,
+    "--store-heading-font": FONTS[theme.headingFont === "same" ? theme.font : theme.headingFont].stack,
+    "--sf-accent": theme.accentColor,
+    "--sf-accent-contrast": contrastText(theme.accentColor),
+    "--btn-radius": RADIUS[theme.buttonShape],
+    "--card-radius": CORNERS[theme.cornerStyle],
   };
 }

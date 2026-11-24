@@ -45,7 +45,7 @@ export function MobileNav({ items, label, closeLabel }: { items: { title: string
       <button
         ref={toggle}
         type="button"
-        className="-ml-2 flex size-10 items-center justify-center rounded-lg hover:bg-surface-2"
+        className="-ml-2 flex size-10 items-center justify-center rounded-card hover:bg-surface-2"
         aria-expanded={open}
         aria-controls={id}
         aria-label={open ? closeLabel : label}
@@ -65,7 +65,7 @@ export function MobileNav({ items, label, closeLabel }: { items: { title: string
             className="absolute left-0 top-full z-40 mt-2 w-64 origin-top-left rounded-xl border border-border bg-bg p-1.5 shadow-lg"
           >
             {items.map((i) => (
-              <Link key={i.title + i.href} href={i.href} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 hover:bg-surface-2">
+              <Link key={i.title + i.href} href={i.href} onClick={() => setOpen(false)} className="block rounded-card px-3 py-2.5 hover:bg-surface-2">
                 {i.title}
               </Link>
             ))}

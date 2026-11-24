@@ -27,7 +27,7 @@ export async function setupSteps(store: Store, owner: Pick<User, "emailVerifiedA
     { key: "product", done: products > 0, href: `${base}/products/new`, minutes: 5 },
     { key: "shipping", done: rates > 0, href: `${base}/settings/shipping`, minutes: 3 },
     { key: "payments", done: availablePaymentMethods(store).some((m) => m !== "test"), href: `${base}/settings/payments`, minutes: 5 },
-    { key: "theme", done: !!(theme.logoUrl || theme.heroImageUrl || theme.primaryColor !== "#111827"), href: `${base}/online-store/theme`, minutes: 5 },
+    { key: "theme", done: !!(theme.logoUrl || theme.heroImageUrl || theme.primaryColor !== "#111827" || Array.isArray((store.theme as { sections?: unknown } | null)?.sections)), href: `${base}/online-store/theme`, minutes: 5 },
     { key: "legal", done: legal >= 2, href: `${base}/online-store/pages`, minutes: 5 },
   ];
   if (env.billingEnforced) steps.push({ key: "plan", done: !!owner && accountActive(owner), href: "/account/billing", minutes: 2 });
