@@ -34,3 +34,22 @@ export const EU_STANDARD_VAT_BPS: Record<string, number> = {
 };
 
 export const CURRENCIES = ["EUR", "RON", "USD", "GBP", "CHF", "PLN", "HUF", "CZK", "BGN", "SEK", "DKK", "NOK"];
+
+/** Euro area (Bulgaria adopted the euro on 1 January 2026). */
+const EURO = new Set(["AT", "BE", "BG", "HR", "CY", "EE", "FI", "FR", "DE", "GR", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PT", "SK", "SI", "ES"]);
+const LOCAL_CURRENCY: Record<string, string> = { RO: "RON", PL: "PLN", HU: "HUF", CZ: "CZK", SE: "SEK", DK: "DKK", NO: "NOK", CH: "CHF", LI: "CHF", GB: "GBP", US: "USD" };
+
+/** The currency a store in this country most likely sells in (pre-selection only). */
+export function suggestedCurrency(countryCode: string): string {
+  if (EURO.has(countryCode)) return "EUR";
+  return LOCAL_CURRENCY[countryCode] ?? "EUR";
+}
+
+/** First country found in an Accept-Language header ("it-IT,it;q=0.9" → "IT"), if supported. */
+export function countryFromAcceptLanguage(header: string | null | undefined): string | null {
+  for (const part of (header ?? "").split(",")) {
+    const region = part.split(";")[0].trim().split("-")[1]?.toUpperCase();
+    if (region && COUNTRY_CODES.includes(region)) return region;
+  }
+  return null;
+}

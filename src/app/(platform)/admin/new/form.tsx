@@ -12,12 +12,18 @@ export function NewStoreForm(props: {
   defaultLocale: string;
   countries: { code: string; name: string }[];
   currencies: string[];
+  defaultCountry: string;
+  /** Suggested currency per country (applied until the merchant picks one). */
+  currencyFor: Record<string, string>;
   locales: { value: string; label: string }[];
-  labels: Record<"name" | "slug" | "email" | "country" | "currency" | "locale" | "submit", string>;
+  labels: Record<"name" | "slug" | "email" | "country" | "currency" | "locale" | "submit" | "slugExample", string>;
 }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [country, setCountry] = useState(props.defaultCountry);
+  const [currency, setCurrency] = useState(props.currencyFor[props.defaultCountry] ?? "EUR");
+  const [currencyTouched, setCurrencyTouched] = useState(false);
   const { labels } = props;
   return (
     <ActionForm action={createStoreAction} className="space-y-4">
@@ -42,17 +48,20 @@ export function NewStoreForm(props: {
           setSlugTouched(true);
           setSlug(e.target.value.toLowerCase());
         }}
-        hint={`${slug || "your-store"}.${props.rootDomain}`}
+        hint={`${slug || labels.slugExample}.${props.rootDomain}`}
         required
       />
       <Input name="email" type="email" autoComplete="email" label={labels.email} defaultValue={props.defaultEmail} required />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select name="countryCode" label={labels.country} defaultValue="RO">
+        <Select name="countryCode" autoComplete="country" label={labels.country} value={country} onChange={(e) => {
+          setCountry(e.target.value);
+          if (!currencyTouched) setCurrency(props.currencyFor[e.target.value] ?? "EUR");
+        }}>
           {props.countries.map((c) => (
             <option key={c.code} value={c.code}>{c.name}</option>
           ))}
         </Select>
-        <Select name="currency" label={labels.currency} defaultValue="EUR">
+        <Select name="currency" label={labels.currency} value={currency} onChange={(e) => { setCurrency(e.target.value); setCurrencyTouched(true); }}>
           {props.currencies.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}

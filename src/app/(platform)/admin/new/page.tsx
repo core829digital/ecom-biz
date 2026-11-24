@@ -1,7 +1,9 @@
 import { requireUser } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { env } from "@/lib/env";
-import { countryOptions, CURRENCIES } from "@/lib/geo";
+import { countryFromAcceptLanguage, countryOptions, CURRENCIES, suggestedCurrency } from "@/lib/geo";
+import { headers } from "next/headers";
+import { Check } from "lucide-react";
 import { LOCALES, LOCALE_LABELS } from "@/lib/i18n";
 import { NewStoreForm } from "./form";
 import Link from "next/link";
@@ -27,10 +29,26 @@ export default async function NewStorePage() {
       </main>
     );
   }
+  const firstStore = (await ownedStoreCount(user.id)) === 0;
+  const country = countryFromAcceptLanguage((await headers()).get("accept-language")) ?? (locale === "it" ? "IT" : "RO");
+  const steps = [t("onboarding.step.account"), t("onboarding.step.store"), t("onboarding.step.setup")];
   return (
     <main className="mx-auto max-w-lg px-4 py-12">
-      <h1 className="text-xl font-semibold">{t("stores.new.title")}</h1>
-      <p className="mb-6 mt-1 text-sm text-muted">{t("stores.new.subtitle")}</p>
+      {firstStore && (
+        <ol className="mb-8 flex items-center gap-2 text-xs" aria-label={t("onboarding.progress")}>
+          {steps.map((s, i) => (
+            <li key={s} className="flex flex-1 items-center gap-2" aria-current={i === 1 ? "step" : undefined}>
+              <span className={`flex size-6 shrink-0 items-center justify-center rounded-full font-semibold ${i === 0 ? "bg-success text-white" : i === 1 ? "bg-accent text-accent-contrast" : "border border-border text-muted"}`}>
+                {i === 0 ? <Check className="size-3.5" aria-hidden /> : i + 1}
+              </span>
+              <span className={i === 1 ? "font-medium" : "text-muted"}>{s}</span>
+              {i < steps.length - 1 && <span className="h-px flex-1 bg-border" aria-hidden />}
+            </li>
+          ))}
+        </ol>
+      )}
+      <h1 className="text-xl font-semibold">{firstStore ? t("onboarding.welcome", { name: user.name.split(" ")[0] }) : t("stores.new.title")}</h1>
+      <p className="mb-6 mt-1 text-sm text-muted">{firstStore ? t("onboarding.welcomeBody") : t("stores.new.subtitle")}</p>
       <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <NewStoreForm
           rootDomain={env.storefrontRootDomain}
@@ -38,6 +56,8 @@ export default async function NewStorePage() {
           defaultLocale={locale}
           countries={countryOptions(locale)}
           currencies={CURRENCIES}
+          defaultCountry={country}
+          currencyFor={Object.fromEntries(countryOptions(locale).map((c) => [c.code, suggestedCurrency(c.code)]))}
           locales={LOCALES.map((l) => ({ value: l, label: LOCALE_LABELS[l] }))}
           labels={{
             name: t("field.storeName"),
@@ -47,6 +67,7 @@ export default async function NewStorePage() {
             currency: t("field.currency"),
             locale: t("field.storeLanguage"),
             submit: t("stores.create"),
+            slugExample: t("stores.new.slugExample"),
           }}
         />
       </div>

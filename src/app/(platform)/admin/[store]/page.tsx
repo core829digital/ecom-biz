@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { SetupGuide, setupSteps } from "./setup-guide";
+import { restoreSetupAction } from "./setup-actions";
+import { storeOwner } from "@/server/plans";
+import { ConfirmSubmit } from "@/components/ui/form";
 import { db } from "@/lib/db";
 import { requireStoreAccess } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { formatMoney } from "@/lib/money";
-import { parseTheme } from "@/lib/theme";
-import { availablePaymentMethods } from "@/server/payments";
 import { Card, PageHeader, Stat } from "@/components/ui/primitives";
 import { FinancialBadge, FulfillmentBadge } from "@/components/admin/status-badges";
 import { SalesChart } from "@/components/admin/sales-chart";
@@ -20,7 +22,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ stor
   const since = new Date(Date.now() - DAYS * 86400_000);
   const tz = store.timezone;
 
-  const [profitRows, daily, top, recent, lowStock, productCount, rateCount, unfulfilled, unpaid] = await Promise.all([
+  const [profitRows, daily, top, recent, lowStock, unfulfilled, unpaid] = await Promise.all([
     // Gross profit over the window: revenue net of discounts, refunds and (when included) VAT, minus unit cost.
     db.$queryRaw<{ revenue: bigint | null; cost: bigint | null; missing: bigint | null }[]>`
       SELECT
@@ -50,8 +52,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ stor
       orderBy: { inventoryQty: "asc" },
       take: 5,
     }),
-    db.product.count({ where: { storeId: store.id } }),
-    db.shippingRate.count({ where: { zone: { storeId: store.id } } }),
     db.order.count({ where: { storeId: store.id, status: "OPEN", fulfillmentStatus: { not: "FULFILLED" } } }),
     db.order.count({ where: { storeId: store.id, status: "OPEN", financialStatus: "PENDING" } }),
   ]);
@@ -74,35 +74,24 @@ export default async function DashboardPage({ params }: { params: Promise<{ stor
   const totalOrders = points.reduce((s, p) => s + p.orders, 0);
   const today = points[points.length - 1];
 
-  const theme = parseTheme(store.theme);
-  const checklist = [
-    { done: productCount > 0, label: t("dashboard.setup.product"), href: `${base}/products/new` },
-    { done: availablePaymentMethods(store).filter((m) => m !== "test").length > 0, label: t("dashboard.setup.payments"), href: `${base}/settings/payments` },
-    { done: rateCount > 0, label: t("dashboard.setup.shipping"), href: `${base}/settings/shipping` },
-    { done: !!(theme.logoUrl || theme.heroImageUrl || theme.primaryColor !== "#111827"), label: t("dashboard.setup.theme"), href: `${base}/online-store/theme` },
-  ];
-  const setupDone = checklist.every((c) => c.done);
+  const owner = await storeOwner(store.id);
+  const steps = await setupSteps(store, owner);
+  const setupComplete = steps.every((st) => st.done);
   const date = new Intl.DateTimeFormat(locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: tz });
 
   return (
     <>
-      <PageHeader title={t("dashboard.greeting", { name: user.name.split(" ")[0] })} subtitle={t("dashboard.subtitle", { days: DAYS })} />
+      <PageHeader
+        title={t("dashboard.greeting", { name: user.name.split(" ")[0] })}
+        subtitle={t("dashboard.subtitle", { days: DAYS })}
+        actions={store.setupDismissedAt && !setupComplete ? (
+          <form action={restoreSetupAction.bind(null, store.slug)}>
+            <ConfirmSubmit>{t("setup.resume", { done: steps.filter((st) => st.done).length, total: steps.length })}</ConfirmSubmit>
+          </form>
+        ) : null}
+      />
 
-      {!setupDone && (
-        <Card className="mb-5" title={t("dashboard.setup.title")}>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {checklist.map((c) => (
-              <li key={c.href}>
-                <Link href={c.href} className={`flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-sm hover:bg-surface-2 ${c.done ? "text-muted line-through" : ""}`}>
-                  <span className={`flex size-5 items-center justify-center rounded-full border text-xs ${c.done ? "border-success bg-success text-white" : "border-border"}`} aria-hidden>{c.done ? "✓" : ""}</span>
-                  {c.label}
-                  <span className="sr-only">{c.done ? t("dashboard.setup.done") : ""}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+      {!store.setupDismissedAt && <SetupGuide store={store} steps={steps} t={t} />}
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-3">
         <Stat label={t("dashboard.sales", { days: DAYS })} value={money(totalSales)} />
