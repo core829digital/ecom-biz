@@ -92,6 +92,11 @@ export async function deliverWebhook(deliveryId: string): Promise<boolean> {
       nextAttemptAt: success || attempts >= MAX_ATTEMPTS ? null : new Date(Date.now() + backoffMs(attempts)),
     },
   });
+  if (!success && attempts >= MAX_ATTEMPTS) {
+    const { notifyStore } = await import("@/server/notifications");
+    const store = await db.store.findUnique({ where: { id: d.subscription.storeId }, select: { slug: true } });
+    await notifyStore(d.subscription.storeId, { type: "webhook_failed", data: { topic: d.topic, url: d.subscription.url.slice(0, 80) }, href: store ? `/admin/${store.slug}/settings/developers` : undefined }, ["OWNER", "ADMIN"]);
+  }
   return success;
 }
 

@@ -16,6 +16,7 @@ import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
 import { fail, type ActionState } from "@/lib/action";
 import { AccountDeletionError, deleteUserAccount } from "@/server/gdpr";
+import { notifyUsers } from "@/server/notifications";
 
 export type EnrollState = { error?: string; qr?: string; secret?: string; codes?: string[]; done?: boolean; at?: number } | null;
 
@@ -38,6 +39,7 @@ export async function confirmEnrollAction(_: EnrollState, fd: FormData): Promise
   if (!verifyTotp(open(user.totpSecret), String(fd.get("code") ?? ""))) return { error: t("security.error.code"), at: Date.now() };
   const codes = generateRecoveryCodes();
   await db.user.update({ where: { id: user.id }, data: { totpEnabledAt: new Date(), recoveryCodes: codes.map(sha256) } });
+  await notifyUsers([user.id], { type: "security_2fa_changed", data: { state: "on" }, href: "/account/security" });
   await audit({ userId: user.id, action: "auth.2fa_enabled" });
   revalidatePath("/account/security");
   return { codes, done: true, at: Date.now() };
@@ -50,6 +52,7 @@ export async function disableTwoFactorAction(_: EnrollState, fd: FormData): Prom
   if (!(await verifyPassword(String(fd.get("password") ?? ""), user.passwordHash))) return { error: t("account.error.password"), at: Date.now() };
   if (!user.totpSecret || !verifyTotp(open(user.totpSecret), String(fd.get("code") ?? ""))) return { error: t("security.error.code"), at: Date.now() };
   await db.user.update({ where: { id: user.id }, data: { totpEnabledAt: null, totpSecret: null, recoveryCodes: [] } });
+  await notifyUsers([user.id], { type: "security_2fa_changed", data: { state: "off" }, href: "/account/security" });
   await audit({ userId: user.id, action: "auth.2fa_disabled" });
   revalidatePath("/account/security");
   return { done: true, at: Date.now() };

@@ -15,9 +15,19 @@ export async function createStaffSession(userId: string, opts: { verified?: bool
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
+  const userAgent = h.get("user-agent")?.slice(0, 255) ?? null;
+  // A sign-in from a browser/network this account hasn't used before is reported to its owner.
+  const [previous, known] = await Promise.all([
+    db.session.count({ where: { userId } }),
+    db.session.findFirst({ where: { userId, userAgent, ip }, select: { id: true } }),
+  ]);
   await db.session.create({
-    data: { tokenHash: sha256(token), userId, expiresAt, userAgent: h.get("user-agent")?.slice(0, 255), ip, verified: opts.verified ?? true },
+    data: { tokenHash: sha256(token), userId, expiresAt, userAgent, ip, verified: opts.verified ?? true },
   });
+  if (previous > 0 && !known) {
+    const { notifyUsers } = await import("@/server/notifications");
+    await notifyUsers([userId], { type: "security_new_login", data: { device: describeDevice(userAgent), ip: ip ?? "?" }, href: "/account/security" });
+  }
   // Restore the user's saved appearance on this device.
   const prefs = await db.user.findUnique({ where: { id: userId }, select: { theme: true, accent: true } });
   if (prefs) {
@@ -106,4 +116,12 @@ export const requireStoreAccess = cache(async (slug: string, minRole: Role = "ST
 
 export function hasRole(role: Role, minRole: Role) {
   return ROLE_RANK[role] >= ROLE_RANK[minRole];
+}
+
+/** "Chrome · Windows" from a user-agent string (for notifications and session lists). */
+export function describeDevice(ua: string | null) {
+  if (!ua) return "Unknown device";
+  const browser = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "Browser";
+  const os = /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "macOS" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Linux/.test(ua) ? "Linux" : "";
+  return [browser, os].filter(Boolean).join(" · ");
 }

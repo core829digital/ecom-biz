@@ -49,12 +49,16 @@ export async function submitReviewAction(site: string, productId: string, _: Rev
   const verified = customer?.email === d.email && (await db.orderLine.count({
     where: { productId, order: { storeId: store.id, customerId: customer.id, financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] } } },
   })) > 0;
-  await db.productReview.create({
+  const review = await db.productReview.create({
     data: {
       storeId: store.id, productId, name: d.name, email: d.email, rating: d.rating, title: d.title || null, body: d.body,
       verifiedPurchase: verified, status: store.reviewsAutoPublish ? "APPROVED" : "PENDING",
     },
   });
+  if (review.status === "PENDING") {
+    const { notifyStore } = await import("@/server/notifications");
+    await notifyStore(store.id, { type: "review_pending", data: { name: d.name, rating: d.rating }, href: `/admin/${store.slug}/reviews?view=pending` });
+  }
   // Only this product page shows reviews: never refresh the whole site.
   revalidatePath("/sites/[site]/products/[handle]", "page");
   return { ok: true, message: store.reviewsAutoPublish ? t("sf.reviews.published") : t("sf.reviews.thanks"), at: Date.now() };

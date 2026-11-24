@@ -8,6 +8,8 @@ import { parseManualPayments } from "@/server/payments";
 import { sendMerchantNewOrder, sendOrderConfirmation } from "@/server/emails";
 import { emitWebhook } from "@/server/webhooks";
 import { getTranslator } from "@/lib/i18n";
+import { formatMoney } from "@/lib/money";
+import { notifyStore, recentlyNotified } from "@/server/notifications";
 
 export class OutOfStockError extends Error {
   constructor(public title: string) {
@@ -231,7 +233,29 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
       emitWebhook(store.id, "orders/create", orderPayload(order)),
       order.financialStatus === "PAID" ? emitWebhook(store.id, "orders/paid", orderPayload(order)) : Promise.resolve(),
       result.newCustomer ? emitWebhook(store.id, "customers/create", { id: order.customerId, email: order.email }) : Promise.resolve(),
+      notifyStore(store.id, {
+        type: "order_new",
+        data: { number: order.number, total: formatMoney(order.totalCents, order.currency, store.locale), email: order.email },
+        href: `/admin/${store.slug}/orders/${order.id}`,
+      }),
+      notifyLowStock(store, order.lines.map((l) => l.variantId).filter((v): v is string => !!v)),
     ]);
   }
   return { orderId: result.orderId, created: result.created };
+}
+
+const LOW_STOCK = 3;
+
+/** Tell the team when a sale leaves a tracked variant at or below the low-stock level (once a day per variant). */
+async function notifyLowStock(store: { id: string; slug: string }, variantIds: string[]) {
+  if (!variantIds.length) return;
+  const low = await db.productVariant.findMany({
+    where: { id: { in: variantIds }, trackInventory: true, allowBackorder: false, inventoryQty: { lte: LOW_STOCK }, product: { storeId: store.id } },
+    select: { id: true, title: true, inventoryQty: true, product: { select: { id: true, title: true } } },
+  });
+  for (const v of low) {
+    if (await recentlyNotified(store.id, "low_stock", v.id)) continue;
+    const title = v.title === "Default" ? v.product.title : `${v.product.title} (${v.title})`;
+    await notifyStore(store.id, { type: "low_stock", data: { key: v.id, title, qty: v.inventoryQty }, href: `/admin/${store.slug}/products/${v.product.id}` });
+  }
 }

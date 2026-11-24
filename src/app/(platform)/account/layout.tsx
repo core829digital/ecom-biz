@@ -26,6 +26,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
           {
             title: t("account.group.app"),
             items: [
+              { href: "/account/notifications", label: t("notify.title"), icon: "bell" },
               { href: "/account/appearance", label: t("account.appearance"), icon: "palette" },
               { href: "/account/billing", label: t("nav.billing"), icon: "card" },
             ],

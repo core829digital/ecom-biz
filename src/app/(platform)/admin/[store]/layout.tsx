@@ -12,6 +12,7 @@ import { UsageMeter } from "@/components/admin/usage-meter";
 import { CommandPalette } from "@/components/admin/command-palette";
 import { KeyboardShortcuts } from "@/components/admin/shortcuts";
 import { I18nProvider } from "@/components/i18n-provider";
+import { NotificationBell } from "@/components/notifications/bell";
 import { logoutAction } from "../../(auth)/actions";
 
 export default async function StoreAdminLayout({ children, params }: { children: React.ReactNode; params: Promise<{ store: string }> }) {
@@ -37,7 +38,10 @@ export default async function StoreAdminLayout({ children, params }: { children:
     else throw e;
   }
   const usage = await storeUsage(store.id);
-  const pendingReviews = await db.productReview.count({ where: { storeId: store.id, status: "PENDING" } });
+  const [pendingReviews, unreadNotifications] = await Promise.all([
+    db.productReview.count({ where: { storeId: store.id, status: "PENDING" } }),
+    db.notification.count({ where: { userId: user.id, readAt: null } }),
+  ]);
 
   const nav: NavItem[] = [
     { href: base, label: t("nav.home"), icon: "home", exact: true },
@@ -96,6 +100,7 @@ export default async function StoreAdminLayout({ children, params }: { children:
         user={{ name: user.name, email: user.email, isPlatformAdmin: user.isPlatformAdmin }}
         theme={theme}
         banner={banner}
+        topbar={<NotificationBell initialUnread={unreadNotifications} locale={locale} labels={{ title: t("notify.title"), empty: t("notify.empty"), markAll: t("notify.markAll"), viewAll: t("notify.viewAll"), open: t("notify.open") }} />}
         logoutAction={logoutAction}
         usage={
           <UsageMeter

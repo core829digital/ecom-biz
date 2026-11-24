@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { CreditCard, LogOut, Palette, Shield, User, X, type LucideIcon } from "lucide-react";
+import { CreditCard, LogOut, Palette, Shield, User, X, type LucideIcon, Bell } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-const ICONS: Record<string, LucideIcon> = { user: User, shield: Shield, palette: Palette, card: CreditCard };
+const ICONS: Record<string, LucideIcon> = { user: User, shield: Shield, palette: Palette, card: CreditCard, bell: Bell };
 
 export function SettingsShell({
   userName, groups, labels, logoutAction, children,

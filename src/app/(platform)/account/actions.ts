@@ -14,6 +14,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/server/audit";
 import { BillingError, createBillingPortal, createSubscriptionCheckout } from "@/server/billing";
 import { sendVerificationEmail } from "@/server/email-verification";
+import { emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { clientIp } from "@/lib/http";
 
 export async function updateProfileAction(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -37,7 +38,17 @@ export async function updateProfileAction(_: ActionState, fd: FormData): Promise
   const emailChanged = email !== user.email;
   // A new address must be verified again (it unlocks trials and billing).
   const updated = await db.user.update({ where: { id: user.id }, data: { name, email, locale, ...(emailChanged ? { emailVerifiedAt: null } : {}) } });
-  if (emailChanged) await sendVerificationEmail(updated);
+  if (emailChanged) {
+    await sendVerificationEmail(updated);
+    // Warn the previous address: if someone else changed it, the owner finds out immediately.
+    const tOld = (await import("@/lib/i18n")).getTranslator(user.locale);
+    await sendEmail({
+      to: user.email,
+      subject: tOld("email.emailChanged.subject"),
+      text: tOld("email.emailChanged.body", { email }),
+      html: emailLayout({ heading: tOld("email.emailChanged.subject"), bodyHtml: `<p>${escapeHtml(tOld("email.emailChanged.body", { email }))}</p>` }),
+    });
+  }
   (await cookies()).set("locale", locale, { path: "/", maxAge: 31536000, sameSite: "lax" });
   if (email !== user.email) await audit({ userId: user.id, action: "account.email_change", meta: { from: user.email, to: email } });
   revalidatePath("/", "layout");

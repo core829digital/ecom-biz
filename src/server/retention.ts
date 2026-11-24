@@ -20,6 +20,7 @@ export const RETENTION_DAYS = {
   auditLog: 730, // security log: 2 years
   networkTrialClaims: 60, // only the last 30 days are ever checked
   trialClaims: 3 * 365, // anti-abuse ledger (hashes only)
+  notifications: 90,
 } as const;
 
 export async function applyRetention() {
@@ -34,7 +35,8 @@ export async function applyRetention() {
     db.webhookDelivery.deleteMany({ where: { OR: [{ success: true, createdAt: { lt: ago(r.webhookDeliveriesOk) } }, { createdAt: { lt: ago(r.webhookDeliveriesFailed) } }] } }),
     db.auditLog.deleteMany({ where: { createdAt: { lt: ago(r.auditLog) } } }),
     db.trialClaim.deleteMany({ where: { OR: [{ kind: "NETWORK", createdAt: { lt: ago(r.networkTrialClaims) } }, { createdAt: { lt: ago(r.trialClaims) } }] } }),
+    db.notification.deleteMany({ where: { createdAt: { lt: ago(r.notifications) } } }),
   ]);
-  const names = ["checkouts", "carts", "stockAlerts", "passwordResets", "customerPasswordResets", "emailVerifications", "webhookDeliveries", "auditLog", "trialClaims"];
+  const names = ["checkouts", "carts", "stockAlerts", "passwordResets", "customerPasswordResets", "emailVerifications", "webhookDeliveries", "auditLog", "trialClaims", "notifications"];
   return Object.fromEntries(names.map((n, i) => [n, results[i].count]));
 }

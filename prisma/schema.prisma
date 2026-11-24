@@ -42,6 +42,8 @@ model User {
   /// Version (date) of the legal terms the account accepted, and when.
   termsVersion         String?
   termsAcceptedAt      DateTime?
+  /// Email preference per notification type, e.g. {"order_new": {"email": false}}. Missing = default.
+  notificationPrefs    Json               @default("{}")
   // Two-factor authentication (TOTP, RFC 6238)
   totpSecret           String?
   totpEnabledAt        DateTime?
@@ -56,6 +58,24 @@ model User {
   passwordResets     PasswordReset[]
   emailVerifications EmailVerification[]
   trialClaims        TrialClaim[]
+  notifications      Notification[]
+}
+
+/// In-app notification for one person. Text is rendered at display time in their language from `type` + `data`.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  storeId   String?
+  type      String
+  data      Json      @default("{}")
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([storeId, type, createdAt])
 }
 
 model EmailVerification {
@@ -246,6 +266,7 @@ model Store {
   auditLogs     AuditLog[]
   reviews       ProductReview[]
   stockAlerts   StockAlert[]
+  notifications Notification[]
 }
 
 model Domain {

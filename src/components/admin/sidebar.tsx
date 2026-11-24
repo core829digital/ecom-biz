@@ -38,7 +38,7 @@ const spring = { type: "spring" as const, stiffness: 500, damping: 38 };
  * the quick switcher (Ctrl/⌘ K).
  */
 export function AdminShell({
-  platformName, storeName, storeUrl, nav, stores, currentSlug, canCreateStore, user, labels, logoutAction, banner, usage, theme, children,
+  platformName, storeName, storeUrl, nav, stores, currentSlug, canCreateStore, user, labels, logoutAction, banner, usage, theme, topbar, children,
 }: {
   platformName: string;
   storeName: string;
@@ -53,6 +53,8 @@ export function AdminShell({
   banner?: ReactNode;
   usage?: ReactNode;
   theme: ThemePref;
+  /** Extra controls on the right of the top bar (e.g. notifications). */
+  topbar?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -158,8 +160,11 @@ export function AdminShell({
             <span className="flex-1 truncate text-left">{labels.search}</span>
             <kbd className="hidden rounded border border-border bg-surface-2 px-1.5 py-0.5 font-sans text-[11px] sm:inline">Ctrl K</kbd>
           </button>
-          <div className="ml-auto hidden sm:block">
-            <ThemeSwitcher theme={themePref} onChange={setThemePref} labels={labels.theme} compact layoutId="topbar-theme" />
+          <div className="ml-auto flex items-center gap-2">
+            {topbar}
+            <div className="hidden sm:block">
+              <ThemeSwitcher theme={themePref} onChange={setThemePref} labels={labels.theme} compact layoutId="topbar-theme" />
+            </div>
           </div>
         </header>
         {banner}

@@ -22,6 +22,8 @@ async function acceptInvite(token: string) {
     }),
     db.staffInvite.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } }),
   ]);
+  const { notifyStore } = await import("@/server/notifications");
+  await notifyStore(invite.storeId, { type: "staff_joined", data: { name: user.name, role: invite.role }, href: `/admin/${invite.store.slug}/settings/staff` }, ["OWNER"]);
   redirect(`/admin/${invite.store.slug}`);
 }
 

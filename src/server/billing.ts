@@ -8,6 +8,7 @@ import { mapStripeStatus } from "@/lib/billing-rules";
 import { claimHash, networkOf, cardUsedForTrial, recordTrialClaims, trialEligibility } from "@/server/trial";
 import { audit } from "@/server/audit";
 import { sendBillingEmail } from "@/server/billing-emails";
+import { notifyStore, notifyUsers } from "@/server/notifications";
 
 export type BillingErrorCode = "not_configured" | "verify_email" | "hold" | "no_account" | "no_url";
 export class BillingError extends Error {
@@ -199,10 +200,11 @@ export async function syncSubscription(subscriptionId: string) {
 /** Platform-account disputes: on a merchant order (card sale) or on a subscription invoice. */
 async function handleDispute(stripe: Stripe, dispute: Stripe.Dispute, created: boolean) {
   const pi = idOf(dispute.payment_intent);
-  const order = pi ? await db.order.findFirst({ where: { paymentRef: pi }, select: { id: true, storeId: true } }) : null;
+  const order = pi ? await db.order.findFirst({ where: { paymentRef: pi }, select: { id: true, storeId: true, number: true, store: { select: { slug: true } } } }) : null;
   if (order) {
     await db.orderEvent.create({ data: { orderId: order.id, type: "dispute", message: `Payment dispute ${created ? "opened" : `closed (${dispute.status})`}: ${dispute.reason}` } });
     await audit({ storeId: order.storeId, action: created ? "order.dispute_opened" : "order.dispute_closed", target: order.id, meta: { dispute: dispute.id, status: dispute.status } });
+    if (created) await notifyStore(order.storeId, { type: "order_dispute", data: { number: order.number, reason: dispute.reason }, href: `/admin/${order.store.slug}/orders/${order.id}` }, ["OWNER", "ADMIN"]);
     return;
   }
   const charge = await stripe.charges.retrieve(idOf(dispute.charge)!);
@@ -213,6 +215,7 @@ async function handleDispute(stripe: Stripe, dispute: Stripe.Dispute, created: b
     // A chargeback on our own invoice: pause the account until a platform admin reviews it.
     await db.user.update({ where: { id: user.id }, data: { billingHold: true, billingHoldReason: `dispute:${dispute.id}` } });
     await audit({ userId: user.id, action: "billing.hold_dispute", target: dispute.id });
+    await notifyUsers([user.id], { type: "billing_hold", href: "/account/billing" });
   } else if (dispute.status === "won" && user.billingHoldReason === `dispute:${dispute.id}`) {
     await db.user.update({ where: { id: user.id }, data: { billingHold: false, billingHoldReason: null } });
     await audit({ userId: user.id, action: "billing.hold_cleared", target: dispute.id });
@@ -245,7 +248,11 @@ export async function handleBillingEvent(event: Stripe.Event) {
       // Three days before the first charge: remind the merchant (transparency, fewer disputes).
       const sub = event.data.object;
       const user = await findUserFor(sub);
-      if (user && !sub.cancel_at_period_end) await sendBillingEmail(user, "trial_ending", { date: sub.trial_end ? new Date(sub.trial_end * 1000) : null });
+      if (user && !sub.cancel_at_period_end) {
+        const date = sub.trial_end ? new Date(sub.trial_end * 1000) : null;
+        await sendBillingEmail(user, "trial_ending", { date });
+        await notifyUsers([user.id], { type: "billing_trial_ending", data: { date: date ? date.toISOString().slice(0, 10) : "" }, href: "/account/billing" });
+      }
       break;
     }
     case "invoice.payment_failed": {
@@ -254,7 +261,10 @@ export async function handleBillingEvent(event: Stripe.Event) {
       if (subId) await syncSubscription(subId);
       const customer = idOf(invoice.customer);
       const user = customer ? await db.user.findUnique({ where: { stripeCustomerId: customer } }) : null;
-      if (user) await sendBillingEmail(user, "payment_failed", { date: user.pastDueSince });
+      if (user) {
+        await sendBillingEmail(user, "payment_failed", { date: user.pastDueSince });
+        await notifyUsers([user.id], { type: "billing_payment_failed", href: "/account/billing" });
+      }
       break;
     }
     case "invoice.paid": {
