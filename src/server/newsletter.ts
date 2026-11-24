@@ -5,6 +5,7 @@ import { randomToken } from "@/lib/crypto";
 import { getTranslator } from "@/lib/i18n";
 import { emailButton, emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { storePublicUrl } from "@/lib/tenant";
+import { enrollInAutomation } from "@/server/marketing";
 
 /**
  * Newsletter subscriptions (the merchant is the controller). Sign-ups from the store form use
@@ -19,11 +20,12 @@ export async function subscribe(store: Store, rawEmail: string, source: "form" |
   if (existing?.status === "SUBSCRIBED") return "already";
   if (source !== "form") {
     // Consent given directly (checkout checkbox, or a merchant importing someone who agreed).
-    await db.newsletterSubscriber.upsert({
+    const sub = await db.newsletterSubscriber.upsert({
       where: { storeId_email: { storeId: store.id, email } },
       create: { storeId: store.id, email, status: "SUBSCRIBED", token: randomToken(24), source, consentAt: new Date() },
       update: { status: "SUBSCRIBED", source, consentAt: new Date(), unsubscribedAt: null },
     });
+    await enrollInAutomation(store.id, "WELCOME", sub);
     return "subscribed";
   }
   const sub = await db.newsletterSubscriber.upsert({
@@ -50,6 +52,10 @@ export async function subscribe(store: Store, rawEmail: string, source: "form" |
 export async function confirmSubscription(storeId: string, token: string) {
   if (!token || token.length > 64) return false;
   const res = await db.newsletterSubscriber.updateMany({ where: { storeId, token, status: "PENDING" }, data: { status: "SUBSCRIBED", consentAt: new Date() } });
+  if (res.count) {
+    const sub = await db.newsletterSubscriber.findFirst({ where: { storeId, token } });
+    if (sub) await enrollInAutomation(storeId, "WELCOME", sub);
+  }
   return res.count > 0 || !!(await db.newsletterSubscriber.findFirst({ where: { storeId, token, status: "SUBSCRIBED" }, select: { id: true } }));
 }
 

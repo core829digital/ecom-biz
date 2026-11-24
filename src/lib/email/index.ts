@@ -18,6 +18,8 @@ export type Email = {
   /** Display name for the From header (store name for customer emails). */
   fromName?: string;
   replyTo?: string;
+  /** Extra headers, e.g. List-Unsubscribe on marketing emails. */
+  headers?: Record<string, string>;
 };
 
 /** Sends an email. Never throws: failures are logged so they can't break checkout or orders. */
@@ -36,7 +38,7 @@ export async function sendEmail(input: Email): Promise<boolean> {
     return true;
   }
   try {
-    await t.sendMail({ from, to: email.to, subject: email.subject, html: email.html, text: email.text, replyTo: email.replyTo });
+    await t.sendMail({ from, to: email.to, subject: email.subject, html: email.html, text: email.text, replyTo: email.replyTo, headers: email.headers });
     return true;
   } catch (err) {
     console.error("[email] send failed", { to: email.to, subject: email.subject, err });

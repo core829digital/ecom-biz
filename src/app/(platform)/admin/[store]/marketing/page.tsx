@@ -6,6 +6,7 @@ import { Badge, Card, EmptyState, PageHeader, Stat, Table, Td, Th } from "@/comp
 import { ActionForm, ConfirmSubmit, FieldError, SubmitButton } from "@/components/ui/form";
 import { Checkbox, Input } from "@/components/ui/fields";
 import { FilterTabs, Pagination, SearchBox, parsePage } from "@/components/admin/list";
+import { MarketingTabs } from "./tabs";
 import { addSubscriberAction, removeSubscriberAction, saveNewsletterSettingsAction, unsubscribeSubscriberAction } from "./actions";
 
 const PER_PAGE = 50;
@@ -38,6 +39,7 @@ export default async function MarketingPage({ params, searchParams }: { params: 
         subtitle={t("newsletter.subtitle")}
         actions={admin && count("SUBSCRIBED") > 0 ? <a href={`${base}/export`} download className="inline-flex h-8 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium hover:bg-surface-2">{t("newsletter.export")}</a> : null}
       />
+      <MarketingTabs slug={slug} active="subscribers" t={t} />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Stat label={t("newsletter.status.SUBSCRIBED")} value={count("SUBSCRIBED")} hint={t("newsletter.subscribedHint")} />
         <Stat label={t("newsletter.status.PENDING")} value={count("PENDING")} hint={t("newsletter.pendingHint")} />
@@ -98,6 +100,7 @@ export default async function MarketingPage({ params, searchParams }: { params: 
           )}
           <Card title={t("newsletter.sendingTitle")}>
             <p className="text-sm text-muted">{t("newsletter.sendingBody")}</p>
+            <a href={`${base}/campaigns`} className="mt-3 inline-block text-sm font-medium underline">{t("campaigns.new")} →</a>
           </Card>
         </div>
       </div>

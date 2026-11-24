@@ -280,6 +280,10 @@ model Store {
   blogPosts             BlogPost[]
   newsletterSubscribers NewsletterSubscriber[]
   contactMessages       ContactMessage[]
+  emailCampaigns        EmailCampaign[]
+  emailAutomations      EmailAutomation[]
+  aiConversations       AiConversation[]
+  aiMemory              AiMemory?
 }
 
 model Domain {
@@ -966,4 +970,131 @@ model ContactMessage {
   store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId, readAt, createdAt])
+}
+
+// ───────────────────────────── Email marketing ─────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+}
+
+/// A one-off email to the store's newsletter subscribers.
+model EmailCampaign {
+  id             String         @id @default(cuid())
+  storeId        String
+  subject        String
+  preheader      String         @default("")
+  heading        String         @default("")
+  body           String         @default("")
+  ctaLabel       String         @default("")
+  ctaUrl         String         @default("")
+  status         CampaignStatus @default(DRAFT)
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  recipientCount Int            @default(0)
+  sentCount      Int            @default(0)
+  failedCount    Int            @default(0)
+  createdByAi    Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  store          Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sends          CampaignSend[]
+
+  @@index([storeId, createdAt])
+  @@index([status, scheduledAt])
+}
+
+/// One recipient of a campaign; lets sending resume after a timeout without duplicates.
+model CampaignSend {
+  id           String        @id @default(cuid())
+  campaignId   String
+  subscriberId String
+  email        String
+  status       String        @default("PENDING") // PENDING | SENT | FAILED | SKIPPED
+  sentAt       DateTime?
+  campaign     EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, subscriberId])
+  @@index([campaignId, status])
+}
+
+enum AutomationTrigger {
+  WELCOME // newsletter subscription confirmed
+  POST_PURCHASE // order paid, buyer subscribed to the newsletter
+}
+
+/// Timed email sequence started by an event. Steps: [{ delayHours, subject, heading, body, ctaLabel, ctaUrl }].
+model EmailAutomation {
+  id        String            @id @default(cuid())
+  storeId   String
+  trigger   AutomationTrigger
+  enabled   Boolean           @default(false)
+  steps     Json              @default("[]")
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  store     Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  runs      AutomationRun[]
+
+  @@unique([storeId, trigger])
+}
+
+/// One person going through an automation.
+model AutomationRun {
+  id           String          @id @default(cuid())
+  automationId String
+  subscriberId String
+  email        String
+  step         Int             @default(0)
+  nextAt       DateTime
+  doneAt       DateTime?
+  createdAt    DateTime        @default(now())
+  automation   EmailAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@unique([automationId, subscriberId])
+  @@index([doneAt, nextAt])
+}
+
+// ───────────────────────────── AI assistant ─────────────────────────────
+
+model AiConversation {
+  id        String      @id @default(cuid())
+  storeId   String
+  userId    String
+  title     String      @default("")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  store     Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  messages  AiMessage[]
+
+  @@index([storeId, userId, updatedAt])
+}
+
+/// role: user | assistant | tool. Tool calls and results are kept so the model keeps context.
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  role           String
+  content        String         @default("")
+  toolCalls      Json?
+  toolCallId     String?
+  /// Short summaries of what the assistant did (shown as chips in the chat).
+  actions        Json?
+  createdAt      DateTime       @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+/// What the assistant knows about the business (profile + facts it was told to remember).
+model AiMemory {
+  storeId   String   @id
+  profile   String   @default("")
+  facts     Json     @default("[]")
+  updatedAt DateTime @updatedAt
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }

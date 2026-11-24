@@ -1,5 +1,5 @@
 import "server-only";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, Store } from "@prisma/client";
 import { db } from "@/lib/db";
 import { randomToken } from "@/lib/crypto";
 import type { PricingResult } from "@/lib/pricing";
@@ -240,10 +240,20 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
       }),
       notifyLowStock(store, order.lines.map((l) => l.variantId).filter((v): v is string => !!v)),
       // Explicit (unticked by default) marketing consent at checkout joins the newsletter, with its date and source.
-      result.acceptsMarketing && store.newsletterEnabled ? import("@/server/newsletter").then((m) => m.subscribe(store, order.email, "checkout")) : Promise.resolve(),
+      marketingAfterOrder(store, order.email, result.acceptsMarketing),
     ]);
   }
   return { orderId: result.orderId, created: result.created };
+}
+
+/**
+ * Explicit (unticked by default) marketing consent at checkout joins the newsletter, with its date
+ * and source; subscribed buyers then enter the first-purchase automation (if the merchant enabled it).
+ */
+async function marketingAfterOrder(store: Store, email: string, consent: boolean) {
+  if (consent && store.newsletterEnabled) await (await import("@/server/newsletter")).subscribe(store, email, "checkout");
+  const sub = await db.newsletterSubscriber.findUnique({ where: { storeId_email: { storeId: store.id, email: email.toLowerCase() } } });
+  if (sub?.status === "SUBSCRIBED") await (await import("@/server/marketing")).enrollInAutomation(store.id, "POST_PURCHASE", sub);
 }
 
 const LOW_STOCK = 3;
