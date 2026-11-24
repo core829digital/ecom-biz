@@ -231,6 +231,7 @@ Poi di nuovo `npm run dev`.
 | `Port 3000 is in use` | Un altro server è già avviato | Chiudi l'altro terminale con `npm run dev`, oppure usa `npm run dev -- -p 3001` |
 | "l'esecuzione di script è disabilitata" | Criterio di sicurezza di PowerShell | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
 | `Need to install the following packages: prisma@…` oppure errori tipo "is a Prisma 7 command and is not available in Prisma 8" | Le dipendenze del progetto non sono installate (`npm ci` non eseguito, fallito, o lanciato in un'altra cartella): `npx` scarica allora l'ultima versione di Prisma da internet, che non è quella del progetto | Rispondi **n**, **non** seguire i suggerimenti del messaggio. Entra nella cartella `ecom-biz`, lancia `npm ci` e controlla che finisca senza errori, poi usa `npm run db:deploy` |
+| `@prisma/client did not initialize yet. Please run "prisma generate"` | Il "traduttore" tra codice e database non è stato generato (succedeva con versioni del progetto precedenti al 24/11/2026) | `git pull`, poi `npm ci` (ora lo genera da solo). In alternativa, una tantum: `npx prisma generate` dentro la cartella del progetto |
 | `demo.localhost` non si apre | Browser che non riconosce `*.localhost` | Usa <http://localhost:3000/sites/demo> |
 
 Per ripartire da zero con il database (cancella **tutti** i dati locali):
