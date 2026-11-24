@@ -35,6 +35,23 @@ online con clienti paganti è un rischio.
 | 11 | **Editor del sito, fase 2**: sezioni anche nelle pagine prodotto, collezione e pagine libere; modelli di sezione salvabili; video; modifica del testo direttamente nell'anteprima | Alto | 6–8 gg | Oggi l'editor a sezioni copre la homepage |
 | 12 | **Libreria immagini** del negozio (riusare immagini già caricate in editor, prodotti e blog) | Medio | 2 gg | Evita caricamenti doppi |
 
+## B2. Assistente IA integrato (in discussione con il titolare)
+
+Obiettivo: un negozio online in 5 minuti e la gestione quotidiana (catalogo, design, sconti, blog,
+SEO, newsletter, sequenze email) fatta dall'IA, gratuita per i merchant durante la beta.
+
+| Fase | Contenuto | Prerequisiti | Sforzo |
+|---|---|---|---|
+| 0 | **Motore campagne email** (invio newsletter, sequenze automatiche: benvenuto, carrello, post-acquisto) e SMTP reale | Fornitore di invio massivo (Brevo/SES), dominio | 6–8 gg |
+| 1 | **"Negozio in 5 minuti"**: conversazione guidata + foto → prodotti, palette, homepage a sezioni, pagine legali, spedizioni, tutto in bozza da approvare | Scelta del fornitore IA, tetto di spesa | 6–8 gg |
+| 2 | **Assistente nel pannello**: chat con strumenti su catalogo, sconti, blog, SEO, sezioni, newsletter; conferma obbligatoria per azioni verso i clienti o irreversibili; registro "eseguito dall'IA" | Fase 1 | 8–10 gg |
+| 3 | **Memoria per negozio**: profilo del business, tono, preferenze, risultati (aperture email, conversioni) usati a ogni richiesta; statistiche aggregate e anonime tra negozi solo con consenso | Statistiche senza cookie (B.6) | 5–7 gg |
+
+Regole: l'IA usa le stesse funzioni e gli stessi permessi del merchant (mai accesso diretto al
+database); quote giornaliere per negozio e tetto di spesa mensile della piattaforma; nessun dato
+dei clienti finali inviato a fornitori che lo usano per addestrare modelli; DPA e informativa
+aggiornate (sub-responsabile IA).
+
 ## C. Tecnica (per crescere oltre 10.000 utenti)
 
 - **Coda di lavori in background** per email e webhook (es. `pg-boss`, che usa lo stesso Postgres):
