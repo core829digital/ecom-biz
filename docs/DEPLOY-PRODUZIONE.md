@@ -102,7 +102,7 @@ solo il database e la pausa settimanale è pericolosa per una demo che un client
 
 | Problema su Vercel | Soluzione nel progetto |
 |---|---|
-| Il disco è temporaneo: le foto caricate sparirebbero | Su Vercel l'app **rifiuta** lo storage locale e richiede `STORAGE_DRIVER=s3` (R2 o S3) |
+| Il disco è temporaneo: le foto caricate sparirebbero | Su Vercel, senza R2, i file vengono salvati **nel database** (funziona subito, nessuna configurazione); con `STORAGE_DRIVER=s3` + R2 vanno nello storage a oggetti, più economico quando i file crescono |
 | Vercel accetta al massimo 4,5 MB per richiesta | Su Vercel il limite di upload scende da 10 a **4 MB**, con un messaggio chiaro al merchant |
 | I domini dei merchant devono essere registrati sul progetto, altrimenti niente HTTPS | Quando un merchant verifica il suo dominio, l'app lo aggiunge a Vercel tramite API (`VERCEL_API_TOKEN`); quando lo rimuove, lo toglie |
 | Le migrazioni non funzionano tramite il pooler | Lo script `vercel-build` usa `DIRECT_DATABASE_URL` solo per le migrazioni |

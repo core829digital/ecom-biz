@@ -3,6 +3,7 @@ import { mkdir, readFile, rm, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { AwsClient } from "aws4fetch";
 import { randomToken } from "@/lib/crypto";
+import { db } from "@/lib/db";
 
 /** Serverless hosts cap request bodies (Vercel: 4.5 MB), so uploads are smaller there. */
 export const MAX_UPLOAD_MB = process.env.VERCEL ? 4 : 10;
@@ -94,11 +95,37 @@ function s3Driver(): Driver {
   };
 }
 
+/**
+ * Files inside PostgreSQL: works anywhere with zero setup (e.g. a Vercel deployment before
+ * Cloudflare R2 is configured). Fine for logos and catalog images of early stores; switch to
+ * STORAGE_DRIVER=s3 when volume grows (database storage costs more than object storage).
+ */
+const dbDriver: Driver = {
+  async put(key, body, contentType) {
+    if (!localPathForKey(key)) throw new Error("Invalid storage key");
+    await db.fileBlob.upsert({ where: { key }, create: { key, data: new Uint8Array(body), contentType, size: body.length }, update: { data: new Uint8Array(body), contentType, size: body.length } });
+    return `/files/${key}`;
+  },
+  async remove(key) {
+    await db.fileBlob.deleteMany({ where: { key } });
+  },
+  async removePrefix(prefix) {
+    await db.fileBlob.deleteMany({ where: { key: { startsWith: prefix } } });
+  },
+};
+
+export type StorageDriverName = "s3" | "db" | "local";
+
+/** s3 when configured; on serverless hosts (ephemeral disk) the database; otherwise the local disk. */
+export function storageDriverName(): StorageDriverName {
+  const explicit = process.env.STORAGE_DRIVER;
+  if (explicit === "s3" || explicit === "db") return explicit;
+  return process.env.VERCEL ? "db" : "local";
+}
+
 function driver(): Driver {
-  if (process.env.STORAGE_DRIVER === "s3") return s3Driver();
-  // Serverless file systems are ephemeral: uploads would vanish on the next deploy.
-  if (process.env.VERCEL) throw new Error("STORAGE_DRIVER=s3 is required on Vercel (use Cloudflare R2 or S3)");
-  return localDriver;
+  const name = storageDriverName();
+  return name === "s3" ? s3Driver() : name === "db" ? dbDriver : localDriver;
 }
 
 export type UploadResult = { key: string; url: string; contentType: string; size: number };
@@ -123,9 +150,14 @@ export async function removeStoreFiles(storeId: string) {
   await driver().removePrefix(`stores/${storeId}/`);
 }
 
+/** Bytes of a file served from /files (local disk or database driver). */
 export async function readLocalObject(key: string): Promise<Buffer | null> {
   const full = localPathForKey(key);
   if (!full) return null;
+  if (storageDriverName() === "db") {
+    const blob = await db.fileBlob.findUnique({ where: { key } });
+    return blob ? Buffer.from(blob.data) : null;
+  }
   return readFile(full).catch(() => null);
 }
 

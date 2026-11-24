@@ -1,7 +1,7 @@
 import { readLocalObject } from "@/lib/storage";
 import { db } from "@/lib/db";
 
-/** Serves locally stored uploads (STORAGE_DRIVER=local). In production prefer S3 + CDN. */
+/** Serves uploads kept on the local disk or in the database (STORAGE_DRIVER=local|db). With S3/R2 files are served by the bucket/CDN. */
 export async function GET(_req: Request, { params }: { params: Promise<{ key: string[] }> }) {
   const key = (await params).key.join("/");
   const file = await db.storedFile.findUnique({ where: { key } });

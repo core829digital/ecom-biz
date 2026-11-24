@@ -91,7 +91,7 @@ The essentials:
 | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Card payments + merchant subscriptions |
 | `PLATFORM_FEE_BPS` | Default fee on card payments (plans can override) |
 | `SMTP_URL`, `EMAIL_FROM` | Transactional email (logged to the console when empty) |
-| `STORAGE_DRIVER` (`local` \| `s3`) + `S3_*` | Upload storage (S3, R2, MinIO, …) |
+| `STORAGE_DRIVER` (`local` \| `db` \| `s3`) + `S3_*` | Upload storage: local disk, the database (default on Vercel without S3), or S3/R2/MinIO |
 | `CRON_SECRET` | Protects `/api/cron/*` |
 | `BILLING_ENFORCED` | Pause stores without an active/trialing subscription |
 | `DIRECT_DATABASE_URL` | Serverless only: direct (non-pooled) URL used by `vercel-build` for migrations |

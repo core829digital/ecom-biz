@@ -1098,3 +1098,13 @@ model AiMemory {
   updatedAt DateTime @updatedAt
   store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
+
+/// File contents when no object storage is configured (STORAGE_DRIVER=db, the default on Vercel
+/// without S3/R2). Kept apart from StoredFile so listings never load the bytes.
+model FileBlob {
+  key         String   @id
+  data        Bytes
+  contentType String
+  size        Int
+  createdAt   DateTime @default(now())
+}
