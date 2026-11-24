@@ -80,6 +80,7 @@ versione e data dell'accettazione.
 
 | Documento | Contenuto |
 |---|---|
+| `AVVIO-LOCALE.md` | Come avviare la piattaforma sul proprio computer (Windows con WSL e Docker, Mac), problemi comuni |
 | `ABBONAMENTI.md` | Prova gratuita, regole anti-abuso, tutti i casi d'uso dei pagamenti, configurazione Stripe |
 | `SICUREZZA.md` | Audit OWASP Top 10, header di sicurezza, cosa resta da fare |
 | `GDPR.md` | Ruoli, diritti degli interessati, tempi di conservazione, sub-responsabili |

@@ -57,7 +57,8 @@ tests/unit, tests/e2e      Vitest and Playwright suites
 
 ## Quick start (local)
 
-Requirements: Node 22, PostgreSQL 16.
+Requirements: Node 22, PostgreSQL 16. Step-by-step guide for Windows (WSL + Docker) and Mac, in
+Italian: [`docs/AVVIO-LOCALE.md`](docs/AVVIO-LOCALE.md).
 
 ```bash
 cp .env.example .env            # set DATABASE_URL and a random APP_SECRET
