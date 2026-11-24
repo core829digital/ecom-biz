@@ -10,6 +10,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ site: stri
   const sf = await loadStorefront((await params).site);
   const customer = await getCurrentCustomer(sf.store.id);
   if (!customer) return new Response("Unauthorized", { status: 401 });
+  // Guest orders are matched by email: only a verified owner of the address may download them.
+  if (!customer.emailVerifiedAt) return new Response(sf.t("sf.account.verify.required"), { status: 403 });
   if (!(await rateLimit(`sf-export:${customer.id}`, 5, 3600))) return new Response("Too many requests", { status: 429 });
   const data = await exportCustomerData(sf.store.id, customer.id);
   return new Response(JSON.stringify(data, null, 2), {

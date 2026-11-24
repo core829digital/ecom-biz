@@ -184,6 +184,10 @@ model Plan {
   maxStaff          Int? // additional staff per store; null = unlimited
   allowCustomDomain Boolean  @default(true)
   allowApi          Boolean  @default(true)
+  /// Storefront animations: 0 none, 1 essential presets, 2 premium presets + per-section entrances.
+  motionLevel       Int      @default(1)
+  /// Custom CSS editor in the site editor.
+  allowCustomCss    Boolean  @default(false)
   stripePriceId     String?
   active            Boolean  @default(true)
   position          Int      @default(0)
@@ -441,6 +445,8 @@ model Customer {
   lastName         String?
   phone            String?
   passwordHash     String?
+  /// Set once the customer proved they own the address (link by email). Gates order history.
+  emailVerifiedAt  DateTime?
   acceptsMarketing Boolean                 @default(false)
   note             String?
   tags             String[]

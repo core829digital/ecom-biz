@@ -88,6 +88,8 @@ export async function savePlanAction(id: string | null, _: ActionState, fd: Form
     maxStaff: get("maxStaff") === "" ? null : Math.max(0, parseInt(get("maxStaff"), 10) || 0),
     allowCustomDomain: fd.get("allowCustomDomain") === "on",
     allowApi: fd.get("allowApi") === "on",
+    motionLevel: Math.min(2, Math.max(0, parseInt(get("motionLevel") || "1", 10) || 0)),
+    allowCustomCss: fd.get("allowCustomCss") === "on",
     active: fd.get("active") === "on",
     position: parseInt(get("position") || "0", 10) || 0,
   };
@@ -111,6 +113,20 @@ export async function savePlanAction(id: string | null, _: ActionState, fd: Form
   revalidatePath("/platform/plans");
   if (!id) redirect("/platform/plans");
   return ok(t("common.saved"));
+}
+
+/**
+ * Support tool: confirm a merchant's email by hand (e.g. the person proved ownership another way,
+ * or a test deployment runs without email). Recorded in the audit log.
+ */
+export async function markEmailVerifiedAction(userId: string) {
+  const admin = await requirePlatformAdmin();
+  const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+  if (!user.emailVerifiedAt) {
+    await db.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } });
+    await audit({ userId: admin.id, action: "platform.email_verified", target: user.email });
+  }
+  revalidatePath(`/platform/users/${userId}`);
 }
 
 export async function togglePlatformAdminAction(userId: string) {

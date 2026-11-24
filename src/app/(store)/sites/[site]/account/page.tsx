@@ -5,20 +5,25 @@ import { loadStorefront } from "@/server/storefront";
 import { getCurrentCustomer } from "@/lib/auth/customer";
 import { formatAddressLines } from "@/lib/address";
 import { countryName } from "@/lib/geo";
-import { customerLogoutAction, deleteMyAccountAction } from "./actions";
+import { customerLogoutAction, deleteMyAccountAction, resendCustomerVerificationAction } from "./actions";
+import { SimpleActionForm } from "@/components/storefront/simple-action";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
 import { Input } from "@/components/ui/fields";
 
 export const metadata = { robots: { index: false } };
 
-export default async function AccountPage({ params }: { params: Promise<{ site: string }> }) {
+export default async function AccountPage({ params, searchParams }: { params: Promise<{ site: string }>; searchParams: Promise<{ welcome?: string; verified?: string }> }) {
   const { site } = await params;
+  const flags = await searchParams;
   const sf = await loadStorefront(site);
   const { t } = sf;
   const customer = await getCurrentCustomer(sf.store.id);
   if (!customer) redirect(sf.href("/account/login"));
   const [orders, address] = await Promise.all([
-    db.order.findMany({ where: { storeId: sf.store.id, OR: [{ customerId: customer.id }, { email: customer.email }] }, orderBy: { createdAt: "desc" }, take: 50 }),
+    // Guest orders are matched by email, so the history needs a verified address.
+    customer.emailVerifiedAt
+      ? db.order.findMany({ where: { storeId: sf.store.id, OR: [{ customerId: customer.id }, { email: customer.email }] }, orderBy: { createdAt: "desc" }, take: 50 })
+      : Promise.resolve([]),
     db.customerAddress.findFirst({ where: { customerId: customer.id }, orderBy: { isDefault: "desc" } }),
   ]);
   const date = new Intl.DateTimeFormat(sf.locale === "it" ? "it-IT" : "en-GB", { dateStyle: "medium", timeZone: sf.store.timezone });
@@ -31,11 +36,20 @@ export default async function AccountPage({ params }: { params: Promise<{ site: 
         </div>
         <form action={customerLogoutAction.bind(null, site)}><button className="text-sm underline">{t("auth.logout")}</button></form>
       </div>
+      {flags.welcome && <p role="status" className="mb-6 rounded-card bg-surface-2 px-4 py-3 text-sm">{t("sf.account.welcome")}</p>}
+      {flags.verified && customer.emailVerifiedAt && <p role="status" className="mb-6 rounded-card bg-success-bg px-4 py-3 text-sm text-success">{t("sf.account.verify.done")}</p>}
+      {!customer.emailVerifiedAt && (
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border px-4 py-3 text-sm">
+          <p>{t("sf.account.verify.notice", { email: customer.email })}</p>
+          <SimpleActionForm action={resendCustomerVerificationAction.bind(null, site)} submitLabel={t("sf.account.verify.resend")}
+            buttonClassName="inline-flex h-9 shrink-0 items-center gap-2 rounded-btn border border-border px-4 text-sm font-medium hover:bg-surface-2 disabled:opacity-60" />
+        </div>
+      )}
       <div className="grid gap-10 md:grid-cols-[1fr_280px]">
         <section>
           <h2 className="mb-4 text-lg font-semibold">{t("sf.account.orders")}</h2>
           {orders.length === 0 ? (
-            <p className="text-muted">{t("sf.account.noOrders")}</p>
+            <p className="text-muted">{customer.emailVerifiedAt ? t("sf.account.noOrders") : t("sf.account.verify.ordersLocked")}</p>
           ) : (
             <ul className="divide-y divide-border border-y border-border">
               {orders.map((o) => (

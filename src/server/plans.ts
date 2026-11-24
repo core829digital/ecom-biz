@@ -37,6 +37,9 @@ export function limitsOf(plan: Plan | null) {
     staff: plan?.maxStaff ?? null,
     customDomain: plan?.allowCustomDomain ?? false,
     api: plan?.allowApi ?? false,
+    /** Storefront animations: 0 none, 1 essential presets, 2 premium presets + per-section entrances. */
+    motion: (plan?.motionLevel ?? 1) as 0 | 1 | 2,
+    customCss: plan?.allowCustomCss ?? false,
   };
 }
 

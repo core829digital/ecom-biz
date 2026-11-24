@@ -52,9 +52,9 @@ async function seedPlans() {
   if ((await db.plan.count()) > 0) return;
   await db.plan.createMany({
     data: [
-      { name: "Basic", priceCents: 1900, transactionFeeBps: 200, trialDays: 14, position: 1, maxStores: 1, maxProducts: 250, maxStaff: 2, allowCustomDomain: true, allowApi: false, features: ["Online store & checkout", "Card, COD and bank transfer", "Discount codes"] },
-      { name: "Grow", priceCents: 4900, transactionFeeBps: 100, trialDays: 14, position: 2, maxStores: 3, maxProducts: null, maxStaff: 5, allowCustomDomain: true, allowApi: true, features: ["Everything in Basic", "API & webhooks", "Priority email support"] },
-      { name: "Advanced", priceCents: 14900, transactionFeeBps: 50, trialDays: 14, position: 3, maxStores: 10, maxProducts: null, maxStaff: null, allowCustomDomain: true, allowApi: true, features: ["Everything in Grow", "Lowest transaction fee", "Dedicated onboarding"] },
+      { name: "Basic", priceCents: 1900, transactionFeeBps: 200, trialDays: 14, position: 1, maxStores: 1, maxProducts: 250, maxStaff: 2, allowCustomDomain: true, allowApi: false, motionLevel: 1, allowCustomCss: false, features: ["Online store & checkout", "Card, COD and bank transfer", "Discount codes", "Site editor with essential animations"] },
+      { name: "Grow", priceCents: 4900, transactionFeeBps: 100, trialDays: 14, position: 2, maxStores: 3, maxProducts: null, maxStaff: 5, allowCustomDomain: true, allowApi: true, motionLevel: 2, allowCustomCss: false, features: ["Everything in Basic", "Premium animated storefront", "API & webhooks", "Priority email support"] },
+      { name: "Advanced", priceCents: 14900, transactionFeeBps: 50, trialDays: 14, position: 3, maxStores: 10, maxProducts: null, maxStaff: null, allowCustomDomain: true, allowApi: true, motionLevel: 2, allowCustomCss: true, features: ["Everything in Grow", "Custom CSS editor", "Lowest transaction fee", "Dedicated onboarding"] },
     ],
   });
   console.log("✓ plans");

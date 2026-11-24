@@ -13,12 +13,13 @@ export default async function CustomerRegister({ params }: { params: Promise<{ s
   const { t } = sf;
   return (
     <AuthShell title={t("auth.signup")} subtitle={t("sf.account.registerHint")}>
-      <ActionForm action={customerRegisterAction.bind(null, site)} resetOnSuccess className="space-y-4">
+      <ActionForm action={customerRegisterAction.bind(null, site)} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Input name="firstName" label={t("checkout.firstName")} autoComplete="given-name" />
           <Input name="lastName" label={t("checkout.lastName")} autoComplete="family-name" />
         </div>
-        <Input name="email" type="email" label={t("field.email")} autoComplete="email" required />
+        <Input name="email" type="email" label={t("field.email")} autoComplete="email" maxLength={200} required />
+        <Input name="password" type="password" label={t("field.password")} autoComplete="new-password" hint={t("validation.passwordLength")} minLength={8} maxLength={200} required />
         <Checkbox name="acceptsMarketing" label={t("checkout.marketing")} />
         <SubmitButton variant="brand" className="w-full rounded-full">{t("auth.signup")}</SubmitButton>
       </ActionForm>

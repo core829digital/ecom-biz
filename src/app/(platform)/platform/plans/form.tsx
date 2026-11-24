@@ -30,7 +30,13 @@ export function PlanForm({ action, plan, t }: { action: (s: ActionState, fd: For
           <div className="space-y-2 pt-6">
             <Checkbox name="allowCustomDomain" label={t("billing.feature.customDomain")} defaultChecked={plan?.allowCustomDomain ?? true} />
             <Checkbox name="allowApi" label={t("billing.feature.api")} defaultChecked={plan?.allowApi ?? true} />
+            <Checkbox name="allowCustomCss" label={t("platform.plan.customCss")} defaultChecked={plan?.allowCustomCss ?? false} />
           </div>
+          <Select name="motionLevel" label={t("platform.plan.motion")} defaultValue={String(plan?.motionLevel ?? 1)} hint={t("platform.plan.motionHint")}>
+            <option value="0">{t("platform.plan.motion0")}</option>
+            <option value="1">{t("platform.plan.motion1")}</option>
+            <option value="2">{t("platform.plan.motion2")}</option>
+          </Select>
           <Textarea name="features" label={t("platform.features")} hint={t("platform.featuresHint")} rows={5} defaultValue={plan?.features.join("\n")} wrapperClassName="sm:col-span-2" />
           <Checkbox name="active" label={t("platform.planActive")} defaultChecked={plan?.active ?? true} className="sm:col-span-2" />
         </div>
