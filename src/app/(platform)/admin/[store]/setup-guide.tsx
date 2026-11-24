@@ -13,7 +13,7 @@ import { dismissSetupAction } from "./setup-actions";
 type Step = { key: string; done: boolean; href: string; minutes: number };
 
 /** The setup steps of a store, computed from its real data (nothing to keep in sync). */
-export async function setupSteps(store: Store, owner: Pick<User, "emailVerifiedAt" | "subscriptionStatus" | "trialEndsAt" | "pastDueSince" | "billingHold"> | null) {
+export async function setupSteps(store: Store, owner: Pick<User, "emailVerifiedAt" | "subscriptionStatus" | "trialEndsAt" | "pastDueSince" | "billingHold" | "isPlatformAdmin"> | null) {
   const base = `/admin/${store.slug}`;
   const [products, rates, legal] = await Promise.all([
     db.product.count({ where: { storeId: store.id } }),
@@ -30,7 +30,7 @@ export async function setupSteps(store: Store, owner: Pick<User, "emailVerifiedA
     { key: "theme", done: !!(theme.logoUrl || theme.heroImageUrl || theme.primaryColor !== "#111827" || Array.isArray((store.theme as { sections?: unknown } | null)?.sections)), href: `${base}/online-store/theme`, minutes: 5 },
     { key: "legal", done: legal >= 2, href: `${base}/online-store/pages`, minutes: 5 },
   ];
-  if (env.billingEnforced) steps.push({ key: "plan", done: !!owner && accountActive(owner), href: "/account/billing", minutes: 2 });
+  if (env.billingEnforced) steps.push({ key: "plan", done: !!owner && (owner.isPlatformAdmin || accountActive(owner)), href: "/account/billing", minutes: 2 });
   return steps;
 }
 

@@ -44,7 +44,7 @@ export async function authenticate(req: Request, scope: ApiScope | null): Promis
   if (token.store.status !== "ACTIVE") throw new ApiError(403, "store_inactive", "The store is not active.");
   const owner = await storeOwner(token.storeId);
   if (owner && !owner.isPlatformAdmin && !limitsOf(owner.plan).api) throw new ApiError(403, "plan_feature", "API access is not included in the current plan.");
-  if (owner && process.env.BILLING_ENFORCED === "true" && !accountActive(owner)) throw new ApiError(402, "subscription_inactive", "The store's subscription is not active.");
+  if (owner && !owner.isPlatformAdmin && process.env.BILLING_ENFORCED === "true" && !accountActive(owner)) throw new ApiError(402, "subscription_inactive", "The store's subscription is not active.");
   if (scope && !token.scopes.includes(scope)) throw new ApiError(403, "insufficient_scope", `This token lacks the "${scope}" scope.`);
   if (!(await rateLimit(`api:${token.id}`, RATE_LIMIT_PER_MINUTE, 60))) throw new ApiError(429, "rate_limited", "Too many requests. Limit is 120 per minute.");
   if (!token.lastUsedAt || Date.now() - token.lastUsedAt.getTime() > 60_000) {

@@ -43,6 +43,15 @@ export function limitsOf(plan: Plan | null) {
   };
 }
 
+/**
+ * Limits that actually apply to an owner: platform admins get everything, without a
+ * subscription, so the operator can test and demo every feature.
+ */
+export function effectiveLimits(owner: { isPlatformAdmin: boolean; plan: Plan | null } | null) {
+  if (owner?.isPlatformAdmin) return { stores: 1000, products: null, staff: null, customDomain: true, api: true, motion: 2 as const, customCss: true };
+  return limitsOf(owner?.plan ?? null);
+}
+
 /** The owner account of a store, with its plan. Memoized per request. */
 export const storeOwner = cache(async (storeId: string) => {
   const m = await db.membership.findFirst({
@@ -69,8 +78,8 @@ export async function storeAvailability(store: Pick<Store, "id" | "status">): Pr
   if (store.status !== "ACTIVE") return "store_inactive";
   if (!env.billingEnforced) return "ok";
   const owner = await storeOwner(store.id);
+  if (owner?.isPlatformAdmin) return "ok";
   if (!owner || !accountActive(owner)) return "account_inactive";
-  if (owner.isPlatformAdmin) return "ok";
   const allowed = storesWithinLimit(await ownedStores(owner.id), limitsOf(owner.plan).stores);
   return allowed.has(store.id) ? "ok" : "over_store_limit";
 }
@@ -127,7 +136,7 @@ export async function assertFeature(storeId: string, feature: FeatureKind) {
 /** Usage numbers for meters in the UI. */
 export async function storeUsage(storeId: string) {
   const owner = await storeOwner(storeId);
-  const limits = limitsOf(owner?.plan ?? null);
+  const limits = effectiveLimits(owner);
   const [products, staff, stores] = await Promise.all([
     db.product.count({ where: { storeId } }),
     db.membership.count({ where: { storeId, role: { not: "OWNER" } } }),
@@ -136,7 +145,7 @@ export async function storeUsage(storeId: string) {
   return {
     owner,
     plan: owner?.plan ?? null,
-    active: owner ? accountActive(owner) : false,
+    active: owner ? owner.isPlatformAdmin || accountActive(owner) : false,
     limits,
     usage: { products, staff, stores },
   };

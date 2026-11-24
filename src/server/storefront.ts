@@ -3,7 +3,7 @@ import { isSafeRelativePath } from "@/lib/safe-path";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { resolveStore, storeBase, storePublicUrl } from "@/lib/tenant";
-import { limitsOf, storeOperational, storeOwner } from "@/server/plans";
+import { effectiveLimits, storeOperational, storeOwner } from "@/server/plans";
 import { clampTheme, type ThemeCapabilities } from "@/lib/theme-capabilities";
 import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
@@ -40,7 +40,7 @@ export const PREVIEW_COOKIE = "sf_preview";
 /** Site-editor features the store owner's plan includes (animations, custom CSS). */
 export async function storeThemeCapabilities(storeId: string): Promise<ThemeCapabilities> {
   const owner = await storeOwner(storeId);
-  const { motion, customCss } = limitsOf(owner?.plan ?? null);
+  const { motion, customCss } = effectiveLimits(owner);
   return { motion, customCss };
 }
 
