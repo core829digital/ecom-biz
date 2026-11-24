@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { AssistantPanel } from "@/components/admin/assistant-panel";
+import { aiConfig } from "@/server/ai/provider";
 import { db } from "@/lib/db";
-import { requireStoreAccess } from "@/lib/auth/staff";
+import { hasRole, requireStoreAccess } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
 import { env } from "@/lib/env";
 import { storePublicUrl } from "@/lib/tenant";
@@ -17,7 +20,7 @@ import { logoutAction } from "../../(auth)/actions";
 
 export default async function StoreAdminLayout({ children, params }: { children: React.ReactNode; params: Promise<{ store: string }> }) {
   const { store: slug } = await params;
-  const { user, store } = await requireStoreAccess(slug);
+  const { user, store, role } = await requireStoreAccess(slug);
   const { t, locale } = await getPlatformT();
   const { theme } = await getAppearance();
   const base = `/admin/${store.slug}`;
@@ -53,6 +56,7 @@ export default async function StoreAdminLayout({ children, params }: { children:
     { href: `${base}/reviews`, label: t("nav.reviews"), icon: "reviews", badge: pendingReviews },
     { href: `${base}/inbox`, label: t("nav.inbox"), icon: "inbox", badge: unreadMessages },
     { href: `${base}/marketing`, label: t("nav.marketing"), icon: "marketing" },
+    { href: `${base}/assistant`, label: t("nav.assistant"), icon: "assistant" },
     { href: `${base}/discounts`, label: t("nav.discounts"), icon: "discounts" },
     { href: `${base}/online-store`, label: t("nav.onlineStore"), icon: "onlineStore", children: [
       { href: `${base}/online-store/theme`, label: t("nav.theme") },
@@ -139,6 +143,9 @@ export default async function StoreAdminLayout({ children, params }: { children:
       </AdminShell>
       <CommandPalette slug={store.slug} stores={memberships.map((m) => ({ slug: m.store.slug, name: m.store.name }))} />
       <KeyboardShortcuts slug={store.slug} stores={memberships.map((m) => m.store.slug)} />
+      <Suspense fallback={null}>
+        <AssistantPanel slug={store.slug} enabled={aiConfig().enabled} canUse={hasRole(role, "ADMIN")} memoryHref={`${base}/assistant`} />
+      </Suspense>
     </I18nProvider>
   );
 }

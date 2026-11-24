@@ -12,6 +12,7 @@ import { createStore } from "@/server/stores";
 import { rateLimit } from "@/lib/rate-limit";
 import { assertCanCreateStore, PlanLimitError } from "@/server/plans";
 import { audit } from "@/server/audit";
+import { aiConfig } from "@/server/ai/provider";
 import { THEME_PRESETS } from "@/lib/theme";
 import { STARTER_IDS } from "@/lib/theme-starters";
 
@@ -42,5 +43,6 @@ export async function createStoreAction(_: ActionState, fd: FormData): Promise<A
   }
   const store = await createStore({ ownerId: user.id, ...parsed.data });
   await audit({ userId: user.id, storeId: store.id, action: "store.create", target: store.slug });
-  redirect(`/admin/${store.slug}`);
+  // With AI connected, the new store opens straight into the "build my store" assistant.
+  redirect(`/admin/${store.slug}${aiConfig().enabled ? "?assistant=build" : ""}`);
 }

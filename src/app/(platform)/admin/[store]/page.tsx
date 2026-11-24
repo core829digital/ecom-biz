@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SetupGuide, setupSteps } from "./setup-guide";
 import { restoreSetupAction } from "./setup-actions";
 import { storeOwner } from "@/server/plans";
+import { aiConfig } from "@/server/ai/provider";
+import { Sparkles } from "lucide-react";
 import { ConfirmSubmit } from "@/components/ui/form";
 import { db } from "@/lib/db";
 import { requireStoreAccess } from "@/lib/auth/staff";
@@ -91,6 +93,16 @@ export default async function DashboardPage({ params }: { params: Promise<{ stor
         ) : null}
       />
 
+      {aiConfig().enabled && (await db.product.count({ where: { storeId: store.id } })) === 0 && (
+        <Link href="?assistant=build" className="group mb-5 flex items-center gap-4 rounded-xl border border-border bg-surface p-5 shadow-sm transition-[border-color,box-shadow] hover:border-text/30 hover:shadow-md">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-text text-bg transition-transform duration-500 group-hover:rotate-12"><Sparkles className="size-5" aria-hidden /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t("ai.build.cardTitle")}</span>
+            <span className="block text-sm text-muted">{t("ai.build.cardBody")}</span>
+          </span>
+          <span className="hidden rounded-full bg-text px-4 py-2 text-sm font-medium text-bg sm:inline">{t("ai.build.cardCta")} →</span>
+        </Link>
+      )}
       {!store.setupDismissedAt && <SetupGuide store={store} steps={steps} t={t} />}
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-3">

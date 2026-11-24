@@ -22,10 +22,10 @@ Legenda: ✅ fatto · 🔄 in corso · ⏳ da fare · 🔒 bloccato da un fattor
 | # | Attività | Stato |
 |---|---|---|
 | B0 | Motore email: campagne, programmazione, automazioni (benvenuto, primo acquisto) | ✅ |
-| B1 | **Assistente IA**: backend compatibile con più fornitori (chiave API e basta), chat nel pannello, quote per negozio | ⏳ |
-| B2 | IA "negozio in 5 minuti": prodotti, palette, homepage, pagine legali, spedizioni in bozza | ⏳ |
-| B3 | IA con strumenti su tutta l'app: catalogo, sconti, blog, SEO, sezioni, campagne (conferma per azioni verso i clienti) | ⏳ |
-| B4 | Memoria del business per negozio (profilo, tono, risultati) | ⏳ |
+| B1 | **Assistente IA**: backend compatibile con più fornitori (chiave API e basta), chat nel pannello, quote per negozio | ✅ (manca solo `AI_API_KEY`) |
+| B2 | IA "negozio in 5 minuti": prodotti, palette, homepage, pagine legali, spedizioni in bozza | ✅ (spedizioni e foto prodotto: prossima iterazione) |
+| B3 | IA con strumenti su tutta l'app: catalogo, sconti, blog, SEO, sezioni, campagne (conferma per azioni verso i clienti) | ✅ 13 strumenti; tutto in bozza |
+| B4 | Memoria del business per negozio (profilo, tono, risultati) | ✅ profilo e fatti; risultati delle campagne: prossima iterazione |
 | B5 | Pagina **Contenuti / Generazione**: testi, post social, immagini e video tramite fornitori esterni | ⏳ |
 | B6 | Pagina **Collegamenti IA** (es. Claude, Gemini): scelta del fornitore e chiave | ⏳ |
 | B7 | Feed prodotti per Google Merchant, Meta e TikTok (cataloghi senza approvazioni) | ⏳ |
