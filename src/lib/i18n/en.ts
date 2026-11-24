@@ -1518,6 +1518,18 @@ export const en = {
   "sf.sections.newsletterOff": "Newsletter section hidden: turn the newsletter on in Marketing.",
   "auditAction.theme_published": "Published the store design",
   "editor.device": "Preview device",
+  "onboarding.style.continue": "Continue",
+  "onboarding.style.title": "Choose your style",
+  "onboarding.style.body": "Your store will be ready to show from the first minute.",
+  "onboarding.style.look": "Look",
+  "onboarding.style.home": "Starting homepage",
+  "onboarding.style.hint": "You can change everything later in Online store → Theme.",
+  "onboarding.starter.classic": "Classic",
+  "onboarding.starter.classicBody": "Banner, benefits, products, story, reviews",
+  "onboarding.starter.editorial": "Editorial",
+  "onboarding.starter.editorialBody": "Bold banner, manifesto, story, FAQ",
+  "onboarding.starter.minimal": "Minimal",
+  "onboarding.starter.minimalBody": "Short banner, products, collections",
 } as const;
 
 export type MessageKey = keyof typeof en;

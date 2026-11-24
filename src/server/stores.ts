@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { EU_STANDARD_VAT_BPS } from "@/lib/geo";
+import { starterTheme, type StarterId } from "@/lib/theme-starters";
 
 export type NewStoreInput = {
   ownerId: string;
@@ -10,6 +11,9 @@ export type NewStoreInput = {
   currency: string;
   locale: string;
   countryCode: string;
+  /** Look and starter homepage chosen during onboarding. */
+  preset?: string;
+  starter?: StarterId;
 };
 
 /** Creates a store with sensible defaults so a merchant can sell immediately. */
@@ -26,7 +30,7 @@ export async function createStore(input: NewStoreInput) {
         locale: input.locale,
         countryCode: input.countryCode,
         taxesIncluded: isEU,
-        theme: { primaryColor: "#111827", accentColor: "#111827", font: "system", heroTitle: input.name },
+        theme: JSON.parse(JSON.stringify(starterTheme(input.preset ?? "minimal", input.starter ?? "classic", input.name, input.locale))),
         manualPayments: {
           cod: { enabled: false, instructions: "" },
           bankTransfer: { enabled: false, instructions: "" },

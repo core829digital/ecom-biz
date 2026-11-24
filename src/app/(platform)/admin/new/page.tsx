@@ -68,6 +68,18 @@ export default async function NewStorePage() {
             locale: t("field.storeLanguage"),
             submit: t("stores.create"),
             slugExample: t("stores.new.slugExample"),
+            continue: t("onboarding.style.continue"),
+            back: t("common.back"),
+            styleTitle: t("onboarding.style.title"),
+            styleBody: t("onboarding.style.body"),
+            lookTitle: t("onboarding.style.look"),
+            homeTitle: t("onboarding.style.home"),
+            styleHint: t("onboarding.style.hint"),
+            starters: {
+              classic: { name: t("onboarding.starter.classic"), body: t("onboarding.starter.classicBody") },
+              editorial: { name: t("onboarding.starter.editorial"), body: t("onboarding.starter.editorialBody") },
+              minimal: { name: t("onboarding.starter.minimal"), body: t("onboarding.starter.minimalBody") },
+            },
           }}
         />
       </div>

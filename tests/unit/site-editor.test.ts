@@ -99,3 +99,22 @@ describe("theme", () => {
     expect(vars["--store-heading-font"]).toContain("Playfair");
   });
 });
+
+describe("onboarding starters", () => {
+  it("every starter builds a valid, localized homepage with every preset", async () => {
+    const { STARTER_IDS, starterTheme } = await import("@/lib/theme-starters");
+    const { THEME_PRESETS } = await import("@/lib/theme");
+    for (const id of STARTER_IDS) {
+      for (const locale of ["en", "it"]) {
+        const t = parseTheme(JSON.parse(JSON.stringify(starterTheme(THEME_PRESETS[2].id, id, "Bottega Rossi", locale))));
+        expect(t.sections.length).toBeGreaterThanOrEqual(3);
+        expect(t.sections[0].type === "hero" && t.sections[0].title).toBe("Bottega Rossi");
+        expect(new Set(t.sections.map((s) => s.id)).size).toBe(t.sections.length);
+        expect(t.backgroundColor).toBe(THEME_PRESETS[2].backgroundColor);
+      }
+    }
+    const it_ = JSON.stringify(starterTheme("minimal", "classic", "X", "it"));
+    expect(it_).toContain("Spedizione rapida");
+    expect(starterTheme("unknown", "minimal", "X", "en").primaryColor).toBe(THEME_PRESETS[0].primaryColor);
+  });
+});
