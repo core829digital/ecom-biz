@@ -21,6 +21,7 @@ test("merchant signs up, creates a store and a product", async ({ page }) => {
   await page.fill("input[name=name]", "E2E Merchant");
   await page.fill("input[name=email]", `e2e-${unique()}@example.com`);
   await page.fill("input[name=password]", "short");
+  await page.check("input[name=acceptTerms]");
   await page.click("button[type=submit]");
   await expect(page.getByText("Use at least 8 characters").first()).toBeVisible();
   await expect(page.locator("input[name=name]")).toHaveValue("E2E Merchant"); // input kept after an error

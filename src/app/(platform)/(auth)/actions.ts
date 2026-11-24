@@ -14,6 +14,7 @@ import { emailButton, emailLayout, escapeHtml, sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
 import { isSafeRelativePath } from "@/lib/safe-path";
+import { LEGAL_VERSION } from "@/lib/legal/platform-docs";
 import { sendVerificationEmail, verifyEmailToken } from "@/server/email-verification";
 import { getCurrentUser } from "@/lib/auth/staff";
 
@@ -58,6 +59,7 @@ export async function signupAction(_: ActionState, fd: FormData): Promise<Action
   if (parsed.fieldErrors) return fail(t("validation.fixErrors"), parsed.fieldErrors);
   const issue = passwordIssue(parsed.data.password, { email: parsed.data.email, name: parsed.data.name });
   if (issue) return fail(t("validation.fixErrors"), { password: t(`validation.password.${issue}`) });
+  if (fd.get("acceptTerms") !== "on") return fail(t("validation.fixErrors"), { acceptTerms: t("legal.accept.required") });
   const ip = await clientIp();
   if (!(await rateLimit(`signup:ip:${ip}`, 10, 3600))) return fail(t("auth.error.rateLimited"));
 
@@ -75,6 +77,8 @@ export async function signupAction(_: ActionState, fd: FormData): Promise<Action
       // (or a card-backed free trial) from Billing. See server/billing.ts.
       planId: entryPlan?.id,
       subscriptionStatus: "NONE",
+      termsVersion: LEGAL_VERSION,
+      termsAcceptedAt: new Date(),
     },
   });
   await sendVerificationEmail(user);

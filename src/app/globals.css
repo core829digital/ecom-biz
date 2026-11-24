@@ -187,3 +187,11 @@ html { scroll-behavior: smooth; }
   .print-area, .print-area * { visibility: visible; }
   .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0 !important; overflow: visible !important; }
 }
+
+/* Long-form legal text (RichText output). */
+.legal-prose { line-height: 1.7; }
+.legal-prose h2 { margin-top: 2rem; margin-bottom: 0.5rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
+.legal-prose p { margin-bottom: 0.75rem; color: var(--text); }
+.legal-prose ul { margin: 0 0 0.75rem 1.25rem; list-style: disc; }
+.legal-prose li { margin-bottom: 0.35rem; }
+.legal-prose a { text-decoration: underline; text-underline-offset: 2px; }

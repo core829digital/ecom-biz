@@ -80,6 +80,25 @@ export const env = {
   get secureStoreCookies() {
     return this.storefrontProtocol === "https";
   },
+  /**
+   * Legal identity of the platform operator, shown in legal pages and emails. White-label:
+   * whoever runs the platform sets their own. `configured` is false until the essentials are set.
+   */
+  get legal() {
+    const company = process.env.LEGAL_COMPANY_NAME || "";
+    const address = process.env.LEGAL_ADDRESS || "";
+    const vat = process.env.LEGAL_VAT_NUMBER || "";
+    const email = process.env.LEGAL_EMAIL || "";
+    return {
+      company: company || "[COMPANY NAME]",
+      address: address || "[REGISTERED ADDRESS]",
+      vat: vat || "[VAT NUMBER]",
+      email: email || "[CONTACT EMAIL]",
+      dpoEmail: process.env.LEGAL_DPO_EMAIL || email || "[PRIVACY EMAIL]",
+      courts: process.env.LEGAL_COURTS || "[CITY]",
+      configured: !!(company && address && vat && email),
+    };
+  },
   get isProduction() {
     return process.env.NODE_ENV === "production";
   },

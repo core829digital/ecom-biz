@@ -39,6 +39,9 @@ model User {
   billingHold          Boolean            @default(false)
   billingHoldReason    String?
   emailVerifiedAt      DateTime?
+  /// Version (date) of the legal terms the account accepted, and when.
+  termsVersion         String?
+  termsAcceptedAt      DateTime?
   // Two-factor authentication (TOTP, RFC 6238)
   totpSecret           String?
   totpEnabledAt        DateTime?

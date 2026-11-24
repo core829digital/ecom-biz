@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/staff";
 import { getPlatformT } from "@/lib/i18n/server";
-import { ActionForm, SubmitButton } from "@/components/ui/form";
+import { ActionForm, FieldError, SubmitButton } from "@/components/ui/form";
 import { Input } from "@/components/ui/fields";
 import { signupAction } from "../actions";
 
@@ -20,7 +20,22 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
         <input type="hidden" name="next" value={next ?? ""} />
         <Input name="name" label={t("field.fullName")} autoComplete="name" required />
         <Input name="email" type="email" label={t("field.email")} autoComplete="email" defaultValue={email} required />
-        <Input name="password" type="password" label={t("field.password")} autoComplete="new-password" hint={t("validation.passwordLength")} required />
+        <Input name="password" type="password" label={t("field.password")} autoComplete="new-password" hint={t("validation.passwordHint")} required />
+        <div>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="acceptTerms" required className="mt-1" />
+            <span>
+              {/* One sentence per language with link placeholders, so each language keeps its own grammar. */}
+              {t("legal.accept.sentence").split(/(\{\w+\})/).map((part, i) => {
+                const m = part.match(/^\{(terms|subscriptions|dpa|privacy)\}$/);
+                if (!m) return part;
+                const key = m[1] as "terms" | "subscriptions" | "dpa" | "privacy";
+                return <Link key={i} href={`/legal/${key}`} target="_blank" className="font-medium underline">{t(`legal.${key}`)}</Link>;
+              })}
+            </span>
+          </label>
+          <FieldError name="acceptTerms" />
+        </div>
         <SubmitButton className="w-full">{t("auth.signup")}</SubmitButton>
       </ActionForm>
       <p className="mt-5 text-center text-sm text-muted">

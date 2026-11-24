@@ -1100,6 +1100,18 @@ export const en = {
   "sf.privacy.delete": "Delete my account",
   "sf.privacy.deleteBody": "Your profile, addresses and reviews are deleted. Past orders are kept by the store as required by tax law.",
   "sf.privacy.deleteConfirm": "Delete my account permanently",
+  "legal.documents": "Legal",
+  "legal.draft": "Draft document: the operator's legal details are not configured yet, and the text must be reviewed by a lawyer before use.",
+  "legal.updated": "Version of {date}",
+  "legal.terms": "Terms of Service",
+  "legal.privacy": "Privacy Policy",
+  "legal.cookies": "Cookie Policy",
+  "legal.dpa": "Data Processing Agreement",
+  "legal.subscriptions": "Subscriptions and Refunds",
+  "legal.acceptableUse": "Acceptable Use",
+  "legal.accept.required": "Accept the terms to create your account.",
+  "validation.passwordHint": "At least 8 characters. A short phrase is easy to remember and hard to guess.",
+  "legal.accept.sentence": "I accept the {terms}, the {subscriptions} policy and the {dpa}, and I have read the {privacy}.",
 } as const;
 
 export type MessageKey = keyof typeof en;
