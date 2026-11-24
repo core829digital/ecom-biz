@@ -1,5 +1,6 @@
 "use client";
 
+import { SeoPreview } from "@/components/admin/seo-preview";
 import { useMemo, useRef, useState } from "react";
 import { ActionForm, SubmitButton, useFieldError } from "@/components/ui/form";
 import { Checkbox, Input, Select, Textarea, inputClass } from "@/components/ui/fields";
@@ -103,7 +104,8 @@ export function CollectionEditor({
             <div className="space-y-4">
               <Input label={t("products.field.seoTitle")} maxLength={70} value={c.seoTitle} onChange={(e) => update({ seoTitle: e.target.value })} />
               <Textarea label={t("products.field.seoDescription")} rows={3} maxLength={320} value={c.seoDescription} onChange={(e) => update({ seoDescription: e.target.value })} />
-              <Input label={t("products.field.handle")} value={c.handle} onChange={(e) => update({ handle: e.target.value })} />
+              <Input label={t("products.field.handle")} autoCapitalize="none" spellCheck={false} value={c.handle} onChange={(e) => update({ handle: e.target.value })} />
+              <SeoPreview title={c.seoTitle || c.title} description={c.seoDescription || c.description.replace(/\s+/g, " ").trim()} url={`/collections/${c.handle || "…"}`} />
             </div>
           </Card>
         </div>

@@ -219,7 +219,7 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
         where: { id: checkout.cartId },
         data: { completedAt: new Date(), ...(cartBefore?.recoveryEmailSentAt ? { recoveredAt: new Date() } : {}) },
       });
-      return { orderId: order.id, created: true as const, order, store, newCustomer: customer.createdAt.getTime() === customer.updatedAt.getTime() };
+      return { orderId: order.id, created: true as const, order, store, acceptsMarketing: checkout.acceptsMarketing, newCustomer: customer.createdAt.getTime() === customer.updatedAt.getTime() };
     },
     { isolationLevel: "ReadCommitted", timeout: 20_000 },
   );
@@ -239,6 +239,8 @@ export async function completeCheckout(checkoutId: string, opts: CompleteOptions
         href: `/admin/${store.slug}/orders/${order.id}`,
       }),
       notifyLowStock(store, order.lines.map((l) => l.variantId).filter((v): v is string => !!v)),
+      // Explicit (unticked by default) marketing consent at checkout joins the newsletter, with its date and source.
+      result.acceptsMarketing && store.newsletterEnabled ? import("@/server/newsletter").then((m) => m.subscribe(store, order.email, "checkout")) : Promise.resolve(),
     ]);
   }
   return { orderId: result.orderId, created: result.created };

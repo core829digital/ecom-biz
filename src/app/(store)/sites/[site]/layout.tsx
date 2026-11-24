@@ -17,6 +17,8 @@ import { themeCssVars } from "@/lib/theme";
 import { STORE_LEGAL_PAGES } from "@/lib/legal/store-templates";
 import { MobileNav } from "@/components/storefront/mobile-nav";
 import { NavProgress } from "@/components/storefront/nav-progress";
+import { SimpleActionForm } from "@/components/storefront/simple-action";
+import { subscribeAction } from "./newsletter/actions";
 import { Suspense } from "react";
 
 type MenuItem = { title: string; url: string };
@@ -30,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ site: str
     title: { default: store.seoTitle || store.name, template: `%s · ${store.name}` },
     description: store.seoDescription ?? undefined,
     icons: theme.faviconUrl ? [{ url: theme.faviconUrl }] : undefined,
-    openGraph: { siteName: store.name, type: "website" },
+    openGraph: { siteName: store.name, type: "website", images: store.socialImageUrl ? [store.socialImageUrl] : undefined },
   };
 }
 
@@ -43,11 +45,12 @@ export default async function StorefrontLayout({ children, params }: { children:
   if (!decodeURIComponent(site).includes(".") && h.has("x-store-base") && sf.publicUrl.startsWith("https://") && !sf.publicUrl.endsWith(`.${process.env.STOREFRONT_ROOT_DOMAIN}`)) {
     permanentRedirect(`${sf.publicUrl}${h.get("x-original-path") ?? "/"}`);
   }
-  const [menus, cart, legalPages] = await Promise.all([
+  const [menus, cart, legalPages, hasBlog] = await Promise.all([
     db.menu.findMany({ where: { storeId: store.id, handle: { in: ["main", "footer"] } } }),
     getCart(store.id),
     // Published legal pages are always linked in the footer (consumer-law information duties).
     db.page.findMany({ where: { storeId: store.id, published: true, handle: { in: [...STORE_LEGAL_PAGES] } }, select: { handle: true, title: true } }),
+    db.blogPost.count({ where: { storeId: store.id, published: true } }).then((n) => n > 0),
   ]);
   const main = menuItems(menus.find((m) => m.handle === "main")?.items);
   const footer = menuItems(menus.find((m) => m.handle === "footer")?.items);
@@ -104,7 +107,7 @@ export default async function StorefrontLayout({ children, params }: { children:
           )}
         </main>
         <footer className="mt-16 border-t border-border">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:grid-cols-3 sm:px-6">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
             <div>
               <p className="font-semibold">{store.name}</p>
               {theme.footerText && <p className="mt-2 whitespace-pre-line text-muted">{theme.footerText}</p>}
@@ -115,6 +118,23 @@ export default async function StorefrontLayout({ children, params }: { children:
                   <li key={i.title + i.url}><Link href={sfHref(base, i.url)} className="text-muted transition-colors hover:text-text">{i.title}</Link></li>
                 ))}
               </ul>
+            )}
+            {(hasBlog || store.contactEnabled) && (
+              <ul className="space-y-2">
+                {hasBlog && <li><Link href={sf.href("/blog")} className="text-muted transition-colors hover:text-text">{t("sf.blog.title")}</Link></li>}
+                {store.contactEnabled && <li><Link href={sf.href("/contact")} className="text-muted transition-colors hover:text-text">{t("sf.contact.title")}</Link></li>}
+              </ul>
+            )}
+            {store.newsletterEnabled && sf.operational && (
+              <div>
+                <p className="font-semibold">{t("sf.newsletter.title")}</p>
+                <p className="mt-1 text-muted">{t("sf.newsletter.body")}</p>
+                <SimpleActionForm action={subscribeAction.bind(null, site)} submitLabel={t("sf.newsletter.cta")} className="mt-3 flex flex-wrap gap-2" buttonClassName="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-brand px-4 text-sm font-medium text-brand-contrast disabled:opacity-60">
+                  <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
+                  <input type="email" name="email" required maxLength={200} autoComplete="email" placeholder={t("field.email")} aria-label={t("field.email")} className="h-10 min-w-0 flex-1 rounded-full border border-border bg-bg px-4 text-sm outline-none focus:border-text" />
+                </SimpleActionForm>
+                <p className="mt-2 text-xs text-muted">{t("sf.newsletter.consent")}</p>
+              </div>
             )}
             {social.length > 0 && (
               <ul className="flex gap-4 sm:justify-end">

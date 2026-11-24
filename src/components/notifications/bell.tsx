@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertTriangle, Bell, CheckCheck, CreditCard, MessageSquare, Package, Shield, ShoppingBag, UserPlus, Webhook } from "lucide-react";
+import { AlertTriangle, Bell, Mail, CheckCheck, CreditCard, MessageSquare, Package, Shield, ShoppingBag, UserPlus, Webhook } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { listNotificationsAction, markAllReadAction, markReadAction, unreadCountAction, type NotificationItem } from "./actions";
 
 const ICONS: Record<string, typeof Bell> = {
   order_new: ShoppingBag, low_stock: Package, review_pending: MessageSquare, order_dispute: AlertTriangle, webhook_failed: Webhook,
-  staff_joined: UserPlus, billing_trial_ending: CreditCard, billing_payment_failed: CreditCard, billing_hold: AlertTriangle,
+  staff_joined: UserPlus, contact_message: Mail, billing_trial_ending: CreditCard, billing_payment_failed: CreditCard, billing_hold: AlertTriangle,
   security_new_login: Shield, security_2fa_changed: Shield,
 };
 

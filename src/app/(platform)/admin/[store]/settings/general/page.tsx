@@ -52,6 +52,7 @@ export default async function GeneralSettings({ params }: { params: Promise<{ st
           <div className="space-y-4">
             <Input name="seoTitle" label={t("products.field.seoTitle")} maxLength={70} defaultValue={store.seoTitle ?? ""} />
             <Textarea name="seoDescription" label={t("products.field.seoDescription")} rows={3} maxLength={320} defaultValue={store.seoDescription ?? ""} />
+            <Input name="socialImageUrl" type="url" inputMode="url" autoCapitalize="none" spellCheck={false} label={t("seo.socialImage")} hint={t("seo.socialImageHint")} placeholder="https://…" defaultValue={store.socialImageUrl ?? ""} />
           </div>
         </Card>
         <div className="flex justify-end"><SubmitButton>{t("common.save")}</SubmitButton></div>

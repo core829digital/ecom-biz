@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { handleize } from "@/lib/slug";
 import { parseRules, smartCollectionWhere, type CollectionSort } from "@/lib/collections";
 
-type HandleModel = "product" | "collection" | "page";
+type HandleModel = "product" | "collection" | "page" | "blog";
 
 /** Returns `base` or `base-2`, `base-3`… unique within the store for the given model. */
 export async function uniqueHandle(storeId: string, input: string, model: HandleModel, excludeId?: string) {
@@ -17,7 +17,9 @@ export async function uniqueHandle(storeId: string, input: string, model: Handle
         ? await db.product.findFirst({ where, select: { id: true } })
         : model === "collection"
           ? await db.collection.findFirst({ where, select: { id: true } })
-          : await db.page.findFirst({ where, select: { id: true } });
+          : model === "blog"
+            ? await db.blogPost.findFirst({ where, select: { id: true } })
+            : await db.page.findFirst({ where, select: { id: true } });
     if (!exists) return handle;
   }
   return `${base}-${Date.now()}`;

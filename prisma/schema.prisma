@@ -246,29 +246,36 @@ model Store {
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 
-  memberships      Membership[]
-  invites          StaffInvite[]
-  domains          Domain[]
-  products         Product[]
-  collections      Collection[]
-  customers        Customer[]
-  carts            Cart[]
-  checkouts        Checkout[]
-  orders           Order[]
-  discounts        Discount[]
-  shippingZones    ShippingZone[]
-  taxRates         TaxRate[]
-  pages            Page[]
-  menus            Menu[]
-  apiTokens        ApiToken[]
-  webhooks         WebhookSubscription[]
-  files            StoredFile[]
-  auditLogs        AuditLog[]
-  reviews          ProductReview[]
-  stockAlerts      StockAlert[]
-  notifications    Notification[]
+  memberships           Membership[]
+  invites               StaffInvite[]
+  domains               Domain[]
+  products              Product[]
+  collections           Collection[]
+  customers             Customer[]
+  carts                 Cart[]
+  checkouts             Checkout[]
+  orders                Order[]
+  discounts             Discount[]
+  shippingZones         ShippingZone[]
+  taxRates              TaxRate[]
+  pages                 Page[]
+  menus                 Menu[]
+  apiTokens             ApiToken[]
+  webhooks              WebhookSubscription[]
+  files                 StoredFile[]
+  auditLogs             AuditLog[]
+  reviews               ProductReview[]
+  stockAlerts           StockAlert[]
+  notifications         Notification[]
   /// The merchant hid the setup guide on the dashboard.
-  setupDismissedAt DateTime?
+  setupDismissedAt      DateTime?
+  /// Default image when a store link is shared (social networks, messaging apps).
+  socialImageUrl        String?
+  newsletterEnabled     Boolean                @default(true)
+  contactEnabled        Boolean                @default(true)
+  blogPosts             BlogPost[]
+  newsletterSubscribers NewsletterSubscriber[]
+  contactMessages       ContactMessage[]
 }
 
 model Domain {
@@ -894,4 +901,63 @@ model StockAlert {
 
   @@unique([variantId, email])
   @@index([storeId, notifiedAt])
+}
+
+model BlogPost {
+  id             String    @id @default(cuid())
+  storeId        String
+  title          String
+  handle         String
+  excerpt        String?
+  body           String    @default("")
+  coverUrl       String?
+  authorName     String?
+  published      Boolean   @default(false)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  store          Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, handle])
+  @@index([storeId, published, publishedAt])
+}
+
+enum SubscriberStatus {
+  PENDING // double opt-in: waiting for the confirmation click
+  SUBSCRIBED
+  UNSUBSCRIBED
+}
+
+/// Newsletter subscribers of a store (the merchant is the controller). Consent is recorded with time and source.
+model NewsletterSubscriber {
+  id             String           @id @default(cuid())
+  storeId        String
+  email          String
+  status         SubscriberStatus @default(PENDING)
+  token          String           @unique // confirm / unsubscribe link token
+  source         String           @default("form") // form | checkout | admin
+  consentAt      DateTime?
+  unsubscribedAt DateTime?
+  createdAt      DateTime         @default(now())
+  store          Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, email])
+  @@index([storeId, status])
+}
+
+model ContactMessage {
+  id        String    @id @default(cuid())
+  storeId   String
+  name      String
+  email     String
+  subject   String?
+  message   String
+  orderRef  String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, readAt, createdAt])
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { SeoPreview } from "@/components/admin/seo-preview";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionForm, SubmitButton, useFieldError } from "@/components/ui/form";
 import { Checkbox, Input, Select, Textarea, inputClass } from "@/components/ui/fields";
@@ -239,7 +240,8 @@ export function ProductEditor({
             <div className="space-y-4">
               <Input label={t("products.field.seoTitle")} maxLength={70} value={p.seoTitle} onChange={(e) => update({ seoTitle: e.target.value })} hint={`${p.seoTitle.length}/70`} />
               <Textarea label={t("products.field.seoDescription")} rows={3} maxLength={320} value={p.seoDescription} onChange={(e) => update({ seoDescription: e.target.value })} hint={`${p.seoDescription.length}/320`} />
-              <Input label={t("products.field.handle")} value={p.handle} onChange={(e) => update({ handle: e.target.value })} hint={storefrontUrl ? `${storefrontUrl}/products/${p.handle || "…"}` : undefined} />
+              <Input label={t("products.field.handle")} autoCapitalize="none" spellCheck={false} value={p.handle} onChange={(e) => update({ handle: e.target.value })} hint={storefrontUrl ? `${storefrontUrl}/products/${p.handle || "…"}` : undefined} />
+              <SeoPreview title={p.seoTitle || p.title} description={p.seoDescription || p.description.replace(/[#*\[\]()_-]/g, " ").replace(/\s+/g, " ").trim()} url={`${storefrontUrl ?? ""}/products/${p.handle || "…"}`} />
             </div>
           </Card>
         </div>

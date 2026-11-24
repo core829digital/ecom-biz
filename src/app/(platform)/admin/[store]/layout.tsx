@@ -38,9 +38,10 @@ export default async function StoreAdminLayout({ children, params }: { children:
     else throw e;
   }
   const usage = await storeUsage(store.id);
-  const [pendingReviews, unreadNotifications] = await Promise.all([
+  const [pendingReviews, unreadNotifications, unreadMessages] = await Promise.all([
     db.productReview.count({ where: { storeId: store.id, status: "PENDING" } }),
     db.notification.count({ where: { userId: user.id, readAt: null } }),
+    db.contactMessage.count({ where: { storeId: store.id, readAt: null } }),
   ]);
 
   const nav: NavItem[] = [
@@ -50,10 +51,13 @@ export default async function StoreAdminLayout({ children, params }: { children:
     { href: `${base}/collections`, label: t("nav.collections"), icon: "collections" },
     { href: `${base}/customers`, label: t("nav.customers"), icon: "customers" },
     { href: `${base}/reviews`, label: t("nav.reviews"), icon: "reviews", badge: pendingReviews },
+    { href: `${base}/inbox`, label: t("nav.inbox"), icon: "inbox", badge: unreadMessages },
+    { href: `${base}/marketing`, label: t("nav.marketing"), icon: "marketing" },
     { href: `${base}/discounts`, label: t("nav.discounts"), icon: "discounts" },
     { href: `${base}/online-store`, label: t("nav.onlineStore"), icon: "onlineStore", children: [
       { href: `${base}/online-store/theme`, label: t("nav.theme") },
       { href: `${base}/online-store/pages`, label: t("nav.pages") },
+      { href: `${base}/online-store/blog`, label: t("nav.blog") },
       { href: `${base}/online-store/navigation`, label: t("nav.navigation") },
       { href: `${base}/online-store/domains`, label: t("nav.domains") },
     ] },

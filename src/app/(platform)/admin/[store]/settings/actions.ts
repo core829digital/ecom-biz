@@ -36,6 +36,7 @@ export async function saveGeneralAction(slug: string, _: ActionState, fd: FormDa
     timezone: z.string().trim().max(60),
     seoTitle: z.string().trim().max(70),
     seoDescription: z.string().trim().max(320),
+    socialImageUrl: z.string().trim().max(2048).optional().default(""),
   });
   const parsed = parseForm(schema, formObject(fd));
   if (parsed.fieldErrors) return fail(t("validation.fixErrors"), parsed.fieldErrors);
@@ -49,13 +50,17 @@ export async function saveGeneralAction(slug: string, _: ActionState, fd: FormDa
     return fail(t("validation.fixErrors"), { currency: t("settings.general.currencyLocked") });
   }
   const nullable = (v: string) => v || null;
+  if (d.socialImageUrl && !d.socialImageUrl.startsWith("/files/")) {
+    const { isPublicHttpsUrl } = await import("@/lib/url-safety");
+    if (!(await isPublicHttpsUrl(d.socialImageUrl))) return fail(t("validation.fixErrors"), { socialImageUrl: t("blog.error.cover") });
+  }
   await db.store.update({
     where: { id: store.id },
     data: {
       name: d.name, email: d.email, phone: nullable(d.phone), legalName: nullable(d.legalName), vatNumber: nullable(d.vatNumber),
       address1: nullable(d.address1), address2: nullable(d.address2), city: nullable(d.city), zip: nullable(d.zip), province: nullable(d.province),
       countryCode: d.countryCode, currency: d.currency, locale: d.locale, timezone: d.timezone || "UTC",
-      seoTitle: nullable(d.seoTitle), seoDescription: nullable(d.seoDescription),
+      seoTitle: nullable(d.seoTitle), seoDescription: nullable(d.seoDescription), socialImageUrl: nullable(d.socialImageUrl),
     },
   });
   revalidatePath(`/admin/${slug}`, "layout");

@@ -86,9 +86,11 @@ export async function exportCustomerData(storeId: string, customerId: string) {
     },
   });
   if (!c) return null;
-  const [reviews, stockAlerts] = await Promise.all([
+  const [reviews, stockAlerts, newsletter, messages] = await Promise.all([
     db.productReview.findMany({ where: { storeId, email: c.email }, select: { rating: true, title: true, body: true, status: true, createdAt: true, product: { select: { title: true } } } }),
     db.stockAlert.findMany({ where: { storeId, email: c.email }, select: { createdAt: true, notifiedAt: true, variant: { select: { title: true, product: { select: { title: true } } } } } }),
+    db.newsletterSubscriber.findUnique({ where: { storeId_email: { storeId, email: c.email } }, select: { status: true, source: true, consentAt: true, unsubscribedAt: true, createdAt: true } }),
+    db.contactMessage.findMany({ where: { storeId, email: c.email }, select: { subject: true, message: true, createdAt: true } }),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -104,6 +106,8 @@ export async function exportCustomerData(storeId: string, customerId: string) {
     })),
     reviews,
     stockAlerts,
+    newsletter,
+    contactMessages: messages,
   };
 }
 
@@ -117,6 +121,8 @@ export async function eraseCustomer(storeId: string, customerId: string, actor: 
   await db.$transaction([
     db.productReview.deleteMany({ where: { storeId, email: c.email } }),
     db.stockAlert.deleteMany({ where: { storeId, email: c.email } }),
+    db.newsletterSubscriber.deleteMany({ where: { storeId, email: c.email } }),
+    db.contactMessage.deleteMany({ where: { storeId, email: c.email } }),
     db.checkout.deleteMany({ where: { storeId, email: c.email, status: { not: "COMPLETED" } } }),
     db.cart.updateMany({ where: { storeId, email: c.email }, data: { email: null } }),
     db.cart.updateMany({ where: { storeId, customerId: c.id }, data: { customerId: null } }),
