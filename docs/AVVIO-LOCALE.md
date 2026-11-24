@@ -101,13 +101,13 @@ Avvia il database (credenziali e porta coincidono già con il file `.env`):
 ```powershell
 docker run --name ecom-db -e POSTGRES_USER=commerce -e POSTGRES_PASSWORD=commerce -e POSTGRES_DB=commerce -p 5432:5432 -d postgres:16-alpine
 ```
-Installa le dipendenze:
+Installa le dipendenze (può richiedere qualche minuto; alla fine non devono comparire righe con `ERR!`):
 ```powershell
 npm ci
 ```
 Crea le tabelle del database:
 ```powershell
-npx prisma migrate deploy
+npm run db:deploy
 ```
 Carica i piani e il negozio demo:
 ```powershell
@@ -163,7 +163,7 @@ docker run --name ecom-db -e POSTGRES_USER=commerce -e POSTGRES_PASSWORD=commerc
 npm ci
 ```
 ```bash
-npx prisma migrate deploy
+npm run db:deploy
 ```
 ```bash
 SEED_DEMO=true npm run db:seed
@@ -203,7 +203,7 @@ git pull
 npm ci
 ```
 ```bash
-npx prisma migrate deploy
+npm run db:deploy
 ```
 Poi di nuovo `npm run dev`.
 
@@ -230,6 +230,7 @@ Poi di nuovo `npm run dev`.
 | `Can't reach database server at localhost:5432` | Il database è spento | `docker start ecom-db` (con Docker Desktop aperto) |
 | `Port 3000 is in use` | Un altro server è già avviato | Chiudi l'altro terminale con `npm run dev`, oppure usa `npm run dev -- -p 3001` |
 | "l'esecuzione di script è disabilitata" | Criterio di sicurezza di PowerShell | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| `Need to install the following packages: prisma@…` oppure errori tipo "is a Prisma 7 command and is not available in Prisma 8" | Le dipendenze del progetto non sono installate (`npm ci` non eseguito, fallito, o lanciato in un'altra cartella): `npx` scarica allora l'ultima versione di Prisma da internet, che non è quella del progetto | Rispondi **n**, **non** seguire i suggerimenti del messaggio. Entra nella cartella `ecom-biz`, lancia `npm ci` e controlla che finisca senza errori, poi usa `npm run db:deploy` |
 | `demo.localhost` non si apre | Browser che non riconosce `*.localhost` | Usa <http://localhost:3000/sites/demo> |
 
 Per ripartire da zero con il database (cancella **tutti** i dati locali):

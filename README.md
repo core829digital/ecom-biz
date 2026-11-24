@@ -63,7 +63,7 @@ Italian: [`docs/AVVIO-LOCALE.md`](docs/AVVIO-LOCALE.md).
 ```bash
 cp .env.example .env            # set DATABASE_URL and a random APP_SECRET
 npm ci
-npx prisma migrate deploy
+npm run db:deploy
 SEED_DEMO=true npm run db:seed  # plans + demo store (demo@example.com / demo12345)
 npm run dev
 ```
