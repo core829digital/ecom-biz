@@ -81,6 +81,8 @@ versione e data dell'accettazione.
 
 | Documento | Contenuto |
 |---|---|
+| `PRD.md` | Visione, pubblico, requisiti, modello di business, metriche |
+| `PIANO-LAVORI.md` | **Tutte le attività per fasi, con stato, e registro delle decisioni** |
 | `AVVIO-LOCALE.md` | Come avviare la piattaforma sul proprio computer (Windows con WSL e Docker, Mac), problemi comuni |
 | `ABBONAMENTI.md` | Prova gratuita, regole anti-abuso, tutti i casi d'uso dei pagamenti, configurazione Stripe |
 | `SICUREZZA.md` | Audit OWASP Top 10, header di sicurezza, cosa resta da fare |
