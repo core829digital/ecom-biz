@@ -34,5 +34,6 @@ export async function storePublicUrl(store: Pick<Store, "id" | "slug">): Promise
     where: { storeId: store.id, isPrimary: true, verifiedAt: { not: null } },
   });
   if (primary) return `https://${primary.hostname}`;
-  return `${env.storefrontProtocol}://${store.slug}.${env.storefrontRootDomain}`;
+  if (env.storefrontPathMode) return `${env.appUrl}/sites/${store.slug}`;
+  return `${env.storefrontProtocol}://${env.storeAddress(store.slug)}`;
 }

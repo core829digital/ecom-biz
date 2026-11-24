@@ -51,7 +51,7 @@ export default async function NewStorePage() {
       <p className="mb-6 mt-1 text-sm text-muted">{firstStore ? t("onboarding.welcomeBody") : t("stores.new.subtitle")}</p>
       <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <NewStoreForm
-          rootDomain={env.storefrontRootDomain}
+          addressPattern={env.storeAddress("{slug}")}
           defaultEmail={user.email}
           defaultLocale={locale}
           countries={countryOptions(locale)}

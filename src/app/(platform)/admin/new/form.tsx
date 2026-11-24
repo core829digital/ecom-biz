@@ -18,7 +18,8 @@ type Labels = Record<
 > & { starters: Record<StarterId, { name: string; body: string }> };
 
 export function NewStoreForm(props: {
-  rootDomain: string;
+  /** Where the store will live, with "{slug}" as placeholder. */
+  addressPattern: string;
   defaultEmail: string;
   defaultLocale: string;
   countries: { code: string; name: string }[];
@@ -58,7 +59,7 @@ export function NewStoreForm(props: {
           onChange={(e) => { setName(e.target.value); if (!slugTouched) setSlug(handleize(e.target.value).slice(0, 40)); }} />
         <Input name="slug" autoCapitalize="none" autoCorrect="off" spellCheck={false} label={labels.slug} value={slug} required
           onChange={(e) => { setSlugTouched(true); setSlug(e.target.value.toLowerCase()); }}
-          hint={`${slug || labels.slugExample}.${props.rootDomain}`} />
+          hint={props.addressPattern.replace("{slug}", slug || labels.slugExample)} />
         <Input name="email" type="email" autoComplete="email" label={labels.email} defaultValue={props.defaultEmail} required />
         <div className="grid gap-4 sm:grid-cols-2">
           <Select name="countryCode" autoComplete="country" label={labels.country} value={country} onChange={(e) => {

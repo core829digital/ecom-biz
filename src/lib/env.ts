@@ -29,6 +29,20 @@ export const env = {
   get storefrontRootDomain() {
     return read("STOREFRONT_ROOT_DOMAIN", "localhost:3000").toLowerCase();
   },
+  /**
+   * Stores live at <APP_URL>/sites/<slug> instead of <slug>.<root domain> when the storefront root
+   * domain is the platform's own host (e.g. a *.vercel.app test deployment, where wildcard
+   * subdomains cannot exist). localhost keeps subdomains: browsers resolve *.localhost.
+   */
+  get storefrontPathMode() {
+    const appHost = new URL(this.appUrl).host.toLowerCase();
+    const rootHost = this.storefrontRootDomain;
+    return appHost === rootHost && !rootHost.split(":")[0].endsWith("localhost");
+  },
+  /** Address of a store on the platform, without protocol: "shop.example.com" or "app.example.com/sites/shop". */
+  storeAddress(slug: string) {
+    return this.storefrontPathMode ? `${new URL(this.appUrl).host}/sites/${slug}` : `${slug}.${this.storefrontRootDomain}`;
+  },
   get storefrontProtocol() {
     return read("STOREFRONT_PROTOCOL", "http");
   },

@@ -13,7 +13,7 @@ export default async function DomainsPage({ params }: { params: Promise<{ store:
   const { store, role } = await requireStoreAccess(slug, "ADMIN");
   const { t } = await getPlatformT();
   const domains = await db.domain.findMany({ where: { storeId: store.id }, orderBy: { createdAt: "asc" } });
-  const platformHost = `${store.slug}.${env.storefrontRootDomain}`;
+  const platformHost = env.storeAddress(store.slug);
   const target = process.env.CUSTOM_DOMAIN_TARGET || env.storefrontRootDomain.split(":")[0];
   const owner = role === "OWNER";
   return (
