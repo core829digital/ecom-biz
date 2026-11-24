@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring } from "framer-motion";
-import { ArrowRight, Check, CreditCard, Globe, Keyboard, Lock, Minus, Package, Palette, Plus, Store, Truck, Webhook, X } from "lucide-react";
+import { Check, CreditCard, Globe, Keyboard, Lock, Package, Palette, Store, Truck, Webhook, X } from "lucide-react";
+import { MaskReveal, MorphPlus, PillButton, TiltCard } from "./motion-ui";
 import type { LandingCopy } from "@/lib/i18n/landing";
 import { cn } from "@/lib/cn";
-import { ease, MagneticLink } from "./hero";
+import { ease } from "./hero";
 
 const reveal = {
   hidden: { opacity: 0, y: 24 },
@@ -15,10 +16,14 @@ const reveal = {
 
 function SectionTitle({ eyebrow, title }: { eyebrow?: string; title: string }) {
   return (
-    <motion.div variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-80px" }} className="mx-auto mb-14 max-w-2xl text-center">
-      {eyebrow && <p className="text-sm font-medium text-muted">{eyebrow}</p>}
-      <h2 className="mt-2 text-balance text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">{title}</h2>
-    </motion.div>
+    <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20">
+      {eyebrow && (
+        <motion.p variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true }} className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-muted">
+          {eyebrow}
+        </motion.p>
+      )}
+      <MaskReveal text={title} className="mt-5 text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl" />
+    </div>
   );
 }
 
@@ -176,16 +181,17 @@ export function Features({ copy, mock }: { copy: LandingCopy["features"]; mock: 
     { key: "global", icon: Truck, className: "sm:col-span-2 lg:col-span-3" },
   ];
   return (
-    <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
+    <section id="features" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-28 sm:py-36 sm:px-6">
       <SectionTitle eyebrow={copy.eyebrow} title={copy.title} />
-      <motion.ul initial="hidden" whileInView="show" viewport={{ once: true, margin: "-60px" }} transition={{ staggerChildren: 0.06 }} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <motion.ul initial="hidden" whileInView="show" viewport={{ once: true, margin: "-60px" }} transition={{ staggerChildren: 0.06 }} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map(({ key, icon: Icon, className, demo }) => (
-          <motion.li key={key} variants={reveal} whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            className={cn("group relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-soft transition-shadow hover:shadow-elevated", className)}>
-            <span className="flex size-10 items-center justify-center rounded-xl bg-surface-2 transition-colors group-hover:bg-accent group-hover:text-accent-contrast"><Icon className="size-5" aria-hidden /></span>
-            <h3 className="mt-5 font-semibold">{f[key].title}</h3>
-            <p className="mt-1.5 text-sm text-muted">{f[key].body}</p>
-            {demo}
+          <motion.li key={key} variants={reveal} className={className}>
+            <TiltCard className="h-full overflow-hidden rounded-3xl border border-border bg-surface p-7 shadow-soft transition-[box-shadow,border-color] duration-300 hover:border-text/20 hover:shadow-elevated sm:p-8">
+              <span className="flex size-11 items-center justify-center rounded-2xl bg-surface-2 transition-all duration-300 group-hover:rotate-[-6deg] group-hover:scale-110 group-hover:bg-text group-hover:text-bg"><Icon className="size-5" aria-hidden /></span>
+              <h3 className="mt-6 text-lg font-semibold tracking-tight">{f[key].title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{f[key].body}</p>
+              {demo}
+            </TiltCard>
           </motion.li>
         ))}
       </motion.ul>
@@ -198,7 +204,7 @@ export function HowItWorks({ copy }: { copy: LandingCopy["how"] }) {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 75%", "end 55%"] });
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
   return (
-    <section id="how" className="scroll-mt-20 border-y border-border bg-surface/40 py-24">
+    <section id="how" className="scroll-mt-20 border-y border-border bg-surface/40 py-28 sm:py-36">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <SectionTitle eyebrow={copy.eyebrow} title={copy.title} />
         <ol ref={ref} className="relative space-y-12 pl-14">
@@ -219,7 +225,7 @@ export function HowItWorks({ copy }: { copy: LandingCopy["how"] }) {
 
 export function Compare({ copy }: { copy: LandingCopy["compare"] }) {
   return (
-    <section className="mx-auto max-w-4xl px-4 py-24 sm:px-6">
+    <section className="mx-auto max-w-4xl px-4 py-28 sm:py-36 sm:px-6">
       <SectionTitle eyebrow={copy.eyebrow} title={copy.title} />
       <motion.div variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true }} className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="grid grid-cols-[1fr_auto_auto] gap-x-6 border-b border-border bg-surface-2 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted sm:gap-x-10">
@@ -247,7 +253,7 @@ export type LandingPlan = { id: string; name: string; price: string; fee: string
 export function Pricing({ copy, plans }: { copy: LandingCopy["pricing"]; plans: LandingPlan[] }) {
   const popular = plans.length >= 3 ? 1 : -1;
   return (
-    <section id="pricing" className="scroll-mt-20 border-y border-border bg-surface/40 py-24">
+    <section id="pricing" className="scroll-mt-20 border-y border-border bg-surface/40 py-28 sm:py-36">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionTitle eyebrow={copy.eyebrow} title={copy.title} />
         <motion.ul initial="hidden" whileInView="show" viewport={{ once: true }} transition={{ staggerChildren: 0.08 }} className={cn("mx-auto grid gap-5", plans.length >= 3 ? "lg:grid-cols-3" : "max-w-3xl sm:grid-cols-2")}>
@@ -263,7 +269,7 @@ export function Pricing({ copy, plans }: { copy: LandingCopy["pricing"]; plans: 
                     <li key={f} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0" aria-hidden />{f}</li>
                   ))}
                 </ul>
-                <Link href="/signup" className={cn("mt-8 inline-flex h-11 items-center justify-center rounded-xl text-sm font-medium transition-opacity hover:opacity-90", i === popular ? "bg-text text-bg" : "border border-border bg-surface hover:bg-surface-2")}>{copy.cta}</Link>
+                <Link href="/signup" className={cn("mt-8 inline-flex h-12 items-center justify-center rounded-full text-sm font-medium transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]", i === popular ? "bg-text text-bg hover:shadow-[0_14px_30px_-12px_rgb(0_0_0/0.5)]" : "border border-border bg-surface hover:bg-surface-2")}>{copy.cta}</Link>
               </div>
             </motion.li>
           ))}
@@ -276,21 +282,23 @@ export function Pricing({ copy, plans }: { copy: LandingCopy["pricing"]; plans: 
 export function Faq({ copy }: { copy: LandingCopy["faq"] }) {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-4 py-24 sm:px-6">
+    <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-4 py-28 sm:py-36 sm:px-6">
       <SectionTitle title={copy.title} />
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border rounded-3xl border border-border bg-surface">
         {copy.items.map((item, i) => {
           const isOpen = open === i;
           return (
             <li key={item.q}>
-              <button className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left font-medium" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen}>
+              <button className="group flex w-full items-center justify-between gap-6 px-6 py-6 text-left text-[17px] font-medium sm:px-8" onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen}>
                 {item.q}
-                <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25, ease }} className="shrink-0 text-muted">{isOpen ? <Minus className="size-4" /> : <Plus className="size-4" />}</motion.span>
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors duration-300", isOpen ? "border-text bg-text text-bg" : "border-border text-muted group-hover:border-text/40 group-hover:text-text")}>
+                  <MorphPlus open={isOpen} className="size-3.5" />
+                </span>
               </button>
               <AnimatePresence initial={false}>
                 {isOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease }} className="overflow-hidden">
-                    <p className="px-6 pb-5 text-muted">{item.a}</p>
+                    <p className="px-6 pb-6 leading-relaxed text-muted sm:px-8">{item.a}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -306,17 +314,15 @@ export function FinalCta({ copy }: { copy: LandingCopy["cta"] }) {
   return (
     <section className="px-4 pb-24 sm:px-6">
       <motion.div variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true }}
-        className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-text px-6 py-20 text-center text-bg sm:px-12">
+        className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-text px-6 py-24 text-center text-bg sm:px-12 sm:py-32">
         <motion.div className="pointer-events-none absolute -left-24 -top-24 size-96 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--bg)_22%,transparent),transparent_65%)]"
           animate={{ x: [0, 80, 0], y: [0, 40, 0] }} transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }} aria-hidden />
         <motion.div className="pointer-events-none absolute -bottom-32 -right-16 size-[28rem] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--bg)_16%,transparent),transparent_65%)]"
           animate={{ x: [0, -60, 0], y: [0, -30, 0] }} transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }} aria-hidden />
-        <h2 className="relative mx-auto max-w-2xl text-balance text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">{copy.title}</h2>
-        <p className="relative mt-4 opacity-70">{copy.subtitle}</p>
-        <div className="relative mt-8">
-          <MagneticLink href="/signup" className="group inline-flex h-12 items-center gap-2 rounded-xl bg-bg px-6 text-[15px] font-medium text-text">
-            {copy.button} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-          </MagneticLink>
+        <MaskReveal text={copy.title} className="relative mx-auto max-w-3xl text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-7xl" />
+        <p className="relative mt-6 text-lg opacity-70">{copy.subtitle}</p>
+        <div className="relative mt-10">
+          <PillButton href="/signup" variant="inverse">{copy.button}</PillButton>
         </div>
       </motion.div>
     </section>

@@ -7,6 +7,7 @@ import type { ThemePref } from "@/lib/appearance";
 import { Hero, LandingNav } from "./hero";
 import { Compare, Faq, Features, FinalCta, Footer, HowItWorks, Marquee, Pricing, Stats, type LandingPlan } from "./sections";
 import { setLocaleAction } from "./actions";
+import { ScrollProgress } from "./motion-ui";
 
 export function Landing({ copy, brand, loggedIn, plans, theme, themeLabels, locale, company }: {
   copy: LandingCopy; brand: string; loggedIn: boolean; plans: LandingPlan[]; theme: ThemePref; themeLabels: Record<ThemePref, string>; locale: string;
@@ -18,6 +19,7 @@ export function Landing({ copy, brand, loggedIn, plans, theme, themeLabels, loca
   const onLocale = (l: "en" | "it") => start(async () => { await setLocaleAction(l); router.refresh(); });
   return (
     <div className="overflow-x-clip">
+      <ScrollProgress />
       <LandingNav copy={copy} brand={brand} loggedIn={loggedIn} theme={theme} themeLabels={themeLabels} locale={locale} onLocale={onLocale} />
       <main>
         <Hero copy={copy} />

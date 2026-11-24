@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   AnimatePresence, animate, motion, useInView, useMotionTemplate, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform,
 } from "framer-motion";
-import { ArrowRight, BarChart3, Boxes, Check, Home, Menu, Package, ShoppingBag, Users, X } from "lucide-react";
+import { BarChart3, Boxes, Check, ChevronDown, Home, Package, ShoppingBag, Users } from "lucide-react";
+import { MaskReveal, MorphMenu, PillButton } from "./motion-ui";
 import type { LandingCopy } from "@/lib/i18n/landing";
 import type { ThemePref } from "@/lib/appearance";
 import { ThemeSwitcher } from "@/components/appearance/theme-switcher";
@@ -20,6 +21,7 @@ export function LandingNav({ copy, brand, loggedIn, theme, themeLabels, locale, 
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [th, setTh] = useState(theme);
+  const [hover, setHover] = useState<string | null>(null);
   useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 12));
   const links: [string, string][] = [["#features", copy.nav.features], ["#how", copy.nav.how], ["#pricing", copy.nav.pricing], ["#faq", copy.nav.faq]];
   return (
@@ -29,13 +31,18 @@ export function LandingNav({ copy, brand, loggedIn, theme, themeLabels, locale, 
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease }}
     >
-      <nav className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6" aria-label="Main">
+      <nav className="mx-auto flex h-[72px] max-w-7xl items-center gap-6 px-4 sm:px-6" aria-label="Main">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="flex size-7 items-center justify-center rounded-lg bg-text text-xs font-bold text-bg">{brand.slice(0, 1).toUpperCase()}</span>
           {brand}
         </Link>
-        <ul className="hidden items-center gap-6 text-sm text-muted md:flex">
-          {links.map(([href, label]) => <li key={href}><a href={href} className="transition-colors hover:text-text">{label}</a></li>)}
+        <ul className="hidden items-center text-sm text-muted md:flex" onMouseLeave={() => setHover(null)}>
+          {links.map(([href, label]) => (
+            <li key={href} className="relative">
+              {hover === href && <motion.span layoutId="nav-hover" className="absolute inset-0 rounded-full bg-surface-2" transition={{ type: "spring", stiffness: 500, damping: 38 }} />}
+              <a href={href} onMouseEnter={() => setHover(href)} className="relative block rounded-full px-3.5 py-2 transition-colors hover:text-text">{label}</a>
+            </li>
+          ))}
         </ul>
         <div className="ml-auto hidden items-center gap-3 md:flex">
           <div className="flex rounded-lg border border-border p-0.5 text-xs" role="group" aria-label={copy.footer.language}>
@@ -45,15 +52,15 @@ export function LandingNav({ copy, brand, loggedIn, theme, themeLabels, locale, 
           </div>
           <ThemeSwitcher theme={th} onChange={setTh} labels={themeLabels} compact layoutId="landing-theme" />
           {loggedIn ? (
-            <Link href="/admin" className="inline-flex h-9 items-center rounded-lg bg-text px-4 text-sm font-medium text-bg transition-opacity hover:opacity-90">{copy.nav.dashboard}</Link>
+            <PillButton href="/admin" size="md" className="h-10 px-5">{copy.nav.dashboard}</PillButton>
           ) : (
             <>
               <Link href="/login" className="text-sm font-medium text-muted hover:text-text">{copy.nav.login}</Link>
-              <MagneticLink href="/signup" className="inline-flex h-9 items-center rounded-lg bg-text px-4 text-sm font-medium text-bg">{copy.nav.start}</MagneticLink>
+              <PillButton href="/signup" size="md" className="h-10 px-5">{copy.nav.start}</PillButton>
             </>
           )}
         </div>
-        <button className="ml-auto rounded-md p-2 md:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}>{open ? <X className="size-5" /> : <Menu className="size-5" />}</button>
+        <button className="ml-auto flex size-10 items-center justify-center rounded-full transition-colors hover:bg-surface-2 md:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}><MorphMenu open={open} /></button>
       </nav>
       <AnimatePresence>
         {open && (
@@ -65,8 +72,8 @@ export function LandingNav({ copy, brand, loggedIn, theme, themeLabels, locale, 
                 {(["en", "it"] as const).map((l) => <button key={l} onClick={() => onLocale(l)} className={cn("text-sm uppercase", locale === l ? "font-semibold" : "text-muted")}>{l}</button>)}
               </li>
               <li className="grid grid-cols-2 gap-2 pt-3">
-                <Link href={loggedIn ? "/admin" : "/login"} className="flex h-10 items-center justify-center rounded-lg border border-border text-sm font-medium">{loggedIn ? copy.nav.dashboard : copy.nav.login}</Link>
-                <Link href="/signup" className="flex h-10 items-center justify-center rounded-lg bg-text text-sm font-medium text-bg">{copy.nav.start}</Link>
+                <Link href={loggedIn ? "/admin" : "/login"} className="flex h-11 items-center justify-center rounded-full border border-border text-sm font-medium">{loggedIn ? copy.nav.dashboard : copy.nav.login}</Link>
+                <Link href="/signup" className="flex h-11 items-center justify-center rounded-full bg-text text-sm font-medium text-bg">{copy.nav.start}</Link>
               </li>
             </ul>
           </motion.div>
@@ -112,12 +119,11 @@ export function Hero({ copy }: { copy: LandingCopy }) {
   const rotateX = useTransform(scrollYProgress, [0, 0.6], reduce ? [0, 0] : [22, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.6], reduce ? [1, 1] : [0.92, 1]);
   const lift = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [0, -80]);
-  const words = copy.hero.title.split(" ");
 
   return (
     <section
       ref={section}
-      className="relative overflow-hidden pb-24 pt-32 sm:pt-40"
+      className="relative overflow-hidden pb-28 pt-36 sm:pt-48"
       onMouseMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         mx.set(((e.clientX - r.left) / r.width) * 100);
@@ -128,35 +134,29 @@ export function Hero({ copy }: { copy: LandingCopy }) {
       <div className="pointer-events-none absolute inset-0 [background-image:linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_50%_0%,black_30%,transparent_75%)] opacity-60" aria-hidden />
       <motion.div className="pointer-events-none absolute inset-0" style={{ background: spotlight }} aria-hidden />
 
-      <div className="relative mx-auto max-w-6xl px-4 text-center sm:px-6">
+      <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6">
         <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.1 }}
           className="mx-auto inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-xs font-medium text-muted shadow-soft backdrop-blur">
           <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" /><span className="relative inline-flex size-2 rounded-full bg-success" /></span>
           {copy.hero.eyebrow}
         </motion.p>
-        <h1 className="mx-auto mt-6 max-w-4xl text-balance text-5xl font-semibold tracking-[-0.035em] sm:text-7xl">
-          {words.map((w, i) => (
-            <motion.span key={i} className="inline-block pr-[0.25em]"
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, filter: "blur(10px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={{ duration: 0.7, ease, delay: 0.15 + i * 0.07 }}>
-              {w}
-            </motion.span>
-          ))}
-        </h1>
+        <MaskReveal as="h1" immediate delay={0.15} text={copy.hero.title}
+          className="mx-auto mt-8 max-w-5xl text-balance text-[clamp(2.75rem,8vw,6.25rem)] font-semibold leading-[0.98] tracking-[-0.045em]" />
         <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease, delay: 0.5 }}
-          className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted">{copy.hero.subtitle}</motion.p>
+          className="mx-auto mt-8 max-w-2xl text-pretty text-lg text-muted sm:text-xl">{copy.hero.subtitle}</motion.p>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease, delay: 0.62 }}
-          className="mt-9 flex flex-wrap items-center justify-center gap-3">
-          <MagneticLink href="/signup" className="group inline-flex h-12 items-center gap-2 rounded-xl bg-text px-6 text-[15px] font-medium text-bg shadow-elevated">
-            {copy.hero.primary} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-          </MagneticLink>
-          <a href="#how" className="inline-flex h-12 items-center rounded-xl border border-border bg-surface/70 px-6 text-[15px] font-medium backdrop-blur transition-colors hover:bg-surface">{copy.hero.secondary}</a>
+          className="mt-11 flex flex-wrap items-center justify-center gap-3">
+          <PillButton href="/signup">{copy.hero.primary}</PillButton>
+          <PillButton href="#how" variant="ghost" arrow={false}>{copy.hero.secondary}</PillButton>
         </motion.div>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9, duration: 0.6 }} className="mt-4 text-xs text-muted">{copy.hero.note}</motion.p>
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9, duration: 0.6 }} className="mt-5 text-xs text-muted">{copy.hero.note}</motion.p>
+        <motion.a href="#features" aria-label={copy.nav.features} initial={{ opacity: 0 }} animate={{ opacity: 1, y: [0, 6, 0] }} transition={{ opacity: { delay: 1.4 }, y: { delay: 1.4, duration: 2.2, repeat: Infinity, ease: "easeInOut" } }}
+          className="mx-auto mt-8 hidden size-9 items-center justify-center rounded-full border border-border text-muted hover:text-text sm:flex">
+          <ChevronDown className="size-4" aria-hidden />
+        </motion.a>
       </div>
 
-      <motion.div className="relative mx-auto mt-16 max-w-5xl px-4 sm:px-6 [perspective:1600px]" style={{ y: lift }}
+      <motion.div className="relative mx-auto mt-20 max-w-6xl px-4 sm:px-6 [perspective:1600px]" style={{ y: lift }}
         initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease, delay: 0.55 }}>
         <motion.div style={{ rotateX, scale, transformOrigin: "50% 0%" }} className="will-change-transform">
           <DashboardMock toastLabel={copy.hero.toast} labels={copy.mock} />
