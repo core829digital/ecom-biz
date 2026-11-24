@@ -72,14 +72,25 @@ export function SiteEditor({ initial, hasDraft: initialDraft, storeName, backHre
     try { return frame.current?.contentDocument ?? null; } catch { return null; }
   };
 
-  /** Colors and shapes apply instantly in the preview; content changes arrive with the reload. */
+  /**
+   * Colors and shapes apply instantly in the preview; content changes arrive with the reload.
+   * Everything goes through one injected <style> in the preview's <head>: elements rendered by
+   * React are never touched, so the preview page hydrates without mismatches.
+   */
   const paintPreview = useCallback(() => {
     const doc = previewDoc();
-    const body = doc?.querySelector<HTMLElement>("body.storefront");
-    if (!body) return;
-    for (const [k, v] of Object.entries(themeCssVars(theme))) body.style.setProperty(k, v);
-    doc!.querySelectorAll(".sf-editing").forEach((n) => n.classList.remove("sf-editing"));
-    if (selected) doc!.querySelector(`[data-section-id="${selected}"]`)?.classList.add("sf-editing");
+    if (!doc?.head || !doc.querySelector("body.storefront")) return;
+    let style = doc.getElementById("sf-editor-overrides");
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = "sf-editor-overrides";
+      doc.head.appendChild(style);
+    }
+    const vars = Object.entries(themeCssVars(theme)).map(([k, v]) => `${k}: ${v} !important;`).join(" ");
+    const outline = selected && /^[a-z0-9]+$/.test(selected)
+      ? `[data-section-id="${selected}"] { outline: 2px solid var(--brand); outline-offset: -2px; }`
+      : "";
+    style.textContent = `body.storefront { ${vars} } ${outline}`;
   }, [theme, selected]);
   useEffect(paintPreview, [paintPreview]);
 

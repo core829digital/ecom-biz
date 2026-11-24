@@ -170,8 +170,6 @@ html.theme-transition, html.theme-transition *, html.theme-transition *::before,
   background: var(--bg); color: var(--text); font-family: var(--store-font);
 }
 .storefront :is(h1, h2, h3) { font-family: var(--store-heading-font); }
-/* Site-editor preview: outline the section being edited. */
-.storefront [data-section-id].sf-editing { outline: 2px solid var(--brand); outline-offset: -2px; }
 
 .prose-store p { margin: 0 0 1em; line-height: 1.7; }
 .prose-store h2 { font-size: 1.25rem; font-weight: 600; margin: 1.5em 0 .5em; }
