@@ -38,3 +38,28 @@ export async function deletePageAction(slug: string, id: string) {
   await db.page.deleteMany({ where: { id, storeId: store.id } });
   redirect(`/admin/${slug}/online-store/pages`);
 }
+
+/** Create a legal page from the starter template, as a draft the merchant reviews before publishing. */
+export async function createLegalPageAction(slug: string, page: string) {
+  const { store, user } = await requireStoreAccess(slug, "ADMIN");
+  const { STORE_LEGAL_PAGES, storeLegalTemplate } = await import("@/lib/legal/store-templates");
+  if (!(STORE_LEGAL_PAGES as readonly string[]).includes(page)) return;
+  const existing = await db.page.findUnique({ where: { storeId_handle: { storeId: store.id, handle: page } } });
+  if (existing) redirect(`/admin/${slug}/online-store/pages/${existing.id}`);
+  const { countryName } = await import("@/lib/geo");
+  const address = [store.address1, store.address2, [store.zip, store.city].filter(Boolean).join(" "), countryName(store.countryCode, store.locale)].filter(Boolean).join(", ");
+  const missing = store.locale === "it" ? "[DA COMPLETARE]" : "[TO COMPLETE]";
+  const tpl = storeLegalTemplate(page as never, store.locale, {
+    store: store.name,
+    company: store.legalName || store.name,
+    address: address || missing,
+    vat: store.vatNumber || missing,
+    email: store.email,
+    phone: store.phone ? ` · ${store.phone}` : "",
+  });
+  const created = await db.page.create({ data: { storeId: store.id, handle: page, title: tpl.title, body: tpl.body, published: false } });
+  const { audit } = await import("@/server/audit");
+  await audit({ userId: user.id, storeId: store.id, action: "page.legal_template", target: page });
+  revalidatePath(`/admin/${slug}/online-store/pages`);
+  redirect(`/admin/${slug}/online-store/pages/${created.id}`);
+}

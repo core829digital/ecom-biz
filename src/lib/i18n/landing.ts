@@ -70,7 +70,7 @@ const en = {
     ],
   },
   cta: { title: "Your next store is a few minutes away", subtitle: "Start free. Upgrade when you're ready.", button: "Create your store" },
-  footer: { rights: "All rights reserved.", product: "Product", account: "Account", language: "Language" },
+  footer: { rights: "All rights reserved.", product: "Product", account: "Account", language: "Language", legal: "Legal", terms: "Terms of Service", privacy: "Privacy Policy", cookies: "Cookie Policy", subscriptions: "Subscriptions and Refunds", vat: "VAT" },
   mock: { sales: "Net sales", orders: "Orders", conversion: "Conversion", shop: "Shop now", steps: ["Paid", "Packed", "Shipped", "Delivered"] },
 };
 
@@ -147,7 +147,7 @@ const it: LandingCopy = {
     ],
   },
   cta: { title: "Il tuo prossimo negozio è a pochi minuti", subtitle: "Inizia gratis. Passa a un piano quando sei pronto.", button: "Crea il tuo negozio" },
-  footer: { rights: "Tutti i diritti riservati.", product: "Prodotto", account: "Account", language: "Lingua" },
+  footer: { rights: "Tutti i diritti riservati.", product: "Prodotto", account: "Account", language: "Lingua", legal: "Note legali", terms: "Termini di servizio", privacy: "Informativa privacy", cookies: "Cookie policy", subscriptions: "Abbonamenti e rimborsi", vat: "P.IVA" },
   mock: { sales: "Vendite nette", orders: "Ordini", conversion: "Conversione", shop: "Acquista", steps: ["Pagato", "Preparato", "Spedito", "Consegnato"] },
 };
 

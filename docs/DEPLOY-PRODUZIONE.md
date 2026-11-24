@@ -134,6 +134,7 @@ solo il database e la pausa settimanale è pericolosa per una demo che un client
    | `SMTP_URL`, `EMAIL_FROM` | dal fornitore email |
    | `STRIPE_*`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | dal pannello Stripe (prima *test*, poi *live*) |
    | `CUSTOM_DOMAIN_TARGET` | `cname.vercel-dns.com` |
+   | `LEGAL_COMPANY_NAME`, `LEGAL_ADDRESS`, `LEGAL_VAT_NUMBER`, `LEGAL_EMAIL`, `LEGAL_COURTS` | dati legali del gestore, mostrati nelle pagine `/legal` e nel footer |
    | `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | token creato in Vercel → Account Settings → Tokens, con accesso al team del progetto |
 
    Le altre variabili (e il loro significato) sono in [`.env.example`](../.env.example).

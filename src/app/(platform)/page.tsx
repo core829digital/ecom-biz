@@ -26,6 +26,7 @@ export default async function LandingPage() {
     <Landing
       copy={landingCopy(locale, env.platformName)}
       brand={env.platformName}
+      company={env.legal.configured ? { name: env.legal.company, vat: env.legal.vat } : null}
       loggedIn={!!user}
       locale={locale}
       theme={theme}

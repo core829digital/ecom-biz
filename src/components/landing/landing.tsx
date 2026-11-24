@@ -8,8 +8,10 @@ import { Hero, LandingNav } from "./hero";
 import { Compare, Faq, Features, FinalCta, Footer, HowItWorks, Marquee, Pricing, Stats, type LandingPlan } from "./sections";
 import { setLocaleAction } from "./actions";
 
-export function Landing({ copy, brand, loggedIn, plans, theme, themeLabels, locale }: {
+export function Landing({ copy, brand, loggedIn, plans, theme, themeLabels, locale, company }: {
   copy: LandingCopy; brand: string; loggedIn: boolean; plans: LandingPlan[]; theme: ThemePref; themeLabels: Record<ThemePref, string>; locale: string;
+  /** Operator identity for the footer (required on business websites in the EU); null until configured. */
+  company: { name: string; vat: string } | null;
 }) {
   const router = useRouter();
   const [, start] = useTransition();
@@ -28,7 +30,7 @@ export function Landing({ copy, brand, loggedIn, plans, theme, themeLabels, loca
         <Faq copy={copy.faq} />
         <FinalCta copy={copy.cta} />
       </main>
-      <Footer copy={copy.footer} nav={copy.nav} brand={brand} />
+      <Footer copy={copy.footer} nav={copy.nav} brand={brand} company={company} />
     </div>
   );
 }

@@ -323,10 +323,10 @@ export function FinalCta({ copy }: { copy: LandingCopy["cta"] }) {
   );
 }
 
-export function Footer({ copy, nav, brand }: { copy: LandingCopy["footer"]; nav: LandingCopy["nav"]; brand: string }) {
+export function Footer({ copy, nav, brand, company }: { copy: LandingCopy["footer"]; nav: LandingCopy["nav"]; brand: string; company?: { name: string; vat: string } | null }) {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-3 sm:px-6">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div>
           <p className="flex items-center gap-2 font-semibold"><span className="flex size-7 items-center justify-center rounded-lg bg-text text-xs font-bold text-bg">{brand.slice(0, 1).toUpperCase()}</span>{brand}</p>
           <p className="mt-3 flex items-center gap-1.5 text-sm text-muted"><Globe className="size-4" aria-hidden /> EN · IT</p>
@@ -346,8 +346,19 @@ export function Footer({ copy, nav, brand }: { copy: LandingCopy["footer"]; nav:
             <li><Link href="/signup" className="hover:text-text">{nav.start}</Link></li>
           </ul>
         </div>
+        <div>
+          <p className="text-sm font-semibold">{copy.legal}</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted">
+            <li><Link href="/legal/terms" className="hover:text-text">{copy.terms}</Link></li>
+            <li><Link href="/legal/privacy" className="hover:text-text">{copy.privacy}</Link></li>
+            <li><Link href="/legal/cookies" className="hover:text-text">{copy.cookies}</Link></li>
+            <li><Link href="/legal/subscriptions" className="hover:text-text">{copy.subscriptions}</Link></li>
+          </ul>
+        </div>
       </div>
-      <p className="border-t border-border px-4 py-6 text-center text-xs text-muted">© {new Date().getFullYear()} {brand}. {copy.rights}</p>
+      <p className="border-t border-border px-4 py-6 text-center text-xs text-muted">
+        © {new Date().getFullYear()} {company ? company.name : brand}. {copy.rights}{company && <> · {copy.vat} {company.vat}</>}
+      </p>
     </footer>
   );
 }

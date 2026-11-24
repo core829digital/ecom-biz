@@ -1112,6 +1112,20 @@ export const en = {
   "legal.accept.required": "Accept the terms to create your account.",
   "validation.passwordHint": "At least 8 characters. A short phrase is easy to remember and hard to guess.",
   "legal.accept.sentence": "I accept the {terms}, the {subscriptions} policy and the {dpa}, and I have read the {privacy}.",
+  "legalPages.title": "Legal pages",
+  "legalPages.body": "Online stores in the EU must publish these pages. Create them from a template prefilled with your business details, review them (ideally with a lawyer) and publish: they are linked automatically in the footer and at checkout.",
+  "legalPages.privacy-policy": "Privacy policy",
+  "legalPages.terms-of-sale": "Terms of sale (incl. 14-day withdrawal)",
+  "legalPages.returns": "Returns and refunds",
+  "legalPages.shipping": "Shipping",
+  "legalPages.missing": "Missing",
+  "legalPages.draft": "Draft",
+  "legalPages.create": "Create from template",
+  "legalPages.completeDetails": "Add your legal name, address and VAT number so the templates are complete:",
+  "sf.legal": "Legal information",
+  "sf.vatNumber": "VAT {vat}",
+  "checkout.legal.terms": "By placing your order you accept our",
+  "checkout.legal.privacy": " and acknowledge our",
 } as const;
 
 export type MessageKey = keyof typeof en;

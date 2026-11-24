@@ -24,6 +24,8 @@ export function CheckoutForm(props: {
   requirePhone: boolean;
   stripePublishableKey: string;
   cartHref: string;
+  /** "By placing the order you accept…" with links to the store's legal pages (server-rendered). */
+  legalNotice?: React.ReactNode;
   quote: (input: unknown) => Promise<QuoteView | { error: string }>;
   place: (input: unknown) => Promise<PlaceResult>;
   initial: { email: string; phone: string; discountCode: string; note: string; address: Address };
@@ -220,6 +222,8 @@ export function CheckoutForm(props: {
             </Elements>
           )
         ) : (
+          <>
+          {props.legalNotice && <p className="text-xs text-muted">{props.legalNotice}</p>}
           <div className="flex flex-col-reverse items-center gap-4 sm:flex-row sm:justify-between">
             <Link href={props.cartHref} className="text-sm underline">← {L["checkout.backToCart"]}</Link>
             <button
@@ -230,6 +234,7 @@ export function CheckoutForm(props: {
               {placing ? L["checkout.processing"] : free ? L["checkout.freeOrder"] : method === "stripe" ? L["checkout.payNow"] : L["checkout.placeOrder"]}
             </button>
           </div>
+          </>
         )}
       </form>
 

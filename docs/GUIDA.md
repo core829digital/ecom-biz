@@ -62,6 +62,20 @@ Una piattaforma e-commerce **white-label e multi-negozio**, sullo stesso modello
    le chiavi. Da quel momento i merchant possono collegare il loro conto e tu incassi la commissione.
 5. **Primo accesso.** Crea il tuo utente amministratore e i piani di abbonamento.
 
+## Documenti legali
+
+La piattaforma include le bozze di Termini di servizio, Informativa privacy, Cookie policy, Accordo sul
+trattamento dei dati (DPA), Abbonamenti e rimborsi e Uso accettabile (pagine `/legal/...`, in italiano e
+inglese). Alla registrazione il merchant le accetta con una casella obbligatoria, e la piattaforma salva
+versione e data dell'accettazione.
+
+- Inserisci i dati della tua società in `LEGAL_COMPANY_NAME`, `LEGAL_ADDRESS`, `LEGAL_VAT_NUMBER`,
+  `LEGAL_EMAIL` (e `LEGAL_COURTS` per il foro). Finché mancano, le pagine mostrano un avviso "bozza".
+- **Fai rivedere i testi da un avvocato prima del lancio**: sono bozze accurate, non consulenza legale.
+- Ogni negozio trova in **Negozio online → Pagine** i modelli di Informativa privacy, Condizioni di vendita
+  (con diritto di recesso di 14 giorni), Resi e Spedizioni, precompilati con i suoi dati. Una volta
+  pubblicati compaiono da soli nel footer e al checkout; la P.IVA del negozio appare nel footer.
+
 ## Decisioni che spettano a te
 
 - **Nome e dominio** della piattaforma

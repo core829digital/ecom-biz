@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { loadStorefront } from "@/server/storefront";
 import { getCart } from "@/server/cart";
@@ -29,7 +30,18 @@ export default async function CheckoutPage({ params }: { params: Promise<{ site:
   const cart = await getCart(store.id);
   if (!cart || !cart.lines.length) redirect(sf.href("/cart"));
 
-  const [countries, customer] = await Promise.all([shippableCountries(store.id), getCurrentCustomer(store.id)]);
+  const [countries, customer, legal] = await Promise.all([
+    shippableCountries(store.id),
+    getCurrentCustomer(store.id),
+    db.page.findMany({ where: { storeId: store.id, published: true, handle: { in: ["terms-of-sale", "privacy-policy"] } }, select: { handle: true, title: true } }),
+  ]);
+  const terms = legal.find((p) => p.handle === "terms-of-sale");
+  const privacy = legal.find((p) => p.handle === "privacy-policy");
+  const legalLink = (p: { handle: string; title: string }) => <Link href={sf.href(`/pages/${p.handle}`)} target="_blank" className="underline">{p.title}</Link>;
+  // Shown only when the pages exist, so it never points to a missing page.
+  const legalNotice = terms ? (
+    <>{t("checkout.legal.terms")} {legalLink(terms)}{privacy && <>{t("checkout.legal.privacy")} {legalLink(privacy)}</>}.</>
+  ) : null;
   const defaultAddress = customer
     ? await db.customerAddress.findFirst({ where: { customerId: customer.id }, orderBy: { isDefault: "desc" } })
     : null;
@@ -52,6 +64,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ site:
         requirePhone={store.checkoutRequirePhone}
         stripePublishableKey={env.stripePublishableKey}
         cartHref={sf.href("/cart")}
+        legalNotice={legalNotice}
         quote={quoteAction.bind(null, site)}
         place={placeOrderAction.bind(null, site)}
         initial={{

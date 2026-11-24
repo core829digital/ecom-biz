@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import { loadStorefront, sfHref } from "@/server/storefront";
 import { getCart, cartItemCount } from "@/server/cart";
 import { themeCssVars } from "@/lib/theme";
+import { STORE_LEGAL_PAGES } from "@/lib/legal/store-templates";
 import { MobileNav } from "@/components/storefront/mobile-nav";
 import { NavProgress } from "@/components/storefront/nav-progress";
 import { Suspense } from "react";
@@ -42,9 +43,11 @@ export default async function StorefrontLayout({ children, params }: { children:
   if (!decodeURIComponent(site).includes(".") && h.has("x-store-base") && sf.publicUrl.startsWith("https://") && !sf.publicUrl.endsWith(`.${process.env.STOREFRONT_ROOT_DOMAIN}`)) {
     permanentRedirect(`${sf.publicUrl}${h.get("x-original-path") ?? "/"}`);
   }
-  const [menus, cart] = await Promise.all([
+  const [menus, cart, legalPages] = await Promise.all([
     db.menu.findMany({ where: { storeId: store.id, handle: { in: ["main", "footer"] } } }),
     getCart(store.id),
+    // Published legal pages are always linked in the footer (consumer-law information duties).
+    db.page.findMany({ where: { storeId: store.id, published: true, handle: { in: [...STORE_LEGAL_PAGES] } }, select: { handle: true, title: true } }),
   ]);
   const main = menuItems(menus.find((m) => m.handle === "main")?.items);
   const footer = menuItems(menus.find((m) => m.handle === "footer")?.items);
@@ -121,9 +124,19 @@ export default async function StorefrontLayout({ children, params }: { children:
               </ul>
             )}
           </div>
-          <p className="border-t border-border px-4 py-4 text-center text-xs text-muted">
-            © {new Date().getFullYear()} {store.legalName || store.name}
-          </p>
+          <div className="border-t border-border px-4 py-4 text-center text-xs text-muted">
+            {legalPages.length > 0 && (
+              <nav aria-label={t("sf.legal")} className="mb-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
+                {STORE_LEGAL_PAGES.map((h) => legalPages.find((p) => p.handle === h)).filter((p) => !!p).map((p) => (
+                  <Link key={p.handle} href={sf.href(`/pages/${p.handle}`)} className="hover:text-text">{p.title}</Link>
+                ))}
+              </nav>
+            )}
+            <p>
+              © {new Date().getFullYear()} {store.legalName || store.name}
+              {store.vatNumber && <> · {t("sf.vatNumber", { vat: store.vatNumber })}</>}
+            </p>
+          </div>
         </footer>
       </body>
     </html>
