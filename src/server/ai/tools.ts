@@ -45,7 +45,8 @@ async function saveDraftTheme(store: Store, mutate: (t: ReturnType<typeof parseT
 export const TOOLS = {
   get_store_overview: tool({
     description: "Store facts: name, currency, language, catalog size, last 30 days of sales, subscribers, what the homepage contains and what is still missing. Call this first when you need context.",
-    parameters: { type: "object", properties: {} },
+    // Gemini rejects object schemas without properties: one optional field keeps it valid everywhere.
+    parameters: { type: "object", properties: { focus: { type: "string", description: "Optional: what you are about to work on." } } },
     schema: z.object({}).passthrough(),
     async run(_, { store }) {
       const since = new Date(Date.now() - 30 * 86400_000);
@@ -216,7 +217,7 @@ export const TOOLS = {
     description: `Replace the homepage layout in the site editor DRAFT (the merchant previews and publishes). Section types: ${SECTION_TYPES.join(", ")}. Useful fields: title, subtitle, body, ctaLabel, ctaUrl, items (features: [{title, body}], testimonials: [{quote, author}], faq: [{q, a}]), style {background: default|muted|brand|inverse}. Write real copy for this business, never placeholders.`,
     parameters: {
       type: "object",
-      properties: { sections: { type: "array", maxItems: 12, items: { type: "object", properties: { type: { type: "string", enum: SECTION_TYPES }, title: str(120), subtitle: str(300), body: str(3000), ctaLabel: str(40), ctaUrl: str(200), items: { type: "array", items: { type: "object" } }, style: { type: "object" } }, required: ["type"] } } },
+      properties: { sections: { type: "array", maxItems: 12, items: { type: "object", properties: { type: { type: "string", enum: SECTION_TYPES }, title: str(120), subtitle: str(300), body: str(3000), ctaLabel: str(40), ctaUrl: str(200), items: { type: "array", items: { type: "object", properties: { title: str(120), body: str(1000), quote: str(400), author: str(60), q: str(200), a: str(1000) } } }, style: { type: "object", properties: { background: { type: "string", enum: ["default", "muted", "brand", "inverse"] }, spacing: { type: "string", enum: ["compact", "normal", "roomy"] }, width: { type: "string", enum: ["narrow", "normal", "full"] } } } }, required: ["type"] } } },
       required: ["sections"],
     },
     schema: z.object({ sections: z.array(z.record(z.string(), z.unknown())).min(1).max(12) }),

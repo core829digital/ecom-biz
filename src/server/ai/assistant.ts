@@ -3,7 +3,7 @@ import type { Prisma, Store } from "@prisma/client";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { env } from "@/lib/env";
-import { aiConfig, chatCompletion, AiError, type ChatMessage, type ToolCall } from "./provider";
+import { aiConfig, chatCompletion, AiError, type AiErrorCode, type ChatMessage, type ToolCall } from "./provider";
 import { runTool, toolSpecs, type ToolAction } from "./tools";
 
 const MAX_TOOL_ROUNDS = 8;
@@ -49,7 +49,7 @@ export function toDisplay(m: { id: string; role: string; content: string; action
 }
 
 export class AssistantError extends Error {
-  constructor(public code: "not_configured" | "quota" | "rate_limited" | "provider" | "timeout") {
+  constructor(public code: AiErrorCode | "quota", public detail?: string) {
     super(code);
   }
 }
@@ -78,6 +78,8 @@ export async function ask(store: Store, userId: string, conversationId: string |
         reply = out.content;
         break;
       }
+      // Some providers return tool calls without ids: give each one, or the follow-up is rejected.
+      out.toolCalls.forEach((c, i) => { if (!c.id) c.id = `call_${round}_${i}`; c.type = "function"; });
       messages.push({ role: "assistant", content: out.content || null, tool_calls: out.toolCalls });
       await db.aiMessage.create({ data: { conversationId: conv.id, role: "assistant", content: out.content ?? "", toolCalls: out.toolCalls as unknown as Prisma.InputJsonValue } });
       for (const call of out.toolCalls) {
@@ -89,7 +91,7 @@ export async function ask(store: Store, userId: string, conversationId: string |
       }
     }
   } catch (e) {
-    if (e instanceof AiError) throw new AssistantError(e.code === "not_configured" ? "not_configured" : e.code === "rate_limited" ? "rate_limited" : e.code === "timeout" ? "timeout" : "provider");
+    if (e instanceof AiError) throw new AssistantError(e.code, e.detail);
     throw e;
   }
   const saved = await db.aiMessage.create({ data: { conversationId: conv.id, role: "assistant", content: reply, actions: actions as unknown as Prisma.InputJsonValue } });
@@ -103,6 +105,18 @@ export async function loadConversation(storeId: string, userId: string, conversa
   if (!conv) return null;
   const rows = await db.aiMessage.findMany({ where: { conversationId, role: { in: ["user", "assistant"] } }, orderBy: { createdAt: "asc" }, take: 200 });
   return { id: conv.id, title: conv.title, messages: rows.filter((m) => m.role === "user" || m.content || (Array.isArray(m.actions) && m.actions.length)).map(toDisplay) };
+}
+
+/** Minimal request with the real tool list: tells a platform admin whether the configuration works. */
+export async function testConnection(): Promise<{ ok: true; model: string; provider: string } | { ok: false; code: string; detail?: string }> {
+  const cfg = aiConfig();
+  try {
+    await chatCompletion([{ role: "user", content: "Reply with the single word: ok" }], toolSpecs());
+    return { ok: true, model: cfg.model, provider: cfg.provider };
+  } catch (e) {
+    if (e instanceof AiError) return { ok: false, code: e.code, detail: e.detail };
+    return { ok: false, code: "provider", detail: (e as Error).message };
+  }
 }
 
 export async function usageToday(storeId: string) {

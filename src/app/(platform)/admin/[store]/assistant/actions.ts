@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireStoreAccess } from "@/lib/auth/staff";
-import { ok, type ActionState } from "@/lib/action";
+import { fail, ok, type ActionState } from "@/lib/action";
 import { getPlatformT } from "@/lib/i18n/server";
-import { ask, AssistantError, loadConversation, usageToday, type AssistantMessage } from "@/server/ai/assistant";
+import { ask, AssistantError, loadConversation, testConnection, usageToday, type AssistantMessage } from "@/server/ai/assistant";
 
 export type AskResult = { ok: true; conversationId: string; message: AssistantMessage; usage: { used: number; limit: number } } | { ok: false; error: string };
 
@@ -20,7 +20,8 @@ export async function askAssistantAction(slug: string, conversationId: string | 
     revalidatePath(`/admin/${slug}`, "layout");
     return { ok: true, ...res, usage: await usageToday(store.id) };
   } catch (e) {
-    if (e instanceof AssistantError) return { ok: false, error: t(`ai.error.${e.code}`) };
+    // Platform admins get the provider's own message, so configuration problems are visible at once.
+    if (e instanceof AssistantError) return { ok: false, error: t(`ai.error.${e.code}`) + (user.isPlatformAdmin && e.detail ? ` (${e.detail})` : "") };
     console.error("[ai] ask failed", e);
     return { ok: false, error: t("ai.error.provider") };
   }
@@ -59,4 +60,13 @@ export async function clearMemoryAction(slug: string): Promise<ActionState> {
   await db.aiMemory.deleteMany({ where: { storeId: store.id } });
   revalidatePath(`/admin/${slug}/assistant`);
   return ok(t("common.saved"));
+}
+
+/** Platform admins only: checks key, model and tool definitions against the provider. */
+export async function testAiConnectionAction(slug: string): Promise<ActionState> {
+  const { user } = await requireStoreAccess(slug, "ADMIN");
+  const { t } = await getPlatformT();
+  if (!user.isPlatformAdmin) return fail(t("ai.error.provider"));
+  const res = await testConnection();
+  return res.ok ? ok(t("ai.test.ok", { provider: res.provider, model: res.model })) : fail(`${t(`ai.error.${res.code}` as "ai.error.provider")}${res.detail ? ` (${res.detail})` : ""}`);
 }

@@ -1805,4 +1805,11 @@ export const it: Record<MessageKey, string> = {
   "editor.overlay.hidden": "Sezione nascosta — annulla con Ctrl+Z",
   "editor.overlay.removed": "Sezione eliminata — annulla con Ctrl+Z",
   "editor.inlineHint": "Suggerimento: clicca qualsiasi testo nell'anteprima per modificarlo lì.",
+  "ai.error.auth": "La chiave dell'IA è stata rifiutata: controlla AI_API_KEY.",
+  "ai.error.model": "Il modello di IA non esiste: controlla AI_MODEL.",
+  "ai.error.rejected": "Il servizio di IA ha rifiutato la richiesta.",
+  "ai.test.title": "Prova il collegamento all'IA",
+  "ai.test.hint": "Invia una richiesta minima con l'elenco reale degli strumenti: se qualcosa non va mostra la risposta esatta del fornitore. Visibile solo agli admin della piattaforma.",
+  "ai.test.run": "Prova collegamento",
+  "ai.test.ok": "Collegato: {provider} · {model} ha risposto correttamente.",
 };

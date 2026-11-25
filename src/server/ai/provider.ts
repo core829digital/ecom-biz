@@ -28,10 +28,24 @@ export type ChatMessage =
 export type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
 export type ToolSpec = { type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } };
 
+export type AiErrorCode = "not_configured" | "rate_limited" | "provider" | "timeout" | "auth" | "model" | "rejected";
+
 export class AiError extends Error {
-  constructor(public code: "not_configured" | "rate_limited" | "provider" | "timeout", detail?: string) {
+  /** Provider's own message (safe to show to platform admins, never to shoppers). */
+  constructor(public code: AiErrorCode, public detail?: string) {
     super(detail ?? code);
   }
+}
+
+/** Short, single-line excerpt of a provider error body. Keys are never part of it. */
+function errorDetail(status: number, body: string) {
+  let msg = body;
+  try {
+    const j = JSON.parse(body) as { error?: { message?: string } | Array<{ error?: { message?: string } }> };
+    const e = Array.isArray(j.error) ? j.error[0]?.error : Array.isArray(j) ? (j as { error?: { message?: string } }[])[0]?.error : j.error;
+    if (e?.message) msg = e.message;
+  } catch { /* not JSON */ }
+  return `HTTP ${status}: ${msg.replace(/\s+/g, " ").slice(0, 280)}`;
 }
 
 /** One chat completion. Retries once on 429/5xx. Never logs prompts (they may contain business data). */
@@ -60,11 +74,14 @@ export async function chatCompletion(messages: ChatMessage[], tools: ToolSpec[])
       await new Promise((r) => setTimeout(r, 1500));
       continue;
     }
-    if (res.status === 429) throw new AiError("rate_limited");
     if (!res.ok) {
-      const detail = (await res.text().catch(() => "")).slice(0, 300);
-      console.error(`[ai] provider error ${res.status}`, detail);
-      throw new AiError("provider", `HTTP ${res.status}`);
+      const detail = errorDetail(res.status, await res.text().catch(() => ""));
+      console.error(`[ai] provider error (${cfg.provider}, model ${cfg.model})`, detail);
+      if (res.status === 429) throw new AiError("rate_limited", detail);
+      if (res.status === 401 || res.status === 403) throw new AiError("auth", detail);
+      if (res.status === 404) throw new AiError("model", detail);
+      if (res.status === 400 || res.status === 422) throw new AiError("rejected", detail);
+      throw new AiError("provider", detail);
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string | null; tool_calls?: ToolCall[] } }[] };
     const msg = json.choices?.[0]?.message;

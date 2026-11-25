@@ -75,10 +75,26 @@ describe("assistant", () => {
     expect(await loadConversation(storeId, "someone-else", res.conversationId)).toBeNull();
   });
 
+  it("handles providers that return tool calls without ids", async () => {
+    const store = await db.store.findUniqueOrThrow({ where: { id: storeId } });
+    script = [{ tool_calls: [{ id: "", type: "function", function: { name: "get_store_overview", arguments: "{}" } }] }, { content: "Ecco il riepilogo." }];
+    requests.length = 0;
+    const res = await ask(store, userId, null, "Riepilogo?", "/admin/x");
+    expect(res.message.content).toBe("Ecco il riepilogo.");
+    const followUp = requests[1].messages as { role: string; tool_call_id?: string; tool_calls?: { id: string }[] }[];
+    const call = followUp.find((m) => m.role === "assistant" && m.tool_calls)!.tool_calls![0];
+    expect(call.id).not.toBe("");
+    expect(followUp.find((m) => m.role === "tool")?.tool_call_id).toBe(call.id);
+    await db.rateLimit.deleteMany({ where: { key: `ai:${storeId}` } });
+  });
+
   it("enforces the daily quota per store", async () => {
     const store = await db.store.findUniqueOrThrow({ where: { id: storeId } });
-    script = [{ content: "3" }];
-    await ask(store, userId, null, "terzo", "/admin/x"); // 3rd of 3
+    await db.rateLimit.deleteMany({ where: { key: `ai:${storeId}` } });
+    for (const n of ["uno", "due", "tre"]) {
+      script = [{ content: n }];
+      await ask(store, userId, null, n, "/admin/x"); // 3 of 3 allowed
+    }
     await expect(ask(store, userId, null, "quarto", "/admin/x")).rejects.toMatchObject({ code: "quota" });
     expect(AssistantError).toBeDefined();
   });

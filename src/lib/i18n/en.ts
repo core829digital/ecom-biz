@@ -1816,6 +1816,13 @@ export const en = {
   "editor.overlay.hidden": "Section hidden — undo with Ctrl+Z",
   "editor.overlay.removed": "Section removed — undo with Ctrl+Z",
   "editor.inlineHint": "Tip: click any text in the preview to edit it there.",
+  "ai.error.auth": "The AI key was refused: check AI_API_KEY.",
+  "ai.error.model": "The AI model wasn't found: check AI_MODEL.",
+  "ai.error.rejected": "The AI service refused the request.",
+  "ai.test.title": "Test the AI connection",
+  "ai.test.hint": "Sends a tiny request with the real tool list: shows the provider's exact answer if something is wrong. Visible to platform admins only.",
+  "ai.test.run": "Test connection",
+  "ai.test.ok": "Connected: {provider} · {model} answered correctly.",
 } as const;
 
 export type MessageKey = keyof typeof en;

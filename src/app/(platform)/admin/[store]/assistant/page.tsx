@@ -7,7 +7,7 @@ import { ActionForm, SubmitButton } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/fields";
 import { aiConfig } from "@/server/ai/provider";
 import { usageToday } from "@/server/ai/assistant";
-import { saveMemoryAction } from "./actions";
+import { saveMemoryAction, testAiConnectionAction } from "./actions";
 
 export default async function AssistantPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: slug } = await params;
@@ -29,6 +29,14 @@ export default async function AssistantPage({ params }: { params: Promise<{ stor
         <Stat label={t("ai.page.today")} value={`${usage.used}/${usage.limit}`} hint={t("ai.page.todayHint")} />
         <Stat label={t("ai.page.conversations")} value={conversations} />
       </div>
+      {cfg.enabled && user.isPlatformAdmin && (
+        <Card title={t("ai.test.title")} className="mb-6">
+          <p className="mb-3 text-sm text-muted">{t("ai.test.hint")}</p>
+          <ActionForm action={testAiConnectionAction.bind(null, slug)}>
+            <SubmitButton variant="secondary" pendingLabel={t("ai.thinking")}>{t("ai.test.run")}</SubmitButton>
+          </ActionForm>
+        </Card>
+      )}
       {!cfg.enabled && (
         <Card title={t("ai.off.title")} className="mb-6">
           <p className="text-sm text-muted">{user.isPlatformAdmin ? t("ai.setup.admin") : t("ai.off.body")}</p>
