@@ -18,6 +18,7 @@ import { STORE_LEGAL_PAGES } from "@/lib/legal/store-templates";
 import { MobileNav } from "@/components/storefront/mobile-nav";
 import { NavProgress } from "@/components/storefront/nav-progress";
 import { MotionRuntime } from "@/components/storefront/motion-runtime";
+import { PageTransition } from "@/components/page-transition";
 import { SimpleActionForm } from "@/components/storefront/simple-action";
 import { subscribeAction } from "./newsletter/actions";
 import { Suspense } from "react";
@@ -113,7 +114,7 @@ export default async function StorefrontLayout({ children, params }: { children:
         </header>
         <main id="main" className="min-h-[60vh]">
           {sf.operational ? (
-            children
+            theme.motion === "none" ? children : <PageTransition>{children}</PageTransition>
           ) : (
             <div className="mx-auto max-w-md px-4 py-24 text-center">
               <h1 className="text-2xl font-semibold">{store.name}</h1>

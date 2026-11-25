@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   BarChart3, Boxes, ChevronDown, Code2, Copy, CreditCard, ExternalLink, FileText, Globe, Home, LayoutGrid, LogOut, Menu, Navigation,
@@ -12,6 +12,8 @@ import { cn } from "@/lib/cn";
 import type { ThemePref } from "@/lib/appearance";
 import { ThemeSwitcher } from "@/components/appearance/theme-switcher";
 import { toast } from "@/components/ui/toast";
+import { PageTransition } from "@/components/page-transition";
+import { NavProgress } from "@/components/storefront/nav-progress";
 
 export const NAV_ICONS = {
   home: Home, orders: ShoppingBag, products: Package, inventory: Boxes, collections: LayoutGrid, customers: Users, discounts: Percent,
@@ -168,7 +170,8 @@ export function AdminShell({
           </div>
         </header>
         {banner}
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
+        <Suspense fallback={null}><NavProgress barClassName="bg-accent" /></Suspense>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-8"><PageTransition>{children}</PageTransition></main>
       </div>
     </div>
   );

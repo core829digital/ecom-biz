@@ -261,3 +261,9 @@ html { scroll-behavior: smooth; }
 /* Site editor: motion preset thumbnails */
 @keyframes sketch-rise { 0%, 15% { opacity: 0; transform: translateY(8px); } 45%, 100% { opacity: 1; transform: none; } }
 @keyframes sketch-blur { 0%, 15% { opacity: 0; filter: blur(4px); transform: translateY(10px) scale(1.04); } 50%, 100% { opacity: 1; filter: none; transform: none; } }
+
+/* Theme switch "wave": the new theme is revealed by a circle from the click (see applyAppearance). */
+html.theme-wave::view-transition-old(root),
+html.theme-wave::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html.theme-wave::view-transition-old(root) { z-index: 1; }
+html.theme-wave::view-transition-new(root) { z-index: 2; }
