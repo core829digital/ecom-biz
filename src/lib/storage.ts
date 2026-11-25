@@ -130,10 +130,20 @@ function driver(): Driver {
 
 export type UploadResult = { key: string; url: string; contentType: string; size: number };
 
+/** PDF by magic bytes ("%PDF-"). Served from /files with a sandboxing CSP, so embedded scripts can't run. */
+export function sniffDocumentType(buf: Buffer): { mime: string; ext: string } | null {
+  return buf.length > 8 && buf.subarray(0, 5).toString("ascii") === "%PDF-" ? { mime: "application/pdf", ext: "pdf" } : null;
+}
+
 export async function storeImage(storeId: string, file: File): Promise<UploadResult> {
+  return storeFile(storeId, file, { documents: false });
+}
+
+/** Images (and, when allowed, PDF documents) identified by content, never by name or client MIME type. */
+export async function storeFile(storeId: string, file: File, opts: { documents: boolean }): Promise<UploadResult> {
   if (file.size > MAX_UPLOAD_BYTES) throw new UploadError("too_large");
   const buf = Buffer.from(await file.arrayBuffer());
-  const type = sniffImageType(buf);
+  const type = sniffImageType(buf) ?? (opts.documents ? sniffDocumentType(buf) : null);
   if (!type) throw new UploadError("unsupported_type");
   const key = `stores/${storeId}/${new Date().getFullYear()}/${randomToken(12)}.${type.ext}`;
   const url = await driver().put(key, buf, type.mime);

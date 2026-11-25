@@ -14,7 +14,7 @@ Legenda: ✅ fatto · 🔄 in corso · ⏳ da fare · 🔒 bloccato da un fattor
 | A3 | Link dei negozi funzionanti senza dominio (`/sites/nome`) | ✅ |
 | A4 | Prova senza email (`ALLOW_MISSING_SMTP`) e verifica manuale dei merchant | ✅ |
 | A5 | **Caricamento file senza configurazioni esterne** (archivio nel database quando manca R2) | ✅ |
-| A6 | **Libreria file per negozio** (loghi, immagini, documenti): carica, sostituisci, elimina, spazio per piano | ⏳ |
+| A6 | **Libreria file per negozio** (loghi, immagini, documenti): carica, sostituisci, elimina, spazio per piano | ✅ |
 | A7 | **Onboarding completo**: profilo account, dati fiscali e P.IVA, IVA, pagamenti (contrassegno/bonifico/Stripe), spedizioni, primo prodotto | ⏳ |
 
 ## Fase B — Marketing e IA

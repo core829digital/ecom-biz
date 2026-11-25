@@ -11,6 +11,7 @@ import { themeCssVars, themeContrastIssues, type Theme } from "@/lib/theme";
 import { newSectionId, type Section } from "@/lib/theme-sections";
 import type { ActionState } from "@/lib/action";
 import type { ThemeCapabilities } from "@/lib/theme-capabilities";
+import { MediaLibraryProvider } from "@/components/admin/media-picker";
 import { SectionInspector, SectionList, type Catalog } from "./editor-sections";
 import { SettingsPanel, StylePanel } from "./editor-style";
 import { Segmented, type UploadImage } from "./editor-fields";
@@ -21,7 +22,12 @@ type Status = "idle" | "saving" | "saved" | "error";
 
 const HISTORY = 60;
 
-export function SiteEditor({ initial, hasDraft: initialDraft, storeName, backHref, previewSrc, storeUrl, fonts, catalog, caps, saveDraft, publish, discard, uploadImage }: {
+export function SiteEditor(props: Parameters<typeof SiteEditorInner>[0] & { listImages: (page: number) => Promise<{ items: { id: string; url: string; name: string }[]; more: boolean }> }) {
+  const { listImages, ...rest } = props;
+  return <MediaLibraryProvider list={listImages}><SiteEditorInner {...rest} /></MediaLibraryProvider>;
+}
+
+function SiteEditorInner({ initial, hasDraft: initialDraft, storeName, backHref, previewSrc, storeUrl, fonts, catalog, caps, saveDraft, publish, discard, uploadImage }: {
   initial: Theme; hasDraft: boolean; storeName: string; backHref: string; previewSrc: string; storeUrl: string;
   fonts: { value: string; label: string }[]; catalog: Catalog; caps: ThemeCapabilities;
   saveDraft: Action; publish: Action; discard: () => Promise<{ theme: Theme }>; uploadImage: UploadImage;

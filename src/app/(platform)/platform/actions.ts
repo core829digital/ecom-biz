@@ -88,6 +88,7 @@ export async function savePlanAction(id: string | null, _: ActionState, fd: Form
     maxStaff: get("maxStaff") === "" ? null : Math.max(0, parseInt(get("maxStaff"), 10) || 0),
     allowCustomDomain: fd.get("allowCustomDomain") === "on",
     allowApi: fd.get("allowApi") === "on",
+    maxStorageMb: get("maxStorageMb") === "" ? null : Math.max(0, parseInt(get("maxStorageMb"), 10) || 0),
     motionLevel: Math.min(2, Math.max(0, parseInt(get("motionLevel") || "1", 10) || 0)),
     allowCustomCss: fd.get("allowCustomCss") === "on",
     active: fd.get("active") === "on",

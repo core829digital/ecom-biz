@@ -27,6 +27,7 @@ export function PlanForm({ action, plan, t }: { action: (s: ActionState, fd: For
           <Input name="maxStores" type="number" min={1} label={t("platform.maxStores")} defaultValue={String(plan?.maxStores ?? 1)} required />
           <Input name="maxProducts" type="number" min={0} label={t("platform.maxProducts")} hint={t("platform.unlimitedHint")} defaultValue={plan?.maxProducts ?? ""} />
           <Input name="maxStaff" type="number" min={0} label={t("platform.maxStaff")} hint={t("platform.unlimitedHint")} defaultValue={plan?.maxStaff ?? ""} />
+          <Input name="maxStorageMb" type="number" min={0} label={t("platform.maxStorageMb")} hint={t("platform.unlimitedHint")} defaultValue={plan ? (plan.maxStorageMb ?? "") : "500"} />
           <div className="space-y-2 pt-6">
             <Checkbox name="allowCustomDomain" label={t("billing.feature.customDomain")} defaultChecked={plan?.allowCustomDomain ?? true} />
             <Checkbox name="allowApi" label={t("billing.feature.api")} defaultChecked={plan?.allowApi ?? true} />

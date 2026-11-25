@@ -10,10 +10,11 @@ import { fail, ok, type ActionState } from "@/lib/action";
 import { getPlatformT } from "@/lib/i18n/server";
 import { parseMoney } from "@/lib/money";
 import { comboKey, MAX_VARIANTS, variantCombos, variantTitle } from "@/lib/variants";
-import { MAX_UPLOAD_MB, storeImage, UploadError } from "@/lib/storage";
+import { MAX_UPLOAD_MB, UploadError } from "@/lib/storage";
 import { uniqueHandle } from "@/server/catalog";
 import { handleize } from "@/lib/slug";
 import { emitWebhook } from "@/server/webhooks";
+import { MediaError, uploadMedia } from "@/server/media";
 import { assertCanAddProducts, PlanLimitError } from "@/server/plans";
 import { audit } from "@/server/audit";
 import { notifyBackInStock } from "@/server/stock-alerts";
@@ -209,10 +210,10 @@ export async function uploadImageAction(slug: string, fd: FormData): Promise<{ u
   const file = fd.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: t("products.error.image") };
   try {
-    const res = await storeImage(store.id, file);
-    await db.storedFile.create({ data: { storeId: store.id, key: res.key, url: res.url, contentType: res.contentType, size: res.size } });
+    const res = await uploadMedia(store, file);
     return { url: res.url };
   } catch (e) {
+    if (e instanceof MediaError && e.code === "quota") return { error: t("media.error.quota", { used: e.detail?.usedMb ?? 0, limit: e.detail?.limitMb ?? 0 }) };
     if (e instanceof UploadError) return { error: e.code === "too_large" ? t("upload.tooLarge", { max: MAX_UPLOAD_MB }) : t("upload.unsupported") };
     console.error("[upload]", e);
     return { error: t("upload.failed") };

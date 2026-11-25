@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { useT } from "@/components/i18n-provider";
 import { inputClass } from "@/components/ui/fields";
 import { isHex } from "@/lib/palette";
+import { MediaPickerButton } from "@/components/admin/media-picker";
 
 export type UploadImage = (fd: FormData) => Promise<{ url?: string; error?: string }>;
 
@@ -129,7 +130,10 @@ export function ImageField({ label, value, onChange, uploadImage, aspect = "wide
         {value && <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100">{busy ? "…" : t("collections.image.replace")}</span>}
         <input type="file" accept="image/*" className="sr-only" onChange={(e) => void pick(e.target.files?.[0])} />
       </label>
-      {value && <button type="button" onClick={() => onChange("")} className="mt-1 text-xs text-danger hover:underline">{t("common.delete")}</button>}
+      <div className="mt-1 flex items-center gap-3">
+        <MediaPickerButton onPick={onChange} />
+        {value && <button type="button" onClick={() => onChange("")} className="text-xs text-danger hover:underline">{t("common.delete")}</button>}
+      </div>
       {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   );

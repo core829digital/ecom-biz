@@ -40,6 +40,8 @@ export function limitsOf(plan: Plan | null) {
     /** Storefront animations: 0 none, 1 essential presets, 2 premium presets + per-section entrances. */
     motion: (plan?.motionLevel ?? 1) as 0 | 1 | 2,
     customCss: plan?.allowCustomCss ?? false,
+    /** File library space per store, in MB (null = unlimited). */
+    storageMb: plan ? plan.maxStorageMb : 500,
   };
 }
 
@@ -48,7 +50,7 @@ export function limitsOf(plan: Plan | null) {
  * subscription, so the operator can test and demo every feature.
  */
 export function effectiveLimits(owner: { isPlatformAdmin: boolean; plan: Plan | null } | null) {
-  if (owner?.isPlatformAdmin) return { stores: 1000, products: null, staff: null, customDomain: true, api: true, motion: 2 as const, customCss: true };
+  if (owner?.isPlatformAdmin) return { stores: 1000, products: null, staff: null, customDomain: true, api: true, motion: 2 as const, customCss: true, storageMb: null };
   return limitsOf(owner?.plan ?? null);
 }
 

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   BarChart3, Boxes, ChevronDown, Code2, Copy, CreditCard, ExternalLink, FileText, Globe, Home, LayoutGrid, LogOut, Menu, Navigation,
-  Package, Palette, Percent, Plus, Receipt, Search, Settings, Shield, ShoppingBag, Sparkles, Star, Inbox, Megaphone, Store, Truck, UserPlus, Users, X, type LucideIcon,
+  FolderOpen, Package, Palette, Percent, Plus, Receipt, Search, Settings, Shield, ShoppingBag, Sparkles, Star, Inbox, Megaphone, Store, Truck, UserPlus, Users, X, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { ThemePref } from "@/lib/appearance";
@@ -17,7 +17,7 @@ export const NAV_ICONS = {
   home: Home, orders: ShoppingBag, products: Package, inventory: Boxes, collections: LayoutGrid, customers: Users, discounts: Percent,
   onlineStore: Store, theme: Palette, pages: FileText, navigation: Navigation, domains: Globe, settings: Settings, general: Settings,
   payments: CreditCard, shipping: Truck, taxes: Receipt, checkout: ShoppingBag, staff: Users, billing: BarChart3, developers: Code2,
-  audit: Shield, reviews: Star, inbox: Inbox, marketing: Megaphone, assistant: Sparkles,
+  audit: Shield, reviews: Star, inbox: Inbox, marketing: Megaphone, assistant: Sparkles, files: FolderOpen,
 } satisfies Record<string, LucideIcon>;
 export type NavIcon = keyof typeof NAV_ICONS;
 

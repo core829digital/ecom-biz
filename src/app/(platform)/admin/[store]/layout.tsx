@@ -58,6 +58,7 @@ export default async function StoreAdminLayout({ children, params }: { children:
     { href: `${base}/marketing`, label: t("nav.marketing"), icon: "marketing" },
     { href: `${base}/assistant`, label: t("nav.assistant"), icon: "assistant" },
     { href: `${base}/discounts`, label: t("nav.discounts"), icon: "discounts" },
+    { href: `${base}/files`, label: t("nav.files"), icon: "files" },
     { href: `${base}/online-store`, label: t("nav.onlineStore"), icon: "onlineStore", children: [
       { href: `${base}/online-store/theme`, label: t("nav.theme") },
       { href: `${base}/online-store/pages`, label: t("nav.pages") },

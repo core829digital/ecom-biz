@@ -6,6 +6,7 @@ import { storeThemeCapabilities } from "@/server/storefront";
 import { SiteEditor } from "./editor";
 import { discardThemeDraftAction, publishThemeAction, saveThemeDraftAction } from "./actions";
 import { uploadImageAction } from "../../products/actions";
+import { listImagesAction } from "../../files/actions";
 
 export default async function ThemePage({ params }: { params: Promise<{ store: string }> }) {
   const { store: slug } = await params;
@@ -32,6 +33,7 @@ export default async function ThemePage({ params }: { params: Promise<{ store: s
       publish={publishThemeAction.bind(null, slug)}
       discard={discardThemeDraftAction.bind(null, slug)}
       uploadImage={uploadImageAction.bind(null, slug)}
+      listImages={listImagesAction.bind(null, slug)}
     />
   );
 }

@@ -188,6 +188,8 @@ model Plan {
   motionLevel       Int      @default(1)
   /// Custom CSS editor in the site editor.
   allowCustomCss    Boolean  @default(false)
+  /// File library space per store in MB (null = unlimited).
+  maxStorageMb      Int?     @default(500)
   stripePriceId     String?
   active            Boolean  @default(true)
   position          Int      @default(0)
@@ -304,12 +306,14 @@ model StoredFile {
   storeId     String
   key         String   @unique
   url         String
+  /// Original file name, for the library (sanitized).
+  name        String   @default("")
   contentType String
   size        Int
   createdAt   DateTime @default(now())
   store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
-  @@index([storeId])
+  @@index([storeId, createdAt])
 }
 
 // ───────────────────────────── Catalog ─────────────────────────────
