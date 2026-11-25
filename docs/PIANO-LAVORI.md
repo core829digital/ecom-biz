@@ -15,7 +15,7 @@ Legenda: ✅ fatto · 🔄 in corso · ⏳ da fare · 🔒 bloccato da un fattor
 | A4 | Prova senza email (`ALLOW_MISSING_SMTP`) e verifica manuale dei merchant | ✅ |
 | A5 | **Caricamento file senza configurazioni esterne** (archivio nel database quando manca R2) | ✅ |
 | A6 | **Libreria file per negozio** (loghi, immagini, documenti): carica, sostituisci, elimina, spazio per piano | ✅ |
-| A7 | **Onboarding completo**: profilo account, dati fiscali e P.IVA, IVA, pagamenti (contrassegno/bonifico/Stripe), spedizioni, primo prodotto | ⏳ |
+| A7 | **Onboarding completo**: profilo account, dati fiscali e P.IVA, IVA, pagamenti (contrassegno/bonifico/Stripe), spedizioni, primo prodotto | ✅ configurazione guidata in 7 passi |
 
 ## Fase B — Marketing e IA
 

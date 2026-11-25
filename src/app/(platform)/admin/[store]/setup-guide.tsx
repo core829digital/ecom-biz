@@ -17,18 +17,19 @@ export async function setupSteps(store: Store, owner: Pick<User, "emailVerifiedA
   const base = `/admin/${store.slug}`;
   const [products, rates, legal] = await Promise.all([
     db.product.count({ where: { storeId: store.id } }),
-    db.shippingRate.count({ where: { zone: { storeId: store.id } } }),
+    db.shippingRate.findMany({ where: { zone: { storeId: store.id } }, select: { priceCents: true, minSubtotalCents: true } }),
     db.page.count({ where: { storeId: store.id, published: true, handle: { in: ["privacy-policy", "terms-of-sale"] } } }),
   ]);
   const theme = parseTheme(store.theme);
   const steps: Step[] = [
     { key: "email", done: !!owner?.emailVerifiedAt, href: "/account/billing", minutes: 1 },
-    { key: "business", done: !!(store.legalName && store.vatNumber && store.address1), href: `${base}/settings/general`, minutes: 3 },
-    { key: "product", done: products > 0, href: `${base}/products/new`, minutes: 5 },
-    { key: "shipping", done: rates > 0, href: `${base}/settings/shipping`, minutes: 3 },
-    { key: "payments", done: availablePaymentMethods(store).some((m) => m !== "test"), href: `${base}/settings/payments`, minutes: 5 },
+    { key: "business", done: !!(store.legalName && store.vatNumber && store.address1), href: `${base}/setup`, minutes: 3 },
+    { key: "product", done: products > 0, href: `${base}/setup`, minutes: 5 },
+    // New stores start with one free domestic rate: done only once the merchant chose real prices.
+    { key: "shipping", done: rates.length > 1 || rates.some((r) => r.priceCents > 0 || r.minSubtotalCents !== null), href: `${base}/setup`, minutes: 3 },
+    { key: "payments", done: availablePaymentMethods(store).some((m) => m !== "test"), href: `${base}/setup`, minutes: 5 },
     { key: "theme", done: !!(theme.logoUrl || theme.heroImageUrl || theme.primaryColor !== "#111827" || Array.isArray((store.theme as { sections?: unknown } | null)?.sections)), href: `${base}/online-store/theme`, minutes: 5 },
-    { key: "legal", done: legal >= 2, href: `${base}/online-store/pages`, minutes: 5 },
+    { key: "legal", done: legal >= 2, href: `${base}/setup`, minutes: 5 },
   ];
   if (env.billingEnforced) steps.push({ key: "plan", done: !!owner && (owner.isPlatformAdmin || accountActive(owner)), href: "/account/billing", minutes: 2 });
   return steps;
