@@ -8,7 +8,8 @@ import { cn } from "@/lib/cn";
 import { useT } from "@/components/i18n-provider";
 import { toast } from "@/components/ui/toast";
 import { themeCssVars, themeContrastIssues, type Theme } from "@/lib/theme";
-import { newSectionId, type Section } from "@/lib/theme-sections";
+import { newSectionId, setSectionText, type Section } from "@/lib/theme-sections";
+import { SectionOverlay } from "./editor-overlay";
 import type { ActionState } from "@/lib/action";
 import type { ThemeCapabilities } from "@/lib/theme-capabilities";
 import { MediaLibraryProvider } from "@/components/admin/media-picker";
@@ -47,6 +48,10 @@ function SiteEditorInner({ initial, hasDraft: initialDraft, storeName, backHref,
   const lastPush = useRef(0);
   const saveSeq = useRef(0);
   const skipSave = useRef(true);
+  const themeRef = useRef(initial);
+  const editingRef = useRef(false);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [frameVersion, setFrameVersion] = useState(0);
 
   /** Records an undo step at most every 600 ms, so typing a word is one step, not one per letter. */
   const commit = useCallback((next: Theme) => {
@@ -59,6 +64,17 @@ function SiteEditorInner({ initial, hasDraft: initialDraft, storeName, backHref,
   }, []);
   const update = useCallback((patch: Partial<Theme>) => commit({ ...history.present, ...patch }), [commit, history.present]);
   const setSections = (sections: Section[]) => update({ sections });
+  useEffect(() => { themeRef.current = theme; }, [theme]);
+
+  /** Text typed straight into the preview goes back into the section (one undo step). */
+  const applyInline = useCallback((sectionId: string, path: string, value: string) => {
+    const current = themeRef.current;
+    const target = current.sections.find((x) => x.id === sectionId);
+    const next = target && setSectionText(target, path, value);
+    if (!next) return;
+    lastPush.current = 0; // always its own undo step
+    commit({ ...current, sections: current.sections.map((x) => (x.id === sectionId ? next : x)) });
+  }, [commit]);
   const undo = useCallback(() => setHistory((h) => (h.past.length ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] } : h)), []);
   const redo = useCallback(() => setHistory((h) => (h.future.length ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) } : h)), []);
 
@@ -97,7 +113,8 @@ function SiteEditorInner({ initial, hasDraft: initialDraft, storeName, backHref,
     const outline = selected && /^[a-z0-9]+$/.test(selected)
       ? `[data-section-id="${selected}"] { outline: 2px solid var(--brand); outline-offset: -2px; }`
       : "";
-    style.textContent = `body.storefront { ${vars} } ${outline}`;
+    const editable = "[data-edit]{cursor:text;border-radius:3px;transition:outline-color .15s} [data-edit]:hover{outline:1.5px dashed color-mix(in srgb, currentColor 45%, transparent);outline-offset:3px} [data-edit][contenteditable]{outline:2px solid var(--brand)!important;outline-offset:3px;cursor:text}";
+    style.textContent = `body.storefront { ${vars} } ${outline} ${editable}`;
   }, [theme, selected]);
   useEffect(paintPreview, [paintPreview]);
 
@@ -117,14 +134,60 @@ function SiteEditorInner({ initial, hasDraft: initialDraft, storeName, backHref,
     sessionStorage.removeItem("editor-scroll");
     if (y) doc.defaultView?.scrollTo({ top: y });
     paintPreview();
-    // Clicking a homepage section in the preview opens it in the sidebar.
+    setFrameVersion((v) => v + 1);
+    // Clicking a homepage section in the preview opens it in the sidebar; clicking one of its
+    // texts edits it right there.
     doc.addEventListener("click", (e) => {
-      const sec = (e.target as HTMLElement).closest<HTMLElement>("[data-section-id]");
+      const target = e.target as HTMLElement;
+      const sec = target.closest<HTMLElement>("[data-section-id]");
       if (!sec) return;
       e.preventDefault();
       setTab("sections");
       setSelected(sec.dataset.sectionId ?? null);
+      const el = target.closest<HTMLElement>("[data-edit]");
+      if (el && !el.isContentEditable) startInlineEdit(doc, el);
     }, true);
+    doc.addEventListener("mouseover", (e) => {
+      const sec = (e.target as HTMLElement).closest<HTMLElement>("[data-section-id]");
+      setHovered(sec?.dataset.sectionId ?? null);
+    });
+  };
+
+  const startInlineEdit = (doc: Document, el: HTMLElement) => {
+    const [sectionId, path] = (el.dataset.edit ?? "").split("|");
+    if (!sectionId || !path) return;
+    const original = el.innerText;
+    const multiline = /\.(a|body|quote)$/.test(path);
+    try { el.contentEditable = "plaintext-only"; } catch { el.contentEditable = "true"; }
+    if (el.contentEditable !== "plaintext-only") el.contentEditable = "true";
+    editingRef.current = true;
+    el.focus();
+    const range = doc.createRange();
+    range.selectNodeContents(el);
+    const sel = doc.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); el.innerText = original; el.blur(); }
+      else if (e.key === "Enter" && (!multiline || !e.shiftKey)) { e.preventDefault(); el.blur(); }
+    };
+    // Only plain text, whatever is pasted (no HTML ever reaches the store).
+    const onPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      doc.execCommand("insertText", false, e.clipboardData?.getData("text/plain") ?? "");
+    };
+    const onBlur = () => {
+      el.removeEventListener("keydown", onKey);
+      el.removeEventListener("paste", onPaste);
+      el.removeAttribute("contenteditable");
+      editingRef.current = false;
+      const raw = el.innerText;
+      const value = (multiline ? raw.replace(/\n{3,}/g, "\n\n") : raw.replace(/\s+/g, " ")).trim();
+      if (value !== original.trim()) applyInline(sectionId, path, value);
+    };
+    el.addEventListener("keydown", onKey);
+    el.addEventListener("paste", onPaste);
+    el.addEventListener("blur", onBlur, { once: true });
   };
 
   // Autosave the draft shortly after the last change, then refresh the preview.
@@ -137,7 +200,8 @@ function SiteEditorInner({ initial, hasDraft: initialDraft, storeName, backHref,
       fd.set("payload", JSON.stringify(theme));
       const res = await saveDraft(null, fd).catch(() => null);
       if (seq !== saveSeq.current) return;
-      if (res?.ok) { setStatus("saved"); setHasDraft(true); reloadPreview(); }
+      // Never reload under the merchant's cursor: the next save after they finish typing will.
+      if (res?.ok) { setStatus("saved"); setHasDraft(true); if (!editingRef.current) reloadPreview(); }
       else { setStatus("error"); toast(res?.error ?? t("editor.saveFailed"), "error"); }
     }, 700);
     return () => clearTimeout(timer);
@@ -257,8 +321,10 @@ function SiteEditorInner({ initial, hasDraft: initialDraft, storeName, backHref,
         {/* Live preview */}
         <main className={cn("min-w-0 flex-1 items-start justify-center overflow-hidden p-3 lg:flex lg:p-5", showPreview ? "flex" : "hidden")}>
           <motion.div layout transition={{ type: "spring", stiffness: 260, damping: 32 }}
-            className={cn("h-full overflow-hidden bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_12px_40px_-12px_rgb(0_0_0/0.25)]", device === "mobile" ? "w-[390px] max-w-full rounded-[28px] border-[6px] border-black" : "w-full rounded-xl border border-border")}>
+            className={cn("relative h-full overflow-hidden bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_12px_40px_-12px_rgb(0_0_0/0.25)]", device === "mobile" ? "w-[390px] max-w-full rounded-[28px] border-[6px] border-black" : "w-full rounded-xl border border-border")}>
             <iframe ref={frame} src={previewSrc} onLoad={onFrameLoad} title={t("theme.preview")} className="size-full bg-white" />
+            <SectionOverlay frame={frame} version={frameVersion} sectionId={hovered ?? selected} sections={theme.sections}
+              onChange={(sections) => setSections(sections)} onSelect={(id) => { setTab("sections"); setSelected(id); }} />
           </motion.div>
         </main>
       </div>

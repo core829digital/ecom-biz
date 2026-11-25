@@ -140,3 +140,18 @@ describe("plan-gated motion and custom CSS", () => {
     expect([top.motion, top.customCss, top.sections[0].style.reveal]).toEqual(["cinematic", "a{color:red}", "zoom"]);
   });
 });
+
+describe("inline editing from the preview", () => {
+  it("writes texts by path and refuses unknown paths", async () => {
+    const { setSectionText, blankSection } = await import("@/lib/theme-sections");
+    const hero = blankSection("hero", "hero0001");
+    expect(setSectionText(hero, "title", "Nuova collezione")).toMatchObject({ title: "Nuova collezione" });
+    expect(setSectionText(hero, "nope", "x")).toBeNull();
+    const faq = blankSection("faq", "faq00001");
+    expect(setSectionText(faq, "items.0.q", "Spedite all'estero?")?.type === "faq" && (setSectionText(faq, "items.0.q", "Spedite?") as { items: { q: string }[] }).items[0].q).toBe("Spedite?");
+    expect(setSectionText(faq, "items.9.q", "x")).toBeNull();
+    const c = blankSection("container", "cont0001");
+    const blockId = (c as { blocks: { id: string }[] }).blocks[0].id;
+    expect((setSectionText(c, `blocks.${blockId}.text`, "Ciao") as { blocks: { text?: string }[] }).blocks[0].text).toBe("Ciao");
+  });
+});

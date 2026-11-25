@@ -166,3 +166,28 @@ export function blankSection<K extends SectionType>(type: K, id = newSectionId()
   };
   return SECTION_SCHEMAS[type].parse({ id, type, enabled: true, ...seed[type] }) as SectionOf<K>;
 }
+
+/**
+ * Writes one text of a section from the preview's inline editor. Path: "title", "items.2.quote",
+ * "blocks.<blockId>.label". Returns the sanitized section, or null if the path doesn't exist.
+ */
+export function setSectionText(section: Section, path: string, value: string): Section | null {
+  const parts = path.split(".");
+  const next = structuredClone(section) as unknown as Record<string, unknown>;
+  if (parts.length === 1) {
+    if (typeof next[parts[0]] !== "string") return null;
+    next[parts[0]] = value;
+  } else if (parts.length === 3 && parts[0] === "items" && Array.isArray(next.items)) {
+    const item = (next.items as Record<string, unknown>[])[Number(parts[1])];
+    if (!item || typeof item[parts[2]] !== "string") return null;
+    item[parts[2]] = value;
+  } else if (parts.length === 3 && parts[0] === "blocks" && Array.isArray(next.blocks)) {
+    const block = (next.blocks as Record<string, unknown>[]).find((b) => b.id === parts[1]);
+    if (!block || typeof block[parts[2]] !== "string") return null;
+    block[parts[2]] = value;
+  } else return null;
+  // Re-validate: lengths and types stay within the schema (too long text is cut, not rejected).
+  const parsed = parseSections([next]);
+  if (parsed?.length) return parsed[0];
+  return null;
+}

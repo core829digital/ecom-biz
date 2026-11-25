@@ -90,9 +90,15 @@ function buttonClass(section: Section, variant: "solid" | "outline" | "link" = "
   return cn("inline-flex h-12 items-center rounded-btn px-7 font-medium transition-opacity hover:opacity-90", colored ? "bg-bg text-text" : "bg-brand text-brand-contrast");
 }
 
-function Heading({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <h2 className={cn("text-balance text-2xl font-semibold tracking-tight sm:text-3xl", className)}>{children}</h2>;
+function Heading({ children, className, ...rest }: { children: React.ReactNode; className?: string; "data-edit"?: string }) {
+  return <h2 className={cn("text-balance text-2xl font-semibold tracking-tight sm:text-3xl", className)} {...rest}>{children}</h2>;
 }
+
+/**
+ * Marks a text as editable in the site-editor preview ("sectionId|path"); nothing is added for
+ * visitors. The editor makes the element editable on click and writes the value back.
+ */
+const editable = (sf: Storefront, sectionId: string, path: string) => (sf.preview ? { "data-edit": `${sectionId}|${path}` } : {});
 
 function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Storefront; site: string; data: SectionData }) {
   const { t } = sf;
@@ -106,10 +112,10 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
           {img && <div className="absolute inset-0 bg-black" style={{ opacity: s.overlay / 100 }} aria-hidden />}
           <div className={cn(tall, "relative w-full", img && "text-white")}>
             <Container section={s} className={cn("w-full", s.align === "center" && "text-center")} data-hero-text>
-              <h1 className={cn("max-w-2xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl", s.align === "center" && "mx-auto")}>{s.title || sf.store.name}</h1>
-              {s.subtitle && <p className={cn("mt-5 max-w-xl text-pretty text-lg opacity-90", s.align === "center" && "mx-auto")}>{s.subtitle}</p>}
+              <h1 className={cn("max-w-2xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl", s.align === "center" && "mx-auto")} {...editable(sf, s.id, "title")}>{s.title || sf.store.name}</h1>
+              {s.subtitle && <p className={cn("mt-5 max-w-xl text-pretty text-lg opacity-90", s.align === "center" && "mx-auto")} {...editable(sf, s.id, "subtitle")}>{s.subtitle}</p>}
               <a href={sfHref(sf.base, s.ctaUrl || "/collections/all")} className={cn(buttonClass(s), "mt-8", img && "bg-white text-black")}>
-                {s.ctaLabel || t("sf.shopNow")}
+                <span {...editable(sf, s.id, "ctaLabel")}>{s.ctaLabel || t("sf.shopNow")}</span>
               </a>
             </Container>
           </div>
@@ -121,7 +127,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
       return (
         <Container section={s}>
           <div className="mb-8 flex items-end justify-between gap-4">
-            <Heading>{s.title || d?.collection?.title || t("sf.featured")}</Heading>
+            <Heading {...editable(sf, s.id, "title")}>{s.title || d?.collection?.title || t("sf.featured")}</Heading>
             <Link href={sf.href(d?.collection ? `/collections/${d.collection.handle}` : "/collections/all")} className="shrink-0 text-sm underline">{t("sf.viewAll")}</Link>
           </div>
           {d?.products.length ? <ProductGrid products={d.products} sf={sf} stagger /> : <p className="opacity-70">{t("sf.noProducts")}</p>}
@@ -133,7 +139,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
       if (!list.length) return sf.preview ? <Container section={s}><p className="opacity-70">{t("sf.sections.noCollections")}</p></Container> : null;
       return (
         <Container section={s}>
-          <Heading className="mb-8">{s.title || t("sf.collections")}</Heading>
+          <Heading className="mb-8" {...editable(sf, s.id, "title")}>{s.title || t("sf.collections")}</Heading>
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {list.map((c, i) => (
               <li key={c.id} {...item(i)}>
@@ -154,9 +160,9 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
             {s.imageUrl && <img src={s.imageUrl} alt="" loading="lazy" className="size-full object-cover" />}
           </div>
           <div>
-            {s.title && <Heading>{s.title}</Heading>}
+            {s.title && <Heading {...editable(sf, s.id, "title")}>{s.title}</Heading>}
             {s.body && <RichText text={s.body} className="prose-store mt-4 opacity-90" />}
-            {s.ctaLabel && <a href={sfHref(sf.base, s.ctaUrl || "/collections/all")} className={cn(buttonClass(s), "mt-6")}>{s.ctaLabel}</a>}
+            {s.ctaLabel && <a href={sfHref(sf.base, s.ctaUrl || "/collections/all")} className={cn(buttonClass(s), "mt-6")}><span {...editable(sf, s.id, "ctaLabel")}>{s.ctaLabel}</span></a>}
           </div>
         </Container>
       );
@@ -164,7 +170,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
       return (
         <Container section={s} className={cn(s.align === "center" && "text-center")}>
           <div className={cn("max-w-2xl", s.align === "center" && "mx-auto")}>
-            {s.title && <Heading>{s.title}</Heading>}
+            {s.title && <Heading {...editable(sf, s.id, "title")}>{s.title}</Heading>}
             {s.body && <RichText text={s.body} className="prose-store mt-4 opacity-90" />}
           </div>
         </Container>
@@ -172,13 +178,13 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
     case "features":
       return (
         <Container section={s}>
-          {s.title && <Heading className="mb-10 text-center">{s.title}</Heading>}
+          {s.title && <Heading className="mb-10 text-center" {...editable(sf, s.id, "title")}>{s.title}</Heading>}
           <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {s.items.filter((i) => i.title || i.body).map((i, n) => (
-              <li key={n} className="text-center" {...item(n)}>
+            {s.items.map((i, idx) => ({ i, idx })).filter(({ i }) => i.title || i.body).map(({ i, idx }, n) => (
+              <li key={idx} className="text-center" {...item(n)}>
                 <span className="mx-auto mb-3 block h-1 w-8 rounded-full bg-current opacity-40" aria-hidden />
-                <p className="font-semibold">{i.title}</p>
-                {i.body && <p className="mt-1.5 text-sm opacity-75">{i.body}</p>}
+                <p className="font-semibold" {...editable(sf, s.id, `items.${idx}.title`)}>{i.title}</p>
+                {i.body && <p className="mt-1.5 text-sm opacity-75" {...editable(sf, s.id, `items.${idx}.body`)}>{i.body}</p>}
               </li>
             ))}
           </ul>
@@ -187,13 +193,13 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
     case "testimonials":
       return (
         <Container section={s}>
-          {s.title && <Heading className="mb-10 text-center">{s.title}</Heading>}
+          {s.title && <Heading className="mb-10 text-center" {...editable(sf, s.id, "title")}>{s.title}</Heading>}
           <ul className="grid gap-5 md:grid-cols-3">
-            {s.items.filter((i) => i.quote).map((i, n) => (
-              <li key={n} {...item(n)}>
+            {s.items.map((i, idx) => ({ i, idx })).filter(({ i }) => i.quote).map(({ i, idx }, n) => (
+              <li key={idx} {...item(n)}>
                 <figure className="h-full rounded-card border border-current/15 p-6">
-                  <blockquote className="text-pretty leading-relaxed">“{i.quote}”</blockquote>
-                  {i.author && <figcaption className="mt-4 text-sm font-medium opacity-75">— {i.author}</figcaption>}
+                  <blockquote className="text-pretty leading-relaxed">“<span {...editable(sf, s.id, `items.${idx}.quote`)}>{i.quote}</span>”</blockquote>
+                  {i.author && <figcaption className="mt-4 text-sm font-medium opacity-75">— <span {...editable(sf, s.id, `items.${idx}.author`)}>{i.author}</span></figcaption>}
                 </figure>
               </li>
             ))}
@@ -201,22 +207,22 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
         </Container>
       );
     case "faq": {
-      const items = s.items.filter((i) => i.q && i.a);
+      const items = s.items.map((i, idx) => ({ ...i, idx })).filter((i) => i.q && i.a);
       const jsonLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: items.map((i) => ({ "@type": "Question", name: i.q, acceptedAnswer: { "@type": "Answer", text: i.a } })) };
       return (
         <Container section={s} className="max-w-3xl">
-          {s.title && <Heading className="mb-8">{s.title}</Heading>}
+          {s.title && <Heading className="mb-8" {...editable(sf, s.id, "title")}>{s.title}</Heading>}
           <div className="divide-y divide-current/15 border-y border-current/15">
             {items.map((i, n) => (
               <details key={n} className="group py-4">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
-                  {i.q}
+                  <span {...editable(sf, s.id, `items.${i.idx}.q`)}>{i.q}</span>
                   <span className="relative size-4 shrink-0" aria-hidden>
                     <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-current" />
                     <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-current transition-transform duration-300 group-open:rotate-90 group-open:opacity-0" />
                   </span>
                 </summary>
-                <p className="mt-3 whitespace-pre-line text-sm leading-relaxed opacity-80">{i.a}</p>
+                <p className="mt-3 whitespace-pre-line text-sm leading-relaxed opacity-80" {...editable(sf, s.id, `items.${i.idx}.a`)}>{i.a}</p>
               </details>
             ))}
           </div>
@@ -228,17 +234,17 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
       return (
         <Container section={s} className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
-            {s.title && <Heading>{s.title}</Heading>}
+            {s.title && <Heading {...editable(sf, s.id, "title")}>{s.title}</Heading>}
             {s.body && <p className="mt-2 max-w-xl opacity-85">{s.body}</p>}
           </div>
-          {s.ctaLabel && <a href={sfHref(sf.base, s.ctaUrl || "/collections/all")} className={cn(buttonClass(s), "shrink-0")}>{s.ctaLabel}</a>}
+          {s.ctaLabel && <a href={sfHref(sf.base, s.ctaUrl || "/collections/all")} className={cn(buttonClass(s), "shrink-0")}><span {...editable(sf, s.id, "ctaLabel")}>{s.ctaLabel}</span></a>}
         </Container>
       );
     case "newsletter":
       if (!sf.store.newsletterEnabled) return sf.preview ? <Container section={s}><p className="opacity-70">{t("sf.sections.newsletterOff")}</p></Container> : null;
       return (
         <Container section={s} className="max-w-xl text-center">
-          <Heading>{s.title || t("sf.newsletter.title")}</Heading>
+          <Heading {...editable(sf, s.id, "title")}>{s.title || t("sf.newsletter.title")}</Heading>
           <p className="mt-2 opacity-80">{s.body || t("sf.newsletter.body")}</p>
           <SimpleActionForm action={subscribeAction.bind(null, site)} submitLabel={t("sf.newsletter.cta")} className="mx-auto mt-6 flex max-w-md flex-wrap justify-center gap-2" buttonClassName={cn(buttonClass(s), "h-11")}>
             <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
@@ -253,7 +259,7 @@ function SectionBody({ section: s, sf, site, data }: { section: Section; sf: Sto
       return (
         <Container section={s}>
           <div className="mb-8 flex items-end justify-between gap-4">
-            <Heading>{s.title || t("sf.blog.title")}</Heading>
+            <Heading {...editable(sf, s.id, "title")}>{s.title || t("sf.blog.title")}</Heading>
             <Link href={sf.href("/blog")} className="shrink-0 text-sm underline">{t("sf.viewAll")}</Link>
           </div>
           <ul className="grid gap-6 md:grid-cols-3">
@@ -287,7 +293,7 @@ function BlockView({ block: b, section, sf, data }: { block: Block; section: Sec
   switch (b.type) {
     case "heading": {
       const size = { sm: "text-lg", md: "text-2xl", lg: "text-3xl sm:text-4xl", xl: "text-4xl sm:text-6xl" }[b.size];
-      return b.text ? <h2 className={cn("text-balance font-semibold tracking-tight", size)}>{b.text}</h2> : null;
+      return b.text ? <h2 className={cn("text-balance font-semibold tracking-tight", size)} {...editable(sf, section.id, `blocks.${b.id}.text`)}>{b.text}</h2> : null;
     }
     case "text":
       return b.text ? <RichText text={b.text} className="prose-store opacity-90" /> : null;
@@ -298,7 +304,7 @@ function BlockView({ block: b, section, sf, data }: { block: Block; section: Sec
       return b.link ? <a href={sfHref(sf.base, b.link)} className="block">{img}</a> : img;
     }
     case "button":
-      return b.label ? <div><a href={sfHref(sf.base, b.url || "/collections/all")} className={buttonClass(section, b.variant)}>{b.label}</a></div> : null;
+      return b.label ? <div><a href={sfHref(sf.base, b.url || "/collections/all")} className={buttonClass(section, b.variant)}><span {...editable(sf, section.id, `blocks.${b.id}.label`)}>{b.label}</span></a></div> : null;
     case "product": {
       const p = data.products.get(b.productId);
       return p ? <div className="text-left"><ProductCard product={p} sf={sf} /></div> : null;

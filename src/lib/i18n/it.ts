@@ -1802,4 +1802,7 @@ export const it: Record<MessageKey, string> = {
   "setup.product.stock": "Disponibili",
   "setup.product.photo": "Foto",
   "setup.product.ai": "Oppure descrivi i tuoi prodotti e lascia che l'assistente li scriva.",
+  "editor.overlay.hidden": "Sezione nascosta — annulla con Ctrl+Z",
+  "editor.overlay.removed": "Sezione eliminata — annulla con Ctrl+Z",
+  "editor.inlineHint": "Suggerimento: clicca qualsiasi testo nell'anteprima per modificarlo lì.",
 };

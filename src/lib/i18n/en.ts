@@ -1813,6 +1813,9 @@ export const en = {
   "setup.product.stock": "In stock",
   "setup.product.photo": "Photo",
   "setup.product.ai": "Or describe your products and let the assistant write them.",
+  "editor.overlay.hidden": "Section hidden — undo with Ctrl+Z",
+  "editor.overlay.removed": "Section removed — undo with Ctrl+Z",
+  "editor.inlineHint": "Tip: click any text in the preview to edit it there.",
 } as const;
 
 export type MessageKey = keyof typeof en;

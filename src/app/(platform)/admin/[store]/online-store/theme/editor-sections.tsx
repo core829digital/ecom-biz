@@ -60,6 +60,7 @@ export function SectionList({ sections, selected, onSelect, onChange }: {
         ))}
       </Reorder.Group>
       {sections.length === 0 && <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted">{tk("editor.noSections")}</p>}
+      {sections.length > 0 && <p className="mt-3 px-1 text-[11px] leading-snug text-muted">{tk("editor.inlineHint")}</p>}
       <AnimatePresence initial={false} mode="wait">
         {adding ? (
           <motion.div key="picker" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="mt-3 rounded-xl border border-border bg-surface p-2 shadow-sm">
