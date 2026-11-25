@@ -56,7 +56,7 @@ Legenda: ✅ fatto · 🔄 in corso · ⏳ da fare · 🔒 bloccato da un fattor
 
 | # | Attività | Stato |
 |---|---|---|
-| E1 | Audit indici del database sulle query reali (EXPLAIN) e aggiunta di quelli mancanti | ⏳ |
+| E1 | Audit indici del database sulle query reali (EXPLAIN) e aggiunta di quelli mancanti | ✅ 22 indici aggiunti |
 | E2 | Ripasso OWASP Top 10, validazione/sanificazione di ogni input, controllo dipendenze | ⏳ |
 | E3 | Penetration test esterno, test di carico | 🔒 fornitore esterno |
 

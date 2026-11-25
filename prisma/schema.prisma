@@ -59,6 +59,8 @@ model User {
   emailVerifications EmailVerification[]
   trialClaims        TrialClaim[]
   notifications      Notification[]
+
+  @@index([planId])
 }
 
 /// In-app notification for one person. Text is rendered at display time in their language from `type` + `data`.
@@ -110,6 +112,7 @@ model TrialClaim {
 
   @@index([kind, valueHash])
   @@index([kind, createdAt])
+  @@index([userId])
 }
 
 model Session {
@@ -135,6 +138,8 @@ model PasswordReset {
   expiresAt DateTime
   usedAt    DateTime?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum Role {
@@ -467,6 +472,7 @@ model Customer {
   resets           CustomerPasswordReset[]
 
   @@unique([storeId, email])
+  @@index([storeId, createdAt])
 }
 
 model CustomerAddress {
@@ -506,6 +512,8 @@ model CustomerPasswordReset {
   expiresAt  DateTime
   usedAt     DateTime?
   customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
 }
 
 // ───────────────────────────── Cart & Checkout ─────────────────────────────
@@ -528,6 +536,7 @@ model Cart {
   checkouts           Checkout[]
 
   @@index([storeId])
+  @@index([customerId])
 }
 
 model CartLine {
@@ -540,6 +549,7 @@ model CartLine {
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, variantId])
+  @@index([variantId])
 }
 
 enum CheckoutStatus {
@@ -574,6 +584,8 @@ model Checkout {
   cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
+  @@index([cartId])
+  @@index([customerId])
 }
 
 // ───────────────────────────── Orders ─────────────────────────────
@@ -642,6 +654,8 @@ model Order {
   @@unique([storeId, number])
   @@index([storeId, createdAt])
   @@index([customerId])
+  @@index([storeId, status, fulfillmentStatus])
+  @@index([storeId, email])
 }
 
 model OrderLine {
@@ -664,6 +678,8 @@ model OrderLine {
   order            Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
 }
 
 model Fulfillment {
@@ -675,6 +691,8 @@ model Fulfillment {
   createdAt       DateTime          @default(now())
   order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   lines           FulfillmentLine[]
+
+  @@index([orderId])
 }
 
 model FulfillmentLine {
@@ -683,6 +701,9 @@ model FulfillmentLine {
   orderLineId   String
   quantity      Int
   fulfillment   Fulfillment @relation(fields: [fulfillmentId], references: [id], onDelete: Cascade)
+
+  @@index([fulfillmentId])
+  @@index([orderLineId])
 }
 
 model Refund {
@@ -695,6 +716,8 @@ model Refund {
   providerRef String?
   createdAt   DateTime @default(now())
   order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
 
 model OrderEvent {
@@ -757,6 +780,8 @@ model ShippingRate {
   minSubtotalCents Int? // rate only offered when subtotal >= min
   maxSubtotalCents Int? // rate only offered when subtotal <= max
   zone             ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@index([zoneId])
 }
 
 model TaxRate {
@@ -844,6 +869,7 @@ model WebhookDelivery {
   subscription   WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@index([success, nextAttemptAt])
+  @@index([subscriptionId])
 }
 
 // Idempotency ledger for inbound provider webhooks (e.g. Stripe event ids).
@@ -1025,6 +1051,7 @@ model CampaignSend {
 
   @@unique([campaignId, subscriberId])
   @@index([campaignId, status])
+  @@index([subscriberId])
 }
 
 enum AutomationTrigger {
@@ -1061,6 +1088,7 @@ model AutomationRun {
 
   @@unique([automationId, subscriberId])
   @@index([doneAt, nextAt])
+  @@index([subscriberId])
 }
 
 // ───────────────────────────── AI assistant ─────────────────────────────
@@ -1076,6 +1104,7 @@ model AiConversation {
   messages  AiMessage[]
 
   @@index([storeId, userId, updatedAt])
+  @@index([userId])
 }
 
 /// role: user | assistant | tool. Tool calls and results are kept so the model keeps context.
