@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring } from 
 import { Check, CreditCard, Globe, Keyboard, Lock, Package, Palette, Store, Truck, Webhook, X } from "lucide-react";
 import { MaskReveal, MorphPlus, PillButton, TiltCard } from "./motion-ui";
 import type { LandingCopy } from "@/lib/i18n/landing";
+import type { MarketingCopy } from "@/lib/i18n/marketing-pages";
 import { cn } from "@/lib/cn";
 import { ease } from "./hero";
 
@@ -329,7 +330,7 @@ export function FinalCta({ copy }: { copy: LandingCopy["cta"] }) {
   );
 }
 
-export function Footer({ copy, nav, brand, company }: { copy: LandingCopy["footer"]; nav: LandingCopy["nav"]; brand: string; company?: { name: string; vat: string } | null }) {
+export function Footer({ copy, nav, pages, brand, company }: { copy: LandingCopy["footer"]; nav: LandingCopy["nav"]; pages: MarketingCopy["nav"]; brand: string; company?: { name: string; vat: string } | null }) {
   return (
     <footer className="border-t border-border">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
@@ -340,9 +341,11 @@ export function Footer({ copy, nav, brand, company }: { copy: LandingCopy["foote
         <div>
           <p className="text-sm font-semibold">{copy.product}</p>
           <ul className="mt-3 space-y-2 text-sm text-muted">
-            <li><a href="#features" className="hover:text-text">{nav.features}</a></li>
-            <li><a href="#pricing" className="hover:text-text">{nav.pricing}</a></li>
-            <li><a href="#faq" className="hover:text-text">{nav.faq}</a></li>
+            <li><Link href="/features" className="hover:text-text">{pages.features}</Link></li>
+            <li><Link href="/demo" className="hover:text-text">{pages.demo}</Link></li>
+            <li><Link href="/pricing" className="hover:text-text">{pages.pricing}</Link></li>
+            <li><Link href="/about" className="hover:text-text">{pages.about}</Link></li>
+            <li><Link href="/#faq" className="hover:text-text">{nav.faq}</Link></li>
           </ul>
         </div>
         <div>

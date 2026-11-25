@@ -41,7 +41,7 @@ Legenda: ✅ fatto · 🔄 in corso · ⏳ da fare · 🔒 bloccato da un fattor
 | C2 | Palette, font, forme, animazioni per piano, CSS personalizzato | ✅ |
 | C3 | Modifica direttamente nell'anteprima (clic su testi e blocchi), oltre alla sidebar | ✅ |
 | C4 | Transizioni di pagina fluide; cambio chiaro/scuro con onda circolare dall'angolo | ✅ |
-| C5 | Landing multi-pagina: chi siamo, cosa facciamo, offerta, **demo interattiva della dashboard**, parallax | ⏳ |
+| C5 | Landing multi-pagina: chi siamo, cosa facciamo, offerta, **demo interattiva della dashboard**, parallax | ✅ |
 | C6 | Revisione UX di tutti i form, centro notifiche e percorsi (stati vuoti, errori, caricamenti) | ⏳ |
 
 ## Fase D — Business e operatività

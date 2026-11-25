@@ -8,22 +8,25 @@ import {
 import { BarChart3, Boxes, Check, ChevronDown, Home, Package, ShoppingBag, Users } from "lucide-react";
 import { MaskReveal, MorphMenu, PillButton } from "./motion-ui";
 import type { LandingCopy } from "@/lib/i18n/landing";
+import type { MarketingCopy } from "@/lib/i18n/marketing-pages";
+import { usePathname } from "next/navigation";
 import type { ThemePref } from "@/lib/appearance";
 import { ThemeSwitcher } from "@/components/appearance/theme-switcher";
 import { cn } from "@/lib/cn";
 
 export const ease = [0.22, 1, 0.36, 1] as const;
 
-export function LandingNav({ copy, brand, loggedIn, theme, themeLabels, locale, onLocale }: {
-  copy: LandingCopy; brand: string; loggedIn: boolean; theme: ThemePref; themeLabels: Record<ThemePref, string>; locale: string; onLocale: (l: "en" | "it") => void;
+export function LandingNav({ copy, pages, brand, loggedIn, theme, themeLabels, locale, onLocale }: {
+  copy: LandingCopy; pages: MarketingCopy["nav"]; brand: string; loggedIn: boolean; theme: ThemePref; themeLabels: Record<ThemePref, string>; locale: string; onLocale: (l: "en" | "it") => void;
 }) {
+  const pathname = usePathname();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [th, setTh] = useState(theme);
   const [hover, setHover] = useState<string | null>(null);
   useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 12));
-  const links: [string, string][] = [["#features", copy.nav.features], ["#how", copy.nav.how], ["#pricing", copy.nav.pricing], ["#faq", copy.nav.faq]];
+  const links: [string, string][] = [["/features", pages.features], ["/demo", pages.demo], ["/pricing", pages.pricing], ["/about", pages.about]];
   return (
     <motion.header
       className={cn("fixed inset-x-0 top-0 z-50 transition-[background,border-color,backdrop-filter] duration-300", scrolled ? "border-b border-border bg-bg/75 backdrop-blur-xl" : "border-b border-transparent")}
@@ -40,7 +43,7 @@ export function LandingNav({ copy, brand, loggedIn, theme, themeLabels, locale, 
           {links.map(([href, label]) => (
             <li key={href} className="relative">
               {hover === href && <motion.span layoutId="nav-hover" className="absolute inset-0 rounded-full bg-surface-2" transition={{ type: "spring", stiffness: 500, damping: 38 }} />}
-              <a href={href} onMouseEnter={() => setHover(href)} className="relative block rounded-full px-3.5 py-2 transition-colors hover:text-text">{label}</a>
+              <Link href={href} onMouseEnter={() => setHover(href)} aria-current={pathname === href ? "page" : undefined} className={cn("relative block rounded-full px-3.5 py-2 transition-colors hover:text-text", pathname === href && "text-text")}>{label}</Link>
             </li>
           ))}
         </ul>
@@ -66,7 +69,7 @@ export function LandingNav({ copy, brand, loggedIn, theme, themeLabels, locale, 
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-border bg-bg md:hidden">
             <ul className="space-y-1 px-4 py-4">
-              {links.map(([href, label]) => <li key={href}><a href={href} onClick={() => setOpen(false)} className="block rounded-md px-2 py-2 hover:bg-surface-2">{label}</a></li>)}
+              {links.map(([href, label]) => <li key={href}><Link href={href} onClick={() => setOpen(false)} className="block rounded-md px-2 py-2 hover:bg-surface-2">{label}</Link></li>)}
               <li className="flex items-center gap-3 px-2 pt-2">
                 <ThemeSwitcher theme={th} onChange={setTh} labels={themeLabels} compact layoutId="landing-theme-m" />
                 {(["en", "it"] as const).map((l) => <button key={l} onClick={() => onLocale(l)} className={cn("text-sm uppercase", locale === l ? "font-semibold" : "text-muted")}>{l}</button>)}
